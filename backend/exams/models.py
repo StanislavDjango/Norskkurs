@@ -28,6 +28,13 @@ class Test(models.Model):
     def question_count(self) -> int:
         return self.questions.count()
 
+    @property
+    def question_mode(self) -> str:
+        q_types = set(self.questions.values_list("question_type", flat=True))
+        if len(q_types) == 1:
+            return q_types.pop()
+        return "mixed"
+
 
 class Question(models.Model):
     class QuestionType(models.TextChoices):

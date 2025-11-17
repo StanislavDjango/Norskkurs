@@ -8,6 +8,7 @@ export interface Test {
   level: Level;
   estimated_minutes: number;
   question_count: number;
+  question_mode: "single" | "fill" | "mixed";
 }
 
 export interface Option {

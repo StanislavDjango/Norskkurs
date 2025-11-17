@@ -19,10 +19,23 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 class TestListSerializer(serializers.ModelSerializer):
     question_count = serializers.IntegerField(read_only=True)
+    question_mode = serializers.SerializerMethodField()
 
     class Meta:
         model = Test
-        fields = ("id", "title", "slug", "description", "level", "estimated_minutes", "question_count")
+        fields = (
+            "id",
+            "title",
+            "slug",
+            "description",
+            "level",
+            "estimated_minutes",
+            "question_count",
+            "question_mode",
+        )
+
+    def get_question_mode(self, obj: Test) -> str:
+        return obj.question_mode
 
 
 class TestDetailSerializer(TestListSerializer):

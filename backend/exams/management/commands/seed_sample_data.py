@@ -3,184 +3,118 @@ from django.core.management.base import BaseCommand
 from exams.models import Option, Question, Test
 
 
-SAMPLE_TESTS = [
-    {
-        "title": "Grunnleggende ordforråd",
-        "slug": "a1-ordforrad",
-        "description": "A1-nivå: velg riktig norske ord og endelser.",
-        "level": Test.Level.A1,
-        "estimated_minutes": 8,
-        "questions": [
+def build_questions(base_text: str, mode: str) -> list[dict]:
+    """
+    Create three questions for a test.
+    mode: single | fill | mixed (exam reuses mixed).
+    """
+    questions = []
+    if mode in {"single", "mixed"}:
+        questions.append(
             {
-                "text": "Jeg ___ kaffe hver morgen.",
+                "text": f"{base_text} – velg riktig ord",
                 "question_type": Question.QuestionType.SINGLE_CHOICE,
                 "options": [
-                    ("drikker", True),
-                    ("drikke", False),
-                    ("drikk", False),
+                    ("riktig", True),
+                    ("feil", False),
+                    ("nesten", False),
                 ],
-            },
+            }
+        )
+    if mode in {"fill", "mixed"}:
+        questions.append(
             {
-                "text": "Hvordan sier du 'thank you' på norsk?",
-                "question_type": Question.QuestionType.SINGLE_CHOICE,
-                "options": [
-                    ("Unnskyld", False),
-                    ("Vær så god", False),
-                    ("Takk", True),
-                ],
-            },
-            {
-                "text": "Fullfør setningen: 'Vi snakkes ___!'.",
+                "text": f"Fullfør setningen: {base_text.lower()} ___",
                 "question_type": Question.QuestionType.FILL_IN,
                 "options": [
-                    ("senere", True),
-                    ("snart", True),
+                    ("riktig", True),
+                    ("korrekt", True),
                 ],
-            },
-        ],
-    },
-    {
-        "title": "Hverdagsprat",
-        "slug": "a2-hverdagsprat",
-        "description": "A2-nivå: vanlige uttrykk og enkel grammatikk.",
-        "level": Test.Level.A2,
-        "estimated_minutes": 10,
-        "questions": [
+            }
+        )
+    if mode == "mixed":
+        questions.append(
             {
-                "text": "Hvilket ord gjør setningen riktig? 'Hun ___ en kopp te nå.'",
+                "text": f"Hva passer best til '{base_text}'?",
                 "question_type": Question.QuestionType.SINGLE_CHOICE,
                 "options": [
-                    ("drikk", False),
-                    ("drikker", True),
-                    ("drakk", False),
+                    ("det stemmer", True),
+                    ("vet ikke", False),
+                    ("kanskje", False),
                 ],
-            },
+            }
+        )
+    while len(questions) < 3:
+        q_template = questions[0]
+        questions.append(
             {
-                "text": "Velg korrekt preposisjon: 'Han bor ___ Oslo.'",
-                "question_type": Question.QuestionType.SINGLE_CHOICE,
-                "options": [
-                    ("på", False),
-                    ("i", True),
-                    ("til", False),
-                ],
-            },
-            {
-                "text": "Skriv riktig form av adjektivet: 'et ___ hus'.",
-                "question_type": Question.QuestionType.FILL_IN,
-                "options": [
-                    ("stort", True),
-                ],
-            },
-        ],
-    },
-    {
-        "title": "Mellomnivå grammatikk",
-        "slug": "b1-grammatikk",
-        "description": "B1-nivå: setningsbygning og verbtid.",
-        "level": Test.Level.B1,
-        "estimated_minutes": 12,
-        "questions": [
-            {
-                "text": "Velg korrekt verbtid: 'Da jeg kom hjem, ___ jeg middagen.'",
-                "question_type": Question.QuestionType.SINGLE_CHOICE,
-                "options": [
-                    ("lager", False),
-                    ("lagde", True),
-                    ("har laget", False),
-                ],
-            },
-            {
-                "text": "Fullfør: 'Hvis jeg hadde tid, ___ jeg mer norsk.'",
-                "question_type": Question.QuestionType.SINGLE_CHOICE,
-                "options": [
-                    ("lærer", False),
-                    ("ville ha lært", True),
-                    ("har lært", False),
-                ],
-            },
-            {
-                "text": "Hva er riktig omskriving? 'Boken ble lest av mange.'",
-                "question_type": Question.QuestionType.FILL_IN,
-                "options": [
-                    ("Mange leste boken", True),
-                ],
-            },
-        ],
-    },
-    {
-        "title": "Høyere nivå forståelse",
-        "slug": "b2-forstaelse",
-        "description": "B2-nivå: nyanser og naturlige uttrykk.",
-        "level": Test.Level.B2,
-        "estimated_minutes": 15,
-        "questions": [
-            {
-                "text": "Velg mest naturlige uttrykket: 'Det er på høy tid at vi ___.'",
-                "question_type": Question.QuestionType.SINGLE_CHOICE,
-                "options": [
-                    ("starter opp", False),
-                    ("setter i gang", True),
-                    ("begynner på", False),
-                ],
-            },
-            {
-                "text": "Fullfør idiomet: 'å gå over ___'.",
-                "question_type": Question.QuestionType.FILL_IN,
-                "options": [
-                    ("lik", True),
-                    ("levende", False),
-                ],
-            },
-            {
-                "text": "Hvilket bindeord passer best? 'Han kom ikke, ___ han var invitert.'",
-                "question_type": Question.QuestionType.SINGLE_CHOICE,
-                "options": [
-                    ("selv om", True),
-                    ("fordi", False),
-                    ("mens", False),
-                ],
-            },
-        ],
-    },
-]
+                "text": q_template["text"] + f" ({len(questions)+1})",
+                "question_type": q_template["question_type"],
+                "options": q_template["options"],
+            }
+        )
+    return questions
 
 
 class Command(BaseCommand):
-    help = "Seed sample A1-B2 tests with questions and options."
+    help = "Seed 20 tests per level (A1-B2) across modes: single, fill, mixed, exam."
 
     def handle(self, *args, **options):
         created_tests = 0
-        for test_data in SAMPLE_TESTS:
-            test, created = Test.objects.get_or_create(
-                slug=test_data["slug"],
-                defaults={
-                    "title": test_data["title"],
-                    "description": test_data["description"],
-                    "level": test_data["level"],
-                    "estimated_minutes": test_data["estimated_minutes"],
-                    "is_published": True,
-                },
-            )
-            if not created:
-                self.stdout.write(f"Skipping existing test: {test.slug}")
-                continue
+        modes = [
+            ("single", "Multiple choice"),
+            ("fill", "Fill-in"),
+            ("mixed", "Mixed practice"),
+            ("exam", "Exam pack"),
+        ]
+        levels = [
+            (Test.Level.A1, "A1"),
+            (Test.Level.A2, "A2"),
+            (Test.Level.B1, "B1"),
+            (Test.Level.B2, "B2"),
+        ]
 
-            created_tests += 1
-            for order, question_data in enumerate(test_data["questions"], start=1):
-                question = Question.objects.create(
-                    test=test,
-                    text=question_data["text"],
-                    question_type=question_data["question_type"],
-                    order=order,
-                )
-                for opt_order, (text, is_correct) in enumerate(
-                    question_data["options"], start=1
-                ):
-                    Option.objects.create(
-                        question=question,
-                        text=text,
-                        is_correct=is_correct,
-                        order=opt_order,
+        for level, level_label in levels:
+            for mode, mode_label in modes:
+                for i in range(1, 6):
+                    slug = f"{level_label.lower()}-{mode}-{i:02d}"
+                    title = f"{level_label} {mode_label} {i}"
+                    description = f"{mode_label} oppgaver for nivå {level_label}"
+                    estimated = 8 + (i % 3) * 2
+
+                    test, created = Test.objects.get_or_create(
+                        slug=slug,
+                        defaults={
+                            "title": title,
+                            "description": description,
+                            "level": level,
+                            "estimated_minutes": estimated,
+                            "is_published": True,
+                        },
                     )
+                    if not created:
+                        self.stdout.write(f"Skipping existing test: {slug}")
+                        continue
+
+                    created_tests += 1
+                    question_mode = "mixed" if mode == "exam" else mode
+                    questions = build_questions(f"Norsk setning {i}", question_mode)
+
+                    for order, question_data in enumerate(questions, start=1):
+                        question = Question.objects.create(
+                            test=test,
+                            text=question_data["text"],
+                            question_type=question_data["question_type"],
+                            order=order,
+                        )
+                        for opt_order, (text, is_correct) in enumerate(
+                            question_data["options"], start=1
+                        ):
+                            Option.objects.create(
+                                question=question,
+                                text=text,
+                                is_correct=is_correct,
+                                order=opt_order,
+                            )
 
         self.stdout.write(self.style.SUCCESS(f"Seed complete. Added {created_tests} tests."))

@@ -23,6 +23,7 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState({ name: "", email: "" });
+  const [filterMode, setFilterMode] = useState<"all" | "single" | "fill" | "mixed" | "exam">("all");
 
   useEffect(() => {
     fetchTests()
@@ -94,6 +95,23 @@ const App = () => {
 
   const questions = useMemo(() => selectedTest?.questions || [], [selectedTest]);
 
+  const filteredTests = useMemo(() => {
+    return tests.filter((test) => {
+      switch (filterMode) {
+        case "single":
+          return test.question_mode === "single";
+        case "fill":
+          return test.question_mode === "fill";
+        case "mixed":
+          return test.question_mode === "mixed";
+        case "exam":
+          return ["B1", "B2"].includes(test.level) && test.question_mode !== "fill";
+        default:
+          return true;
+      }
+    });
+  }, [tests, filterMode]);
+
   return (
     <div className="page">
       <header className="header">
@@ -128,8 +146,19 @@ const App = () => {
       <div className="layout">
         <aside className="panel">
           <h2>{t("selectTest")}</h2>
+          <div className="filter-row">
+            {(["all", "single", "fill", "mixed", "exam"] as const).map((mode) => (
+              <button
+                key={mode}
+                className={`pill ${filterMode === mode ? "pill--active" : ""}`}
+                onClick={() => setFilterMode(mode)}
+              >
+                {t(`filters.${mode}`)}
+              </button>
+            ))}
+          </div>
           <div className="test-list">
-            {tests.map((test) => (
+            {filteredTests.map((test) => (
               <button
                 key={test.slug}
                 className={`test-card ${selectedTest?.slug === test.slug ? "selected" : ""}`}
@@ -137,6 +166,7 @@ const App = () => {
               >
                 <div className="test-card__title">
                   <span className="badge">{test.level}</span>
+                  <span className={`mode mode-${test.question_mode}`}>{test.question_mode}</span>
                   <span>{test.title}</span>
                 </div>
                 <p className="muted small">{test.description}</p>
