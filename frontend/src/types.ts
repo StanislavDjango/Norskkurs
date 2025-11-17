@@ -51,4 +51,16 @@ export interface SubmissionResponse {
     total_questions: number;
     percent: number;
   };
+  review?: QuestionReview[];
+}
+
+export interface QuestionReview {
+  question: number;
+  order: number;
+  text: string;
+  question_type: Question["question_type"];
+  selected_text: string | null;
+  correct_answers: string[];
+  is_correct: boolean;
+  explanation: string;
 }

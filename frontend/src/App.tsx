@@ -2,7 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { fetchTestDetail, fetchTests, submitTest } from "./api";
-import type { AnswerPayload, Question, SubmissionResponse, Test, TestDetail } from "./types";
+import type {
+  AnswerPayload,
+  Question,
+  QuestionReview,
+  SubmissionResponse,
+  Test,
+  TestDetail,
+} from "./types";
 
 const levelOrder: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4 };
 
@@ -12,6 +19,7 @@ const App = () => {
   const [selectedTest, setSelectedTest] = useState<TestDetail | null>(null);
   const [answers, setAnswers] = useState<Record<number, AnswerPayload>>({});
   const [summary, setSummary] = useState<SubmissionResponse["summary"] | null>(null);
+  const [review, setReview] = useState<QuestionReview[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState({ name: "", email: "" });
@@ -26,6 +34,7 @@ const App = () => {
     setLoading(true);
     setError(null);
     setSummary(null);
+    setReview([]);
     try {
       const detail = await fetchTestDetail(slug);
       setSelectedTest(detail);
@@ -72,6 +81,7 @@ const App = () => {
         locale: i18n.language,
       });
       setSummary(res.summary);
+      setReview(res.review || []);
     } catch (e) {
       console.error(e);
       setError("Could not submit answers");
@@ -92,7 +102,7 @@ const App = () => {
           <p className="muted">{t("appSubtitle")}</p>
         </div>
         <div className="header-actions">
-          <a href="http://localhost:8000/admin/" className="admin-link" target="_blank" rel="noreferrer">
+          <a href="http://localhost:8001/admin/" className="admin-link" target="_blank" rel="noreferrer">
             Admin
           </a>
           <div className="language-switcher">
@@ -222,6 +232,48 @@ const App = () => {
                   {loading ? t("loading") : t("submit")}
                 </button>
               </div>
+
+              {summary && review.length > 0 && (
+                <section className="review">
+                  <h3>{t("reviewTitle")}</h3>
+                  <div className="review-grid">
+                    {review.map((entry) => (
+                      <div
+                        key={entry.question}
+                        className={`review-card ${entry.is_correct ? "good" : "bad"}`}
+                      >
+                        <div className="review-card__header">
+                          <span className="badge">{entry.is_correct ? t("correct") : t("incorrect")}</span>
+                          <span className="muted small">{entry.question_type === "single" ? "MCQ" : "Fill"}</span>
+                        </div>
+                        <p className="question-text">{entry.text}</p>
+                        <div className="review-row">
+                          <span className="label">{t("yourAnswer")}:</span>
+                          <span className="answer-text">
+                            {entry.selected_text && entry.selected_text.trim()
+                              ? entry.selected_text
+                              : "—"}
+                          </span>
+                        </div>
+                        <div className="review-row">
+                          <span className="label">{t("rightAnswer")}:</span>
+                          <span className="answer-text">
+                            {entry.correct_answers.length
+                              ? entry.correct_answers.join(", ")
+                              : "—"}
+                          </span>
+                        </div>
+                        {entry.explanation && (
+                          <div className="review-row">
+                            <span className="label">{t("explanation")}:</span>
+                            <span className="answer-text">{entry.explanation}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
             </>
           )}
         </main>

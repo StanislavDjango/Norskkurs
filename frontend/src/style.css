@@ -58,6 +58,11 @@ h2 {
   gap: 16px;
 }
 
+.question,
+.review-card {
+  line-height: 1.5;
+}
+
 .panel {
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -216,6 +221,7 @@ input {
   border-radius: 12px;
   padding: 12px;
   background: #f8fafc;
+  box-shadow: inset 0 1px 0 #e2e8f0;
 }
 
 .question-title {
@@ -244,6 +250,57 @@ input {
   padding: 10px;
   border-radius: 10px;
   border: 1px solid #cbd5e1;
+}
+
+.review {
+  margin-top: 16px;
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.review-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+}
+
+.review-card.good {
+  border-color: #22c55e;
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.12);
+}
+
+.review-card.bad {
+  border-color: #f97316;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.12);
+}
+
+.review-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.question-text {
+  margin: 4px 0 8px;
+  font-weight: 600;
+}
+
+.review-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 6px;
+  align-items: start;
+  margin: 4px 0;
+}
+
+.answer-text {
+  color: #0f172a;
 }
 
 .actions {

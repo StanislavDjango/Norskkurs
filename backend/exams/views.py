@@ -96,6 +96,32 @@ class TestViewSet(viewsets.ReadOnlyModelViewSet):
         submission.score = score
         submission.save(update_fields=["score"])
 
+        review_payload = []
+        for created_answer in submission.answers.select_related(
+            "question", "selected_option"
+        ).all():
+            question = created_answer.question
+            correct_texts = [
+                option.text for option in question.options.filter(is_correct=True)
+            ]
+            selected_text = (
+                created_answer.selected_option.text
+                if created_answer.selected_option
+                else created_answer.text_response
+            )
+            review_payload.append(
+                {
+                    "question": question.id,
+                    "order": question.order,
+                    "text": question.text,
+                    "question_type": question.question_type,
+                    "selected_text": selected_text,
+                    "is_correct": created_answer.is_correct,
+                    "correct_answers": correct_texts,
+                    "explanation": question.explanation,
+                }
+            )
+
         response_payload = {
             "summary": {
                 "score": score,
@@ -106,5 +132,6 @@ class TestViewSet(viewsets.ReadOnlyModelViewSet):
             },
             "submission": SubmissionSerializer(submission).data,
             "answers": AnswerSerializer(submission.answers.all(), many=True).data,
+            "review": sorted(review_payload, key=lambda item: item["order"]),
         }
         return Response(response_payload, status=status.HTTP_201_CREATED)
