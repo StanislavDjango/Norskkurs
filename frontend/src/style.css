@@ -237,13 +237,18 @@ input {
 }
 
 .option {
-  display: flex;
+  display: grid;
+  grid-template-columns: 20px 1fr;
   gap: 10px;
-  align-items: center;
+  align-items: start;
   background: #fff;
   padding: 10px;
   border-radius: 10px;
   border: 1px solid #e2e8f0;
+}
+
+.option input[type="radio"] {
+  margin-top: 4px;
 }
 
 .text-answer {
