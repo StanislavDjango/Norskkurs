@@ -91,20 +91,25 @@ const App = () => {
           <h1>{t("appTitle")}</h1>
           <p className="muted">{t("appSubtitle")}</p>
         </div>
-        <div className="language-switcher">
-          <span>{t("language")}:</span>
-          <button
-            className={i18n.language === "en" ? "active" : ""}
-            onClick={() => i18n.changeLanguage("en")}
-          >
-            EN
-          </button>
-          <button
-            className={i18n.language === "nb" ? "active" : ""}
-            onClick={() => i18n.changeLanguage("nb")}
-          >
-            NO
-          </button>
+        <div className="header-actions">
+          <a href="http://localhost:8000/admin/" className="admin-link" target="_blank" rel="noreferrer">
+            Admin
+          </a>
+          <div className="language-switcher">
+            <span>{t("language")}:</span>
+            <button
+              className={i18n.language === "en" ? "active" : ""}
+              onClick={() => i18n.changeLanguage("en")}
+            >
+              EN
+            </button>
+            <button
+              className={i18n.language === "nb" ? "active" : ""}
+              onClick={() => i18n.changeLanguage("nb")}
+            >
+              NO
+            </button>
+          </div>
         </div>
       </header>
 

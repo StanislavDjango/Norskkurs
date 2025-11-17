@@ -29,6 +29,12 @@ body {
   margin-bottom: 20px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 h1 {
   margin: 0 0 4px;
   font-weight: 800;
@@ -125,6 +131,22 @@ h2 {
   border-color: #2563eb;
   color: #2563eb;
   font-weight: 700;
+}
+
+.admin-link {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  text-decoration: none;
+  color: #0f172a;
+  background: #fff;
+  font-weight: 700;
+  transition: border 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-link:hover {
+  border-color: #2563eb;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12);
 }
 
 .placeholder {
