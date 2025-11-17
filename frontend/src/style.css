@@ -141,6 +141,18 @@ h2 {
   margin: 8px 0 10px;
 }
 
+.level-row {
+  margin-top: 4px;
+}
+
+.search-row input[type="search"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
 .pill {
   border: 1px solid #e2e8f0;
   background: #fff;
@@ -154,6 +166,13 @@ h2 {
   border-color: #2563eb;
   color: #2563eb;
   background: #e0ebff;
+}
+
+.load-more {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .language-switcher {

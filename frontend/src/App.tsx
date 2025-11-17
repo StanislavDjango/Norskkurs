@@ -9,6 +9,7 @@ import type {
   SubmissionResponse,
   Test,
   TestDetail,
+  Level,
 } from "./types";
 
 const levelOrder: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4 };
@@ -24,6 +25,9 @@ const App = () => {
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState({ name: "", email: "" });
   const [filterMode, setFilterMode] = useState<"all" | "single" | "fill" | "mixed" | "exam">("all");
+  const [filterLevel, setFilterLevel] = useState<"all" | Level>("all");
+  const [search, setSearch] = useState("");
+  const [visibleCount, setVisibleCount] = useState(12);
 
   useEffect(() => {
     fetchTests()
@@ -96,21 +100,34 @@ const App = () => {
   const questions = useMemo(() => selectedTest?.questions || [], [selectedTest]);
 
   const filteredTests = useMemo(() => {
-    return tests.filter((test) => {
-      switch (filterMode) {
-        case "single":
-          return test.question_mode === "single";
-        case "fill":
-          return test.question_mode === "fill";
-        case "mixed":
-          return test.question_mode === "mixed";
-        case "exam":
-          return ["B1", "B2"].includes(test.level) && test.question_mode !== "fill";
-        default:
-          return true;
-      }
-    });
-  }, [tests, filterMode]);
+    const term = search.trim().toLowerCase();
+    return tests
+      .filter((test) => {
+        if (filterLevel !== "all" && test.level !== filterLevel) return false;
+        switch (filterMode) {
+          case "single":
+            return test.question_mode === "single";
+          case "fill":
+            return test.question_mode === "fill";
+          case "mixed":
+            return test.question_mode === "mixed";
+          case "exam":
+            return ["B1", "B2"].includes(test.level) && test.question_mode !== "fill";
+          default:
+            return true;
+        }
+      })
+      .filter((test) => {
+        if (!term) return true;
+        return (
+          test.title.toLowerCase().includes(term) ||
+          test.description.toLowerCase().includes(term) ||
+          test.slug.toLowerCase().includes(term)
+        );
+      });
+  }, [tests, filterMode, filterLevel, search]);
+
+  const visibleTests = useMemo(() => filteredTests.slice(0, visibleCount), [filteredTests, visibleCount]);
 
   return (
     <div className="page">
@@ -146,19 +163,47 @@ const App = () => {
       <div className="layout">
         <aside className="panel">
           <h2>{t("selectTest")}</h2>
+          <div className="search-row">
+            <input
+              type="search"
+              placeholder={t("searchPlaceholder")}
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setVisibleCount(12);
+              }}
+            />
+          </div>
+          <div className="filter-row level-row">
+            {(["all", "A1", "A2", "B1", "B2"] as const).map((lvl) => (
+              <button
+                key={lvl}
+                className={`pill ${filterLevel === lvl ? "pill--active" : ""}`}
+                onClick={() => {
+                  setFilterLevel(lvl === "all" ? "all" : lvl);
+                  setVisibleCount(12);
+                }}
+              >
+                {lvl === "all" ? "All" : lvl}
+              </button>
+            ))}
+          </div>
           <div className="filter-row">
             {(["all", "single", "fill", "mixed", "exam"] as const).map((mode) => (
               <button
                 key={mode}
                 className={`pill ${filterMode === mode ? "pill--active" : ""}`}
-                onClick={() => setFilterMode(mode)}
+                onClick={() => {
+                  setFilterMode(mode);
+                  setVisibleCount(12);
+                }}
               >
                 {t(`filters.${mode}`)}
               </button>
             ))}
           </div>
           <div className="test-list">
-            {filteredTests.map((test) => (
+            {visibleTests.map((test) => (
               <button
                 key={test.slug}
                 className={`test-card ${selectedTest?.slug === test.slug ? "selected" : ""}`}
@@ -180,7 +225,20 @@ const App = () => {
                 </div>
               </button>
             ))}
+            {visibleTests.length === 0 && (
+              <div className="muted small">No tests match filters.</div>
+            )}
           </div>
+          {visibleTests.length < filteredTests.length && (
+            <div className="load-more">
+              <span className="muted small">
+                Showing {visibleTests.length} of {filteredTests.length}
+              </span>
+              <button className="ghost" onClick={() => setVisibleCount((n) => n + 12)}>
+                Load more
+              </button>
+            </div>
+          )}
         </aside>
 
         <main className="panel">
