@@ -23,7 +23,9 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: stanyslav/norskkurs-backend:latest
+          tags: |
+            stanyslav/norskkurs-backend:latest
+            stanyslav/norskkurs-backend:${{ github.sha }}
 
   frontend:
     runs-on: ubuntu-latest
@@ -42,4 +44,6 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: stanyslav/norskkurs-frontend:latest
+          tags: |
+            stanyslav/norskkurs-frontend:latest
+            stanyslav/norskkurs-frontend:${{ github.sha }}
