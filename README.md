@@ -30,6 +30,9 @@ Placement tests for Norwegian proficiency levels A1–B2 with a React UI and Dja
 - Run backend tests: `python backend/manage.py test exams` (uses sqlite in-memory when no `DATABASE_URL`).
 - Frontend build check: `cd frontend && npm run build`.
 
+## CI (Docker Hub)
+- GitHub Actions workflow `.github/workflows/docker-build.yml` builds and pushes `stanyslav/norskkurs-backend:latest` and `stanyslav/norskkurs-frontend:latest` on `main` pushes. Configure repo secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`.
+
 ## GitHub repo
 Initialize git is done locally. To create/push to GitHub (`Norskkurs`), provide a GitHub token or create the repo and share remote credentials, then run:
 ```bash
