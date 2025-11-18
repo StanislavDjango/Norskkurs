@@ -177,6 +177,9 @@ const App = () => {
           <p className="muted">{t("appSubtitle")}</p>
         </div>
         <div className="header-actions">
+          <a href="http://localhost:8001/admin/login/?next=/admin/" className="admin-link" target="_blank" rel="noreferrer">
+            {t("login")}
+          </a>
           {isTeacher && (
             <a href="http://localhost:8001/admin/" className="admin-link" target="_blank" rel="noreferrer">
               Admin
