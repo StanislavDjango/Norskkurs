@@ -3,6 +3,7 @@ import type { AnswerPayload, ProfileInfo, SubmissionResponse, Test, TestDetail }
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8001/api/",
+  withCredentials: true,
 });
 
 export const fetchTests = async (params?: { student_email?: string }): Promise<Test[]> => {
