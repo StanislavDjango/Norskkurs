@@ -26,6 +26,7 @@ class CsrfExemptSessionAuthentication(SessionAuthentication):
 
 
 class TestViewSet(viewsets.ReadOnlyModelViewSet):
+    authentication_classes = (CsrfExemptSessionAuthentication,)
     serializer_class = TestListSerializer
     lookup_field = "slug"
     lookup_value_regex = "[^/]+"
@@ -167,7 +168,7 @@ class TestViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ProfileViewSet(viewsets.ViewSet):
-    authentication_classes = (SessionAuthentication,)
+    authentication_classes = (CsrfExemptSessionAuthentication,)
 
     @action(detail=False, methods=["get"])
     def me(self, request):
