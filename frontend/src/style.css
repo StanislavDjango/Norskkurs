@@ -155,7 +155,8 @@ h2 {
 
 .pill {
   border: 1px solid #e2e8f0;
-  background: #fff;
+  background: #f8fafc;
+  color: #0f172a;
   border-radius: 999px;
   padding: 6px 10px;
   cursor: pointer;
