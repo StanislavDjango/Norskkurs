@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { fetchTestDetail, fetchTests, submitTest } from "./api";
@@ -28,6 +28,8 @@ const App = () => {
   const [filterLevel, setFilterLevel] = useState<"all" | Level>("all");
   const [search, setSearch] = useState("");
   const [visibleCount, setVisibleCount] = useState(12);
+  const [missingQuestions, setMissingQuestions] = useState<Set<number>>(new Set());
+  const questionRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   useEffect(() => {
     fetchTests()
@@ -40,6 +42,7 @@ const App = () => {
     setError(null);
     setSummary(null);
     setReview([]);
+    setMissingQuestions(new Set());
     try {
       const detail = await fetchTestDetail(slug);
       setSelectedTest(detail);
@@ -62,6 +65,11 @@ const App = () => {
       ...prev,
       [questionId]: { ...(prev[questionId] || { question: questionId }), selected_option: value },
     }));
+    setMissingQuestions((prev) => {
+      const next = new Set(prev);
+      next.delete(questionId);
+      return next;
+    });
   };
 
   const handleTextChange = (questionId: number, value: string) => {
@@ -69,10 +77,37 @@ const App = () => {
       ...prev,
       [questionId]: { ...(prev[questionId] || { question: questionId }), text_response: value },
     }));
+    setMissingQuestions((prev) => {
+      const next = new Set(prev);
+      next.delete(questionId);
+      return next;
+    });
   };
 
   const handleSubmit = async () => {
     if (!selectedTest) return;
+    const unanswered = new Set<number>();
+    selectedTest.questions.forEach((q) => {
+      const ans = answers[q.id];
+      const hasAnswer =
+        q.question_type === "single"
+          ? !!ans?.selected_option
+          : !!ans?.text_response && ans.text_response.trim().length > 0;
+      if (!hasAnswer) unanswered.add(q.id);
+    });
+    if (unanswered.size > 0) {
+      setMissingQuestions(unanswered);
+      setError(t("allRequired"));
+      const firstId = Array.from(unanswered)[0];
+      const ref = questionRefs.current[firstId];
+      if (ref) {
+        ref.scrollIntoView({ behavior: "smooth", block: "center" });
+        ref.classList.add("shake");
+        setTimeout(() => ref.classList.remove("shake"), 800);
+      }
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -87,6 +122,7 @@ const App = () => {
       });
       setSummary(res.summary);
       setReview(res.review || []);
+      setMissingQuestions(new Set());
     } catch (e) {
       console.error(e);
       setError("Could not submit answers");
@@ -152,7 +188,13 @@ const App = () => {
               className={i18n.language === "nb" ? "active" : ""}
               onClick={() => i18n.changeLanguage("nb")}
             >
-              NO
+              {t("languageNo")}
+            </button>
+            <button
+              className={i18n.language === "ru" ? "active" : ""}
+              onClick={() => i18n.changeLanguage("ru")}
+            >
+              RU
             </button>
           </div>
         </div>
@@ -304,8 +346,13 @@ const App = () => {
                 {questions.map((question) => (
                   <QuestionBlock
                     key={question.id}
+                    ref={(el) => {
+                      questionRefs.current[question.id] = el;
+                    }}
                     question={question}
                     answer={answers[question.id]}
+                    missing={missingQuestions.has(question.id)}
+                    review={review.find((r) => r.question === question.id)}
                     onSelectOption={handleSelectOption}
                     onChangeText={handleTextChange}
                   />
@@ -321,47 +368,6 @@ const App = () => {
                 </button>
               </div>
 
-              {summary && review.length > 0 && (
-                <section className="review">
-                  <h3>{t("reviewTitle")}</h3>
-                  <div className="review-grid">
-                    {review.map((entry) => (
-                      <div
-                        key={entry.question}
-                        className={`review-card ${entry.is_correct ? "good" : "bad"}`}
-                      >
-                        <div className="review-card__header">
-                          <span className="badge">{entry.is_correct ? t("correct") : t("incorrect")}</span>
-                          <span className="muted small">{entry.question_type === "single" ? "MCQ" : "Fill"}</span>
-                        </div>
-                        <p className="question-text">{entry.text}</p>
-                        <div className="review-row">
-                          <span className="label">{t("yourAnswer")}:</span>
-                          <span className="answer-text">
-                            {entry.selected_text && entry.selected_text.trim()
-                              ? entry.selected_text
-                              : "—"}
-                          </span>
-                        </div>
-                        <div className="review-row">
-                          <span className="label">{t("rightAnswer")}:</span>
-                          <span className="answer-text">
-                            {entry.correct_answers.length
-                              ? entry.correct_answers.join(", ")
-                              : "—"}
-                          </span>
-                        </div>
-                        {entry.explanation && (
-                          <div className="review-row">
-                            <span className="label">{t("explanation")}:</span>
-                            <span className="answer-text">{entry.explanation}</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
             </>
           )}
         </main>
@@ -370,50 +376,80 @@ const App = () => {
   );
 };
 
-const QuestionBlock = ({
-  question,
-  answer,
-  onSelectOption,
-  onChangeText,
-}: {
+type QuestionBlockProps = {
   question: Question;
   answer?: AnswerPayload;
+  missing?: boolean;
+  review?: QuestionReview;
   onSelectOption: (questionId: number, value: number | null) => void;
   onChangeText: (questionId: number, value: string) => void;
-}) => {
-  const { t } = useTranslation();
-  return (
-    <article className="question">
-      <div className="question-title">
-        <span className="badge">{question.question_type === "single" ? "MCQ" : "Fill"}</span>
-        <p>{question.text}</p>
-      </div>
-      {question.question_type === "single" ? (
-        <div className="options">
-          {question.options.map((opt) => (
-            <label key={opt.id} className="option">
-              <input
-                type="radio"
-                name={`q-${question.id}`}
-                value={opt.id}
-                checked={answer?.selected_option === opt.id}
-                onChange={() => onSelectOption(question.id, opt.id)}
-              />
-              <span>{opt.text}</span>
-            </label>
-          ))}
-        </div>
-      ) : (
-        <input
-          type="text"
-          className="text-answer"
-          placeholder={t("answerPlaceholder")}
-          value={answer?.text_response || ""}
-          onChange={(e) => onChangeText(question.id, e.target.value)}
-        />
-      )}
-    </article>
-  );
 };
+
+const QuestionBlock = React.forwardRef<HTMLDivElement, QuestionBlockProps>(
+  ({ question, answer, missing, review, onSelectOption, onChangeText }, ref) => {
+    const { t } = useTranslation();
+    const statusClass = review ? (review.is_correct ? "good" : "bad") : missing ? "missing" : "";
+    return (
+      <article className={`question ${statusClass}`} ref={ref}>
+        <div className="question-title">
+          <span className="badge">{question.question_type === "single" ? "MCQ" : "Fill"}</span>
+          <p>{question.text}</p>
+        </div>
+        {question.question_type === "single" ? (
+          <div className="options">
+            {question.options.map((opt) => (
+              <label key={opt.id} className="option">
+                <input
+                  type="radio"
+                  name={`q-${question.id}`}
+                  value={opt.id}
+                  checked={answer?.selected_option === opt.id}
+                  onChange={() => onSelectOption(question.id, opt.id)}
+                />
+                <span>{opt.text}</span>
+              </label>
+            ))}
+          </div>
+        ) : (
+          <input
+            type="text"
+            className="text-answer"
+            placeholder={t("answerPlaceholder")}
+            value={answer?.text_response || ""}
+            onChange={(e) => onChangeText(question.id, e.target.value)}
+          />
+        )}
+        {review && (
+          <div className={`question-review ${review.is_correct ? "good" : "bad"}`}>
+            <span className="badge">{review.is_correct ? t("correct") : t("incorrect")}</span>
+            <div className="review-row inline">
+              <span className="label">{t("yourAnswer")}:</span>
+              <span className="answer-text">
+                {review.selected_text && review.selected_text.trim() ? review.selected_text : "—"}
+              </span>
+            </div>
+            <div className="review-row inline">
+              <span className="label">{t("rightAnswer")}:</span>
+              <span className="answer-text">
+                {review.correct_answers.length ? review.correct_answers.join(", ") : "—"}
+              </span>
+            </div>
+            {review.explanation && (
+              <div className="review-row inline">
+                <span className="label">{t("explanation")}:</span>
+                <span className="answer-text">{review.explanation}</span>
+              </div>
+            )}
+          </div>
+        )}
+        {missing && !review && (
+          <div className="question-hint">{t("answerRequired")}</div>
+        )}
+      </article>
+    );
+  },
+);
+
+QuestionBlock.displayName = "QuestionBlock";
 
 export default App;

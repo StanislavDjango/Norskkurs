@@ -3,56 +3,62 @@ from django.core.management.base import BaseCommand
 from exams.models import Option, Question, Test
 
 
-def build_questions(base_text: str, mode: str) -> list[dict]:
+def build_questions(base_text: str, mode: str, total: int = 10) -> list[dict]:
     """
-    Create three questions for a test.
+    Create a list of questions for a test.
     mode: single | fill | mixed (exam reuses mixed).
+    total: number of questions per test.
     """
-    questions = []
-    if mode in {"single", "mixed"}:
-        questions.append(
-            {
-                "text": f"{base_text} – velg riktig ord",
-                "question_type": Question.QuestionType.SINGLE_CHOICE,
-                "options": [
-                    ("riktig", True),
-                    ("feil", False),
-                    ("nesten", False),
-                ],
-            }
-        )
-    if mode in {"fill", "mixed"}:
-        questions.append(
-            {
-                "text": f"Fullfør setningen: {base_text.lower()} ___",
-                "question_type": Question.QuestionType.FILL_IN,
-                "options": [
-                    ("riktig", True),
-                    ("korrekt", True),
-                ],
-            }
-        )
-    if mode == "mixed":
-        questions.append(
-            {
-                "text": f"Hva passer best til '{base_text}'?",
-                "question_type": Question.QuestionType.SINGLE_CHOICE,
-                "options": [
-                    ("det stemmer", True),
-                    ("vet ikke", False),
-                    ("kanskje", False),
-                ],
-            }
-        )
-    while len(questions) < 3:
-        q_template = questions[0]
-        questions.append(
-            {
-                "text": q_template["text"] + f" ({len(questions)+1})",
-                "question_type": q_template["question_type"],
-                "options": q_template["options"],
-            }
-        )
+    questions: list[dict] = []
+    for idx in range(1, total + 1):
+        label = f"{base_text} #{idx}"
+        if mode == "single":
+            questions.append(
+                {
+                    "text": f"{label} – velg riktig ord",
+                    "question_type": Question.QuestionType.SINGLE_CHOICE,
+                    "options": [
+                        ("riktig", True),
+                        ("feil", False),
+                        ("nesten", False),
+                    ],
+                }
+            )
+        elif mode == "fill":
+            questions.append(
+                {
+                    "text": f"Fullfør setningen: {label} ___",
+                    "question_type": Question.QuestionType.FILL_IN,
+                    "options": [
+                        ("riktig", True),
+                        ("korrekt", True),
+                    ],
+                }
+            )
+        else:  # mixed
+            if idx % 2 == 0:
+                questions.append(
+                    {
+                        "text": f"{label} – velg riktig ord",
+                        "question_type": Question.QuestionType.SINGLE_CHOICE,
+                        "options": [
+                            ("det stemmer", True),
+                            ("kanskje", False),
+                            ("feil", False),
+                        ],
+                    }
+                )
+            else:
+                questions.append(
+                    {
+                        "text": f"Fullfør setningen: {label} ___",
+                        "question_type": Question.QuestionType.FILL_IN,
+                        "options": [
+                            ("riktig", True),
+                            ("korrekt", True),
+                        ],
+                    }
+                )
     return questions
 
 
@@ -60,6 +66,7 @@ class Command(BaseCommand):
     help = "Seed 20 tests per level (A1-B2) across modes: single, fill, mixed, exam."
 
     def handle(self, *args, **options):
+        Test.objects.all().delete()
         created_tests = 0
         modes = [
             ("single", "Multiple choice"),
@@ -98,7 +105,7 @@ class Command(BaseCommand):
 
                     created_tests += 1
                     question_mode = "mixed" if mode == "exam" else mode
-                    questions = build_questions(f"Norsk setning {i}", question_mode)
+                    questions = build_questions(f"Norsk setning {i}", question_mode, total=10)
 
                     for order, question_data in enumerate(questions, start=1):
                         question = Question.objects.create(
