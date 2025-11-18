@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
 
 import { fetchProfile, fetchTestDetail, fetchTests, logoutProfile, submitTest } from "./api";
 import type {
@@ -193,57 +195,13 @@ const App = () => {
 
   return (
     <div className="page">
-      <header className="header">
-        <div>
-          <h1>{t("appTitle")}</h1>
-          <p className="muted">{t("appSubtitle")}</p>
-        </div>
-        <div className="header-actions">
-          {auth?.is_authenticated ? (
-            <div className="user-chip">
-              <span className="muted small">{auth.display_name || auth.username}</span>
-              <button onClick={handleLogout} className="admin-link ghost-btn">
-                {t("logout")}
-              </button>
-            </div>
-          ) : (
-            <a
-              href="http://localhost:8001/admin/login/?next=/admin/"
-              className="admin-link"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {t("login")}
-            </a>
-          )}
-          {isTeacher && (
-            <a href="http://localhost:8001/admin/" className="admin-link" target="_blank" rel="noreferrer">
-              {t("adminMenu")}
-            </a>
-          )}
-          <div className="language-switcher">
-            <span>{t("language")}:</span>
-            <button
-              className={i18n.language === "en" ? "active" : ""}
-              onClick={() => i18n.changeLanguage("en")}
-            >
-              EN
-            </button>
-            <button
-              className={i18n.language === "nb" ? "active" : ""}
-              onClick={() => i18n.changeLanguage("nb")}
-            >
-              {t("languageNo")}
-            </button>
-            <button
-              className={i18n.language === "ru" ? "active" : ""}
-              onClick={() => i18n.changeLanguage("ru")}
-            >
-              RU
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header
+        auth={auth}
+        isTeacher={isTeacher}
+        onLogout={handleLogout}
+        currentLang={i18n.language}
+        changeLanguage={(l: string) => i18n.changeLanguage(l)}
+      />
 
       {error && <div className="alert">{error}</div>}
 
@@ -428,6 +386,7 @@ const App = () => {
           )}
         </main>
       </div>
+      <Footer />
     </div>
   );
 };
