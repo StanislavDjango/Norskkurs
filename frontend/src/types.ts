@@ -66,3 +66,10 @@ export interface QuestionReview {
   is_correct: boolean;
   explanation: string;
 }
+
+export interface ProfileInfo {
+  is_teacher: boolean;
+  is_authenticated: boolean;
+  username?: string;
+  display_name?: string;
+}

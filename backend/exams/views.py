@@ -163,5 +163,18 @@ class ProfileViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["get"])
     def me(self, request):
         user = request.user
-        is_teacher = bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
-        return Response({"is_teacher": is_teacher})
+        is_authenticated = bool(user and user.is_authenticated)
+        is_teacher = bool(is_authenticated and (user.is_staff or user.is_superuser))
+        display_name = ""
+        username = ""
+        if is_authenticated:
+            username = user.get_username()
+            display_name = (user.get_full_name() or username or "").strip()
+        return Response(
+            {
+                "is_teacher": is_teacher,
+                "is_authenticated": is_authenticated,
+                "username": username,
+                "display_name": display_name,
+            }
+        )

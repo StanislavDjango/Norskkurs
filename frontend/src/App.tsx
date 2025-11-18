@@ -6,6 +6,7 @@ import type {
   AnswerPayload,
   Question,
   QuestionReview,
+  ProfileInfo,
   SubmissionResponse,
   Test,
   TestDetail,
@@ -24,6 +25,7 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState({ name: "", email: "" });
+  const [auth, setAuth] = useState<ProfileInfo | null>(null);
   const [filterMode, setFilterMode] = useState<"all" | "single" | "fill" | "mixed" | "exam">("all");
   const [filterLevel, setFilterLevel] = useState<"all" | Level>("all");
   const [search, setSearch] = useState("");
@@ -38,7 +40,15 @@ const App = () => {
       .then((data) => setTests([...data].sort((a, b) => levelOrder[a.level] - levelOrder[b.level])))
       .catch(() => setError("Could not load tests"));
 
-    fetchProfile().then((data) => setIsTeacher(data.is_teacher)).catch(() => setIsTeacher(false));
+    fetchProfile()
+      .then((data) => {
+        setAuth(data);
+        setIsTeacher(data.is_teacher);
+      })
+      .catch(() => {
+        setAuth(null);
+        setIsTeacher(false);
+      });
   }, [studentEmail]);
 
   const selectTest = async (slug: string) => {
@@ -177,12 +187,31 @@ const App = () => {
           <p className="muted">{t("appSubtitle")}</p>
         </div>
         <div className="header-actions">
-          <a href="http://localhost:8001/admin/login/?next=/admin/" className="admin-link" target="_blank" rel="noreferrer">
-            {t("login")}
-          </a>
+          {auth?.is_authenticated ? (
+            <div className="user-chip">
+              <span className="muted small">{auth.display_name || auth.username}</span>
+              <a
+                href="http://localhost:8001/admin/logout/?next=/"
+                className="admin-link"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t("logout")}
+              </a>
+            </div>
+          ) : (
+            <a
+              href="http://localhost:8001/admin/login/?next=/admin/"
+              className="admin-link"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t("login")}
+            </a>
+          )}
           {isTeacher && (
             <a href="http://localhost:8001/admin/" className="admin-link" target="_blank" rel="noreferrer">
-              Admin
+              {t("adminMenu")}
             </a>
           )}
           <div className="language-switcher">

@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { AnswerPayload, SubmissionResponse, Test, TestDetail } from "./types";
+import type { AnswerPayload, ProfileInfo, SubmissionResponse, Test, TestDetail } from "./types";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8001/api/",
@@ -30,7 +30,7 @@ export const submitTest = async (
   return res.data;
 };
 
-export const fetchProfile = async () => {
-  const res = await api.get<{ is_teacher: boolean }>("profile/me/");
+export const fetchProfile = async (): Promise<ProfileInfo> => {
+  const res = await api.get<ProfileInfo>("profile/me/");
   return res.data;
 };
