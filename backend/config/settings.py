@@ -126,4 +126,5 @@ JAZZMIN_SETTINGS = {
     "site_header": "Norskkurs",
     "welcome_sign": "Velkommen til Norskkurs adminkonsoll",
     "copyright": "Norskkurs",
+    "language_chooser": False,
 }
