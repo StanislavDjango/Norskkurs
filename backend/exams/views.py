@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from django.contrib.auth import logout
 from django.db import models, transaction
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.authentication import SessionAuthentication
 
 from .models import Answer, Assignment, Option, Question, Submission, Test
 from .serializers import (
@@ -16,6 +18,11 @@ from .serializers import (
     TestDetailSerializer,
     TestListSerializer,
 )
+
+
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+    def enforce_csrf(self, request):
+        return
 
 
 class TestViewSet(viewsets.ReadOnlyModelViewSet):
@@ -160,6 +167,8 @@ class TestViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ProfileViewSet(viewsets.ViewSet):
+    authentication_classes = (SessionAuthentication,)
+
     @action(detail=False, methods=["get"])
     def me(self, request):
         user = request.user
@@ -178,3 +187,12 @@ class ProfileViewSet(viewsets.ViewSet):
                 "display_name": display_name,
             }
         )
+
+    @action(
+        detail=False,
+        methods=["post"],
+        authentication_classes=[CsrfExemptSessionAuthentication],
+    )
+    def logout(self, request):
+        logout(request)
+        return Response(status=status.HTTP_204_NO_CONTENT)

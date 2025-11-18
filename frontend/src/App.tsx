@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { fetchProfile, fetchTestDetail, fetchTests, submitTest } from "./api";
+import { fetchProfile, fetchTestDetail, fetchTests, logoutProfile, submitTest } from "./api";
 import type {
   AnswerPayload,
   Question,
@@ -39,7 +39,9 @@ const App = () => {
     fetchTests(studentEmail ? { student_email: studentEmail } : undefined)
       .then((data) => setTests([...data].sort((a, b) => levelOrder[a.level] - levelOrder[b.level])))
       .catch(() => setError("Could not load tests"));
+  }, [studentEmail]);
 
+  useEffect(() => {
     fetchProfile()
       .then((data) => {
         setAuth(data);
@@ -179,6 +181,16 @@ const App = () => {
 
   const visibleTests = useMemo(() => filteredTests.slice(0, visibleCount), [filteredTests, visibleCount]);
 
+  const handleLogout = async () => {
+    try {
+      await logoutProfile();
+      setAuth(null);
+      setIsTeacher(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <div className="page">
       <header className="header">
@@ -190,14 +202,9 @@ const App = () => {
           {auth?.is_authenticated ? (
             <div className="user-chip">
               <span className="muted small">{auth.display_name || auth.username}</span>
-              <a
-                href="http://localhost:8001/admin/logout/"
-                className="admin-link"
-                target="_blank"
-                rel="noreferrer"
-              >
+              <button onClick={handleLogout} className="admin-link ghost-btn">
                 {t("logout")}
-              </a>
+              </button>
             </div>
           ) : (
             <a

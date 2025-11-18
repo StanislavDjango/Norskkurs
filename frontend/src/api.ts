@@ -35,3 +35,7 @@ export const fetchProfile = async (): Promise<ProfileInfo> => {
   const res = await api.get<ProfileInfo>("profile/me/");
   return res.data;
 };
+
+export const logoutProfile = async (): Promise<void> => {
+  await api.post("profile/logout/");
+};
