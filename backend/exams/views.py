@@ -7,10 +7,11 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import Answer, Option, Question, Submission, Test
+from .models import Answer, Assignment, Option, Question, Submission, Test
 from .serializers import (
     AnswerInputSerializer,
     AnswerSerializer,
+    AssignmentSerializer,
     SubmissionSerializer,
     TestDetailSerializer,
     TestListSerializer,
@@ -18,14 +19,22 @@ from .serializers import (
 
 
 class TestViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = (
-        Test.objects.filter(is_published=True)
-        .prefetch_related("questions__options")
-        .order_by("level", "title")
-    )
     serializer_class = TestListSerializer
     lookup_field = "slug"
     lookup_value_regex = "[^/]+"
+
+    def get_queryset(self):
+        base_qs = Test.objects.filter(is_published=True).prefetch_related("questions__options")
+        email = self.request.query_params.get("student_email", "").strip().lower()
+        if not email:
+            return base_qs.filter(is_restricted=False).order_by("level", "title")
+
+        allowed_ids = Assignment.objects.filter(
+            student_email=email
+        ).values_list("test_id", flat=True)
+        return base_qs.filter(models.Q(is_restricted=False) | models.Q(id__in=allowed_ids)).order_by(
+            "level", "title"
+        )
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -36,6 +45,19 @@ class TestViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=["post"], url_path="submit")
     def submit(self, request, **kwargs):
         test = self.get_object()
+        email = (request.data.get("email") or "").strip().lower()
+        if test.is_restricted and email:
+            has_assignment = Assignment.objects.filter(test=test, student_email=email).exists()
+            if not has_assignment:
+                return Response(
+                    {"detail": "This test is restricted. Ask your teacher for access."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        elif test.is_restricted and not email:
+            return Response(
+                {"detail": "Student email required for this test."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         answers_payload = request.data.get("answers", [])
         serializer = AnswerInputSerializer(data=answers_payload, many=True)
         serializer.is_valid(raise_exception=True)
@@ -44,7 +66,7 @@ class TestViewSet(viewsets.ReadOnlyModelViewSet):
         submission = Submission.objects.create(
             test=test,
             name=request.data.get("name", "").strip(),
-            email=request.data.get("email", "").strip(),
+            email=email,
             total_questions=test.questions.count(),
             locale=(request.data.get("locale") or "en")[:5],
         )
@@ -135,3 +157,11 @@ class TestViewSet(viewsets.ReadOnlyModelViewSet):
             "review": sorted(review_payload, key=lambda item: item["order"]),
         }
         return Response(response_payload, status=status.HTTP_201_CREATED)
+
+
+class ProfileViewSet(viewsets.ViewSet):
+    @action(detail=False, methods=["get"])
+    def me(self, request):
+        user = request.user
+        is_teacher = bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
+        return Response({"is_teacher": is_teacher})

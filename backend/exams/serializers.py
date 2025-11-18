@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Answer, Option, Question, Submission, Test
+from .models import Answer, Assignment, Option, Question, Submission, Test
 
 
 class OptionSerializer(serializers.ModelSerializer):
@@ -20,6 +20,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 class TestListSerializer(serializers.ModelSerializer):
     question_count = serializers.IntegerField(read_only=True)
     question_mode = serializers.SerializerMethodField()
+    is_restricted = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Test
@@ -32,6 +33,7 @@ class TestListSerializer(serializers.ModelSerializer):
             "estimated_minutes",
             "question_count",
             "question_mode",
+            "is_restricted",
         )
 
     def get_question_mode(self, obj: Test) -> str:
@@ -63,3 +65,9 @@ class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
         fields = ("id", "question", "selected_option", "text_response", "is_correct")
+
+
+class AssignmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Assignment
+        fields = ("id", "test", "student_email", "expires_at", "created_at")

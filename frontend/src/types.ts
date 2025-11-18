@@ -9,6 +9,7 @@ export interface Test {
   estimated_minutes: number;
   question_count: number;
   question_mode: "single" | "fill" | "mixed";
+  is_restricted: boolean;
 }
 
 export interface Option {

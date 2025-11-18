@@ -15,6 +15,7 @@ class Test(models.Model):
     level = models.CharField(max_length=2, choices=Level.choices)
     estimated_minutes = models.PositiveIntegerField(default=10)
     is_published = models.BooleanField(default=False)
+    is_restricted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -109,3 +110,20 @@ class Answer(models.Model):
 
     def __str__(self) -> str:
         return f"Answer to {self.question_id}"
+
+
+class Assignment(models.Model):
+    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="assignments")
+    student_email = models.EmailField()
+    assigned_by = models.ForeignKey(
+        "auth.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_tests"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ("test", "student_email")
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.student_email} -> {self.test.slug}"

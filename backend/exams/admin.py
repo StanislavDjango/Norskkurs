@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Answer, Option, Question, Submission, Test
+from .models import Answer, Assignment, Option, Question, Submission, Test
 
 
 class OptionInline(admin.TabularInline):
@@ -61,3 +61,10 @@ class AnswerAdmin(admin.ModelAdmin):
     list_display = ("submission", "question", "selected_option", "is_correct")
     list_filter = ("is_correct", "question__test__level")
     search_fields = ("question__text", "selected_option__text")
+
+
+@admin.register(Assignment)
+class AssignmentAdmin(admin.ModelAdmin):
+    list_display = ("student_email", "test", "assigned_by", "created_at", "expires_at")
+    search_fields = ("student_email", "test__title", "test__slug")
+    list_filter = ("test__level", "test__is_restricted")

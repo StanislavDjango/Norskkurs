@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { fetchTestDetail, fetchTests, submitTest } from "./api";
+import { fetchProfile, fetchTestDetail, fetchTests, submitTest } from "./api";
 import type {
   AnswerPayload,
   Question,
@@ -30,12 +30,16 @@ const App = () => {
   const [visibleCount, setVisibleCount] = useState(12);
   const [missingQuestions, setMissingQuestions] = useState<Set<number>>(new Set());
   const questionRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const [studentEmail, setStudentEmail] = useState("");
+  const [isTeacher, setIsTeacher] = useState(false);
 
   useEffect(() => {
-    fetchTests()
+    fetchTests(studentEmail ? { student_email: studentEmail } : undefined)
       .then((data) => setTests([...data].sort((a, b) => levelOrder[a.level] - levelOrder[b.level])))
       .catch(() => setError("Could not load tests"));
-  }, []);
+
+    fetchProfile().then((data) => setIsTeacher(data.is_teacher)).catch(() => setIsTeacher(false));
+  }, [studentEmail]);
 
   const selectTest = async (slug: string) => {
     setLoading(true);
@@ -44,7 +48,7 @@ const App = () => {
     setReview([]);
     setMissingQuestions(new Set());
     try {
-      const detail = await fetchTestDetail(slug);
+      const detail = await fetchTestDetail(slug, studentEmail ? { student_email: studentEmail } : undefined);
       setSelectedTest(detail);
       setAnswers(
         detail.questions.reduce<Record<number, AnswerPayload>>((acc, q) => {
@@ -173,9 +177,11 @@ const App = () => {
           <p className="muted">{t("appSubtitle")}</p>
         </div>
         <div className="header-actions">
-          <a href="http://localhost:8001/admin/" className="admin-link" target="_blank" rel="noreferrer">
-            Admin
-          </a>
+          {isTeacher && (
+            <a href="http://localhost:8001/admin/" className="admin-link" target="_blank" rel="noreferrer">
+              Admin
+            </a>
+          )}
           <div className="language-switcher">
             <span>{t("language")}:</span>
             <button
@@ -205,6 +211,17 @@ const App = () => {
       <div className="layout">
         <aside className="panel">
           <h2>{t("selectTest")}</h2>
+          <div className="search-row">
+            <input
+              type="email"
+              placeholder="student@example.com"
+              value={studentEmail}
+              onChange={(e) => {
+                setStudentEmail(e.target.value.trim());
+              }}
+              onBlur={() => setVisibleCount(12)}
+            />
+          </div>
           <div className="search-row">
             <input
               type="search"

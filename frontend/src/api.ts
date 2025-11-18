@@ -5,13 +5,16 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8001/api/",
 });
 
-export const fetchTests = async (): Promise<Test[]> => {
-  const res = await api.get<Test[]>("tests/");
+export const fetchTests = async (params?: { student_email?: string }): Promise<Test[]> => {
+  const res = await api.get<Test[]>("tests/", { params });
   return res.data;
 };
 
-export const fetchTestDetail = async (slug: string): Promise<TestDetail> => {
-  const res = await api.get<TestDetail>(`tests/${slug}/`);
+export const fetchTestDetail = async (
+  slug: string,
+  params?: { student_email?: string },
+): Promise<TestDetail> => {
+  const res = await api.get<TestDetail>(`tests/${slug}/`, { params });
   return res.data;
 };
 
@@ -24,5 +27,10 @@ export const submitTest = async (
     answers,
     ...profile,
   });
+  return res.data;
+};
+
+export const fetchProfile = async () => {
+  const res = await api.get<{ is_teacher: boolean }>("profile/me/");
   return res.data;
 };
