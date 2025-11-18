@@ -191,7 +191,7 @@ const App = () => {
             <div className="user-chip">
               <span className="muted small">{auth.display_name || auth.username}</span>
               <a
-                href="http://localhost:8001/admin/logout/?next=/"
+                href="http://localhost:8001/admin/logout/"
                 className="admin-link"
                 target="_blank"
                 rel="noreferrer"
