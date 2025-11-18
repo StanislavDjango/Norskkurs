@@ -45,6 +45,52 @@ h1 {
   font-weight: 800;
 }
 
+h1.brand-title {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(90deg, #0f172a, #2563eb, #0f172a);
+  background-size: 200% 100%;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+h1.brand-title::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: -30%;
+  width: 40%;
+  height: 140%;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.7) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  animation: shine 3.5s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(0) skewX(-20deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(250%) skewX(-20deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(400%) skewX(-20deg);
+    opacity: 0;
+  }
+}
+
 h2 {
   margin: 10px 0 4px;
 }
