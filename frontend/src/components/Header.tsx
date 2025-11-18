@@ -1,6 +1,6 @@
-import React from "react";
+﻿import React from "react";
 import { useTranslation } from "react-i18next";
-import type { ProfileInfo } from "../types";
+import type { Level, ProfileInfo, Stream } from "../types";
 
 type Props = {
   auth: ProfileInfo | null;
@@ -8,9 +8,31 @@ type Props = {
   onLogout: () => void;
   currentLang: string;
   changeLanguage: (lang: string) => void;
+  stream: Stream;
+  level: Level;
+  onChangeStream: (stream: Stream) => void;
+  onChangeLevel: (level: Level) => void;
 };
 
-const Header: React.FC<Props> = ({ auth, isTeacher, onLogout, currentLang, changeLanguage }) => {
+const streams: Array<{ key: Stream; label: string }> = [
+  { key: "bokmaal", label: "BokmГҐl" },
+  { key: "nynorsk", label: "Nynorsk" },
+  { key: "english", label: "English" },
+];
+
+const levels: Level[] = ["A1", "A2", "B1", "B2"];
+
+const Header: React.FC<Props> = ({
+  auth,
+  isTeacher,
+  onLogout,
+  currentLang,
+  changeLanguage,
+  stream,
+  level,
+  onChangeStream,
+  onChangeLevel,
+}) => {
   const { t } = useTranslation();
 
   return (
@@ -24,6 +46,36 @@ const Header: React.FC<Props> = ({ auth, isTeacher, onLogout, currentLang, chang
       </div>
 
       <nav className="header-nav">
+        <div className="stream-group">
+          <span className="group-label">{t("stream")}</span>
+          {streams.map((item) => (
+            <button
+              key={item.key}
+              className={`lang-btn ${stream === item.key ? "active" : ""}`}
+              onClick={() => onChangeStream(item.key)}
+              title={item.label}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="stream-group">
+          <span className="group-label">{t("level")}</span>
+          <div className="level-buttons">
+            {levels.map((lvl) => (
+              <button
+                key={lvl}
+                className={`lang-btn ${level === lvl ? "active" : ""}`}
+                onClick={() => onChangeLevel(lvl)}
+                title={lvl}
+              >
+                {lvl}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="lang-group">
           <button
             className={`lang-btn ${currentLang === "en" ? "active" : ""}`}
@@ -35,14 +87,14 @@ const Header: React.FC<Props> = ({ auth, isTeacher, onLogout, currentLang, chang
           <button
             className={`lang-btn ${currentLang === "nb" ? "active" : ""}`}
             onClick={() => changeLanguage("nb")}
-            title="Norsk Bokmål"
+            title="Norsk Bokmal"
           >
             NO
           </button>
           <button
             className={`lang-btn ${currentLang === "ru" ? "active" : ""}`}
             onClick={() => changeLanguage("ru")}
-            title="Русский"
+            title="Russian"
           >
             RU
           </button>

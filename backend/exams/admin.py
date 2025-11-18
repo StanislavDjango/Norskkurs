@@ -1,6 +1,20 @@
 from django.contrib import admin
 
-from .models import Answer, Assignment, Option, Question, Submission, Test
+from .models import (
+    Answer,
+    Assignment,
+    Exercise,
+    Expression,
+    GlossaryTerm,
+    Homework,
+    Material,
+    Option,
+    Question,
+    StudentProfile,
+    Submission,
+    Test,
+    VerbEntry,
+)
 
 
 class OptionInline(admin.TabularInline):
@@ -17,18 +31,18 @@ class QuestionInline(admin.StackedInline):
 
 @admin.register(Test)
 class TestAdmin(admin.ModelAdmin):
-    list_display = ("title", "level", "is_published", "question_count", "updated_at")
-    list_filter = ("level", "is_published")
-    search_fields = ("title", "description")
+    list_display = ("title", "stream", "level", "is_published", "question_count", "updated_at")
+    list_filter = ("stream", "level", "is_published")
+    search_fields = ("title", "description", "slug")
     prepopulated_fields = {"slug": ("title",)}
     inlines = [QuestionInline]
-    ordering = ("level", "title")
+    ordering = ("stream", "level", "title")
 
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
     list_display = ("text", "test", "question_type", "order")
-    list_filter = ("test__level", "question_type")
+    list_filter = ("test__stream", "test__level", "question_type")
     search_fields = ("text",)
     inlines = [OptionInline]
     ordering = ("test", "order")
@@ -68,3 +82,52 @@ class AssignmentAdmin(admin.ModelAdmin):
     list_display = ("student_email", "test", "assigned_by", "created_at", "expires_at")
     search_fields = ("student_email", "test__title", "test__slug")
     list_filter = ("test__level", "test__is_restricted")
+
+
+@admin.register(StudentProfile)
+class StudentProfileAdmin(admin.ModelAdmin):
+    list_display = ("email", "stream", "level", "allow_stream_change", "teacher", "updated_at")
+    search_fields = ("email",)
+    list_filter = ("stream", "level", "allow_stream_change")
+
+
+@admin.register(Material)
+class MaterialAdmin(admin.ModelAdmin):
+    list_display = ("title", "stream", "level", "material_type", "is_published", "assigned_to_email")
+    search_fields = ("title", "tags")
+    list_filter = ("stream", "level", "material_type", "is_published")
+
+
+@admin.register(Homework)
+class HomeworkAdmin(admin.ModelAdmin):
+    list_display = ("title", "stream", "level", "status", "due_date", "assigned_to_email")
+    search_fields = ("title", "instructions")
+    list_filter = ("stream", "level", "status")
+
+
+@admin.register(Exercise)
+class ExerciseAdmin(admin.ModelAdmin):
+    list_display = ("title", "stream", "level", "kind", "estimated_minutes", "assigned_to_email")
+    search_fields = ("title", "prompt", "tags")
+    list_filter = ("stream", "level", "kind")
+
+
+@admin.register(VerbEntry)
+class VerbEntryAdmin(admin.ModelAdmin):
+    list_display = ("verb", "stream", "infinitive", "present", "past", "perfect")
+    search_fields = ("verb", "infinitive", "tags")
+    list_filter = ("stream",)
+
+
+@admin.register(Expression)
+class ExpressionAdmin(admin.ModelAdmin):
+    list_display = ("phrase", "stream")
+    search_fields = ("phrase", "meaning", "tags")
+    list_filter = ("stream",)
+
+
+@admin.register(GlossaryTerm)
+class GlossaryTermAdmin(admin.ModelAdmin):
+    list_display = ("term", "stream", "level")
+    search_fields = ("term", "translation", "explanation", "tags")
+    list_filter = ("stream", "level")

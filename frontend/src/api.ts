@@ -1,19 +1,35 @@
 import axios from "axios";
-import type { AnswerPayload, ProfileInfo, SubmissionResponse, Test, TestDetail } from "./types";
+import type {
+  AnswerPayload,
+  Exercise,
+  GlossaryTerm,
+  Homework,
+  Material,
+  ProfileInfo,
+  Stream,
+  SubmissionResponse,
+  Test,
+  TestDetail,
+  VerbEntry,
+  Expression,
+  Level,
+} from "./types";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8001/api/",
   withCredentials: true,
 });
 
-export const fetchTests = async (params?: { student_email?: string }): Promise<Test[]> => {
+type FilterParams = { student_email?: string; stream?: Stream; level?: Level };
+
+export const fetchTests = async (params?: FilterParams): Promise<Test[]> => {
   const res = await api.get<Test[]>("tests/", { params });
   return res.data;
 };
 
 export const fetchTestDetail = async (
   slug: string,
-  params?: { student_email?: string },
+  params?: FilterParams,
 ): Promise<TestDetail> => {
   const res = await api.get<TestDetail>(`tests/${slug}/`, { params });
   return res.data;
@@ -38,4 +54,43 @@ export const fetchProfile = async (): Promise<ProfileInfo> => {
 
 export const logoutProfile = async (): Promise<void> => {
   await api.post("profile/logout/");
+};
+
+export const updateStreamLevel = async (payload: {
+  email: string;
+  stream?: Stream;
+  level?: Level;
+}): Promise<ProfileInfo> => {
+  const res = await api.post<ProfileInfo>("profile/stream/", payload);
+  return res.data;
+};
+
+export const fetchMaterials = async (params?: FilterParams): Promise<Material[]> => {
+  const res = await api.get<Material[]>("materials/", { params });
+  return res.data;
+};
+
+export const fetchHomework = async (params?: FilterParams): Promise<Homework[]> => {
+  const res = await api.get<Homework[]>("homework/", { params });
+  return res.data;
+};
+
+export const fetchExercises = async (params?: FilterParams): Promise<Exercise[]> => {
+  const res = await api.get<Exercise[]>("exercises/", { params });
+  return res.data;
+};
+
+export const fetchVerbs = async (params?: FilterParams): Promise<VerbEntry[]> => {
+  const res = await api.get<VerbEntry[]>("verbs/", { params });
+  return res.data;
+};
+
+export const fetchExpressions = async (params?: FilterParams): Promise<Expression[]> => {
+  const res = await api.get<Expression[]>("expressions/", { params });
+  return res.data;
+};
+
+export const fetchGlossary = async (params?: FilterParams): Promise<GlossaryTerm[]> => {
+  const res = await api.get<GlossaryTerm[]>("glossary/", { params });
+  return res.data;
 };

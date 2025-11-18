@@ -1,4 +1,5 @@
 export type Level = "A1" | "A2" | "B1" | "B2";
+export type Stream = "bokmaal" | "nynorsk" | "english";
 
 export interface Test {
   id: number;
@@ -6,6 +7,7 @@ export interface Test {
   slug: string;
   description: string;
   level: Level;
+  stream: Stream;
   estimated_minutes: number;
   question_count: number;
   question_mode: "single" | "fill" | "mixed";
@@ -72,4 +74,75 @@ export interface ProfileInfo {
   is_authenticated: boolean;
   username?: string;
   display_name?: string;
+  stream?: Stream;
+  level?: Level;
+  allow_stream_change?: boolean;
+}
+
+export interface Material {
+  id: number;
+  title: string;
+  stream: Stream;
+  level: Level;
+  material_type: "text" | "video" | "audio";
+  body: string;
+  url: string;
+  tags: string[];
+  assigned_to_email?: string | null;
+}
+
+export interface Homework {
+  id: number;
+  title: string;
+  stream: Stream;
+  level: Level;
+  due_date?: string | null;
+  instructions: string;
+  attachments: string[];
+  status: string;
+  assigned_to_email?: string | null;
+  student_submission?: string;
+  feedback?: string;
+}
+
+export interface Exercise {
+  id: number;
+  title: string;
+  stream: Stream;
+  level: Level;
+  kind: "quiz" | "dictation" | "flashcard";
+  prompt: string;
+  tags: string[];
+  estimated_minutes: number;
+}
+
+export interface VerbEntry {
+  id: number;
+  verb: string;
+  stream: Stream;
+  infinitive: string;
+  present: string;
+  past: string;
+  perfect: string;
+  examples: string;
+  tags: string[];
+}
+
+export interface Expression {
+  id: number;
+  phrase: string;
+  meaning: string;
+  example: string;
+  stream: Stream;
+  tags: string[];
+}
+
+export interface GlossaryTerm {
+  id: number;
+  term: string;
+  translation: string;
+  explanation: string;
+  stream: Stream;
+  level: Level;
+  tags: string[];
 }

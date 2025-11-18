@@ -1,6 +1,20 @@
 from rest_framework import serializers
 
-from .models import Answer, Assignment, Option, Question, Submission, Test
+from .models import (
+    Answer,
+    Assignment,
+    Exercise,
+    Expression,
+    GlossaryTerm,
+    Homework,
+    Material,
+    Option,
+    Question,
+    StudentProfile,
+    Submission,
+    Test,
+    VerbEntry,
+)
 
 
 class OptionSerializer(serializers.ModelSerializer):
@@ -30,6 +44,7 @@ class TestListSerializer(serializers.ModelSerializer):
             "slug",
             "description",
             "level",
+            "stream",
             "estimated_minutes",
             "question_count",
             "question_mode",
@@ -71,3 +86,103 @@ class AssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assignment
         fields = ("id", "test", "student_email", "expires_at", "created_at")
+
+
+class StudentProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentProfile
+        fields = (
+            "email",
+            "stream",
+            "level",
+            "allow_stream_change",
+            "teacher",
+        )
+        read_only_fields = ("teacher",)
+
+
+class MaterialSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Material
+        fields = (
+            "id",
+            "title",
+            "stream",
+            "level",
+            "material_type",
+            "body",
+            "url",
+            "tags",
+            "is_published",
+            "assigned_to_email",
+            "created_at",
+        )
+        read_only_fields = ("is_published", "created_at")
+
+
+class HomeworkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Homework
+        fields = (
+            "id",
+            "title",
+            "stream",
+            "level",
+            "due_date",
+            "instructions",
+            "attachments",
+            "status",
+            "assigned_to_email",
+            "student_submission",
+            "feedback",
+            "teacher",
+            "created_at",
+        )
+        read_only_fields = ("status", "teacher", "feedback", "created_at")
+
+
+class ExerciseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Exercise
+        fields = (
+            "id",
+            "title",
+            "stream",
+            "level",
+            "kind",
+            "prompt",
+            "data",
+            "tags",
+            "estimated_minutes",
+            "assigned_to_email",
+            "created_at",
+        )
+        read_only_fields = ("created_at",)
+
+
+class VerbEntrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VerbEntry
+        fields = (
+            "id",
+            "verb",
+            "stream",
+            "infinitive",
+            "present",
+            "past",
+            "perfect",
+            "examples",
+            "tags",
+        )
+
+
+class ExpressionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Expression
+        fields = ("id", "phrase", "meaning", "example", "stream", "tags")
+
+
+class GlossaryTermSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GlossaryTerm
+        fields = ("id", "term", "translation", "explanation", "stream", "level", "tags")

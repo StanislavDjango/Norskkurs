@@ -4,19 +4,40 @@ from typing import Any, Dict, Optional
 
 from django.contrib.auth import logout
 from django.db import models, transaction
-from rest_framework import status, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.authentication import SessionAuthentication
 
-from .models import Answer, Assignment, Option, Question, Submission, Test
+from .models import (
+    Answer,
+    Assignment,
+    Exercise,
+    Expression,
+    GlossaryTerm,
+    Homework,
+    Material,
+    Option,
+    Question,
+    StudentProfile,
+    Submission,
+    Test,
+    VerbEntry,
+)
 from .serializers import (
     AnswerInputSerializer,
     AnswerSerializer,
     AssignmentSerializer,
+    ExerciseSerializer,
+    ExpressionSerializer,
+    GlossaryTermSerializer,
+    HomeworkSerializer,
+    MaterialSerializer,
+    StudentProfileSerializer,
     SubmissionSerializer,
     TestDetailSerializer,
     TestListSerializer,
+    VerbEntrySerializer,
 )
 
 
@@ -33,6 +54,12 @@ class TestViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         base_qs = Test.objects.filter(is_published=True).prefetch_related("questions__options")
+        stream = (self.request.query_params.get("stream") or "").strip().lower()
+        level = (self.request.query_params.get("level") or "").strip().upper()
+        if stream:
+            base_qs = base_qs.filter(stream=stream)
+        if level:
+            base_qs = base_qs.filter(level=level)
         email = self.request.query_params.get("student_email", "").strip().lower()
         if not email:
             return base_qs.filter(is_restricted=False).order_by("level", "title")
@@ -177,15 +204,34 @@ class ProfileViewSet(viewsets.ViewSet):
         is_teacher = bool(is_authenticated and (user.is_staff or user.is_superuser))
         display_name = ""
         username = ""
+        student_email = (request.query_params.get("student_email") or "").strip().lower()
+        profile_email = student_email or getattr(user, "email", "") or ""
+        profile = None
+        if profile_email:
+            profile, _ = StudentProfile.objects.get_or_create(
+                email=profile_email,
+                defaults={"stream": Test.Stream.BOKMAAL, "level": Test.Level.A1},
+            )
+            if is_authenticated and not profile.user:
+                profile.user = user
+                profile.save(update_fields=["user"])
         if is_authenticated:
             username = user.get_username()
             display_name = (user.get_full_name() or username or "").strip()
+            if not profile and user.email:
+                profile, _ = StudentProfile.objects.get_or_create(
+                    email=user.email,
+                    defaults={"stream": Test.Stream.BOKMAAL, "level": Test.Level.A1},
+                )
         return Response(
             {
                 "is_teacher": is_teacher,
                 "is_authenticated": is_authenticated,
                 "username": username,
                 "display_name": display_name,
+                "stream": profile.stream if profile else Test.Stream.BOKMAAL,
+                "level": profile.level if profile else Test.Level.A1,
+                "allow_stream_change": profile.allow_stream_change if profile else True,
             }
         )
 
@@ -197,3 +243,91 @@ class ProfileViewSet(viewsets.ViewSet):
     def logout(self, request):
         logout(request)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=["post"])
+    def stream(self, request):
+        email = (request.data.get("email") or request.data.get("student_email") or "").strip().lower()
+        if not email:
+            return Response({"detail": "Email required to update stream."}, status=status.HTTP_400_BAD_REQUEST)
+        profile, _ = StudentProfile.objects.get_or_create(
+            email=email, defaults={"stream": Test.Stream.BOKMAAL, "level": Test.Level.A1}
+        )
+        if not profile.allow_stream_change:
+            return Response(
+                {"detail": "Stream change is locked for this student."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        serializer = StudentProfileSerializer(
+            profile, data=request.data, partial=True, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class FilteredStreamLevelMixin:
+    def filter_by_stream_level(self, qs):
+        stream = (self.request.query_params.get("stream") or "").strip().lower()
+        level = (self.request.query_params.get("level") or "").strip().upper()
+        email = (self.request.query_params.get("student_email") or "").strip().lower()
+        if stream:
+            qs = qs.filter(stream=stream)
+        if level:
+            qs = qs.filter(level=level)
+        if hasattr(qs.model, "assigned_to_email") and email:
+            qs = qs.filter(models.Q(assigned_to_email__isnull=True) | models.Q(assigned_to_email=email))
+        return qs
+
+
+class MaterialViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (CsrfExemptSessionAuthentication,)
+    serializer_class = MaterialSerializer
+
+    def get_queryset(self):
+        qs = Material.objects.filter(is_published=True)
+        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by("level", "title")
+
+
+class HomeworkViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (CsrfExemptSessionAuthentication,)
+    serializer_class = HomeworkSerializer
+
+    def get_queryset(self):
+        qs = Homework.objects.filter(status=Homework.Status.PUBLISHED)
+        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by("-due_date", "-created_at")
+
+
+class ExerciseViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (CsrfExemptSessionAuthentication,)
+    serializer_class = ExerciseSerializer
+
+    def get_queryset(self):
+        qs = Exercise.objects.all()
+        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by("level", "title")
+
+
+class VerbEntryViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (CsrfExemptSessionAuthentication,)
+    serializer_class = VerbEntrySerializer
+
+    def get_queryset(self):
+        qs = VerbEntry.objects.all()
+        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by("verb")
+
+
+class ExpressionViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (CsrfExemptSessionAuthentication,)
+    serializer_class = ExpressionSerializer
+
+    def get_queryset(self):
+        qs = Expression.objects.all()
+        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by("phrase")
+
+
+class GlossaryTermViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (CsrfExemptSessionAuthentication,)
+    serializer_class = GlossaryTermSerializer
+
+    def get_queryset(self):
+        qs = GlossaryTerm.objects.all()
+        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by("term")
