@@ -185,7 +185,7 @@ h2 {
 
 .verbs-board__header {
   display: grid;
-  grid-template-columns: 220px repeat(4, minmax(160px, 1fr));
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
   gap: 20px;
   padding: 16px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
@@ -193,25 +193,6 @@ h2 {
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-}
-
-.verbs-board__header span {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-.verbs-header-stream {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  text-transform: none;
-  letter-spacing: normal;
-}
-
-.verbs-header-stream strong {
-  color: #0f172a;
-  font-size: 1rem;
 }
 
 .verbs-table {
@@ -263,7 +244,6 @@ h2 {
 
 .examples-label {
   font-size: 0.75rem;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #0ea5e9;
   border-bottom: 1px solid rgba(14, 165, 233, 0.3);
@@ -272,23 +252,9 @@ h2 {
   display: inline-block;
 }
 
-.examples-inline {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+.examples-list p {
+  margin: 4px 0;
   color: #475569;
-}
-
-.examples-inline span {
-  position: relative;
-  padding-left: 12px;
-}
-
-.examples-inline span::before {
-  content: "•";
-  position: absolute;
-  left: 0;
-  color: #94a3b8;
 }
 
 @media (max-width: 900px) {
