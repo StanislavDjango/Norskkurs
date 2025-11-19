@@ -352,6 +352,16 @@ const App = () => {
     }
   };
 
+  const getVerbStartingLetter = (verb: VerbEntry): string => {
+    const base = (verb.present || verb.infinitive || verb.verb || "")
+      .split("/")[0]
+      .trim();
+    const cleaned = base.replace(/^(å|to)\s+/i, "").trim();
+    const match = cleaned.match(/[A-ZÆØÅ]/i);
+    const letter = (match ? match[0] : cleaned.charAt(0) || verb.verb.charAt(0) || "A").toUpperCase();
+    return letter;
+  };
+
   const getExamplesForForm = (verb: VerbEntry, form: VerbForm): string[] => {
     const lines = verb.examples
       .split("\n")
@@ -509,7 +519,7 @@ const App = () => {
                     </button>
                     {alphabet.map((letter) => {
                       const hasLetter = verbs.some(
-                        (verb) => verb.verb.charAt(0).toUpperCase() === letter,
+                        (verb) => getVerbStartingLetter(verb) === letter,
                       );
                       return (
                         <button
@@ -536,7 +546,7 @@ const App = () => {
                       .filter((verb) =>
                         verbLetter === "all"
                           ? true
-                          : verb.verb.charAt(0).toUpperCase() === verbLetter,
+                          : getVerbStartingLetter(verb) === verbLetter,
                       )
                       .map((verb) => (
                         <div key={verb.id} className="verbs-row">
