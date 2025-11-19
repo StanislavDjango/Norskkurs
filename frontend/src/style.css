@@ -213,6 +213,75 @@ h2 {
   cursor: default;
 }
 
+.verbs-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  justify-content: center;
+}
+
+.verbs-tags button {
+  border: none;
+  background: rgba(14, 165, 233, 0.08);
+  color: #0f172a;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.verbs-tags button.active {
+  background: #0d7dfc;
+  color: #fff;
+}
+
+.verbs-view-toggle {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 16px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.verbs-view-toggle button {
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: #fff;
+  color: #0ea5e9;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.verbs-view-toggle button.active {
+  background: #0d7dfc;
+  color: #fff;
+  border-color: #0d7dfc;
+}
+
+.verbs-view-toggle button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.verb-bookmark {
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-right: 12px;
+  color: #94a3b8;
+  transition: color 0.2s ease;
+}
+
+.verb-bookmark.active {
+  color: #fbbf24;
+}
+
 .verbs-board__header {
   display: grid;
   grid-template-columns: repeat(4, minmax(160px, 1fr)) minmax(140px, 1fr);

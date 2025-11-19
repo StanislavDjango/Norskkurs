@@ -29,6 +29,14 @@ Placement tests for Norwegian proficiency levels A1–B2 with a React UI and Dja
 ## Admin
 - Jazzmin admin in English; manage Tests (A1–B2), Questions, Options, Assignments (student_email access). Content of questions is Norwegian only; UI EN.
 
+### Bulk verb import/export
+- **Export current verbs as template:** `python manage.py export_verbs_csv --output verbs-template.csv`
+  - CSV columns: `verb, stream, infinitive/present/past/perfect, examples_* (lines separated by " | "), tags (semicolon separated)`.
+  - File already contains every verb in the DB, so teachers can edit in Excel/Google Sheets.
+- **Import updated CSV:** `python manage.py import_verbs_csv data.csv [--update]`
+  - Without `--update` existing verbs (same `stream+verb`) are skipped; with `--update` they’re overwritten.
+  - New rows are created automatically; tags split by `;`, examples use ` | ` to represent line breaks which become multi-line examples again.
+
 ## Tests
 - Backend (in compose): `docker compose exec backend python manage.py test exams` (sqlite fallback if no DATABASE_URL).
 - Front build: `cd frontend && npm run build`.

@@ -124,8 +124,16 @@ export interface VerbEntry {
   present: string;
   past: string;
   perfect: string;
-  examples: string;
+  examples_infinitive: string;
+  examples_present: string;
+  examples_past: string;
+  examples_perfect: string;
   tags: string[];
+}
+
+export interface VerbTagOption {
+  value: string;
+  label: string;
 }
 
 export interface Expression {

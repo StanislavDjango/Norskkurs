@@ -116,7 +116,16 @@ class Command(BaseCommand):
         created_verbs = 0
         for stream, verb_items in VERBS_BY_STREAM.items():
             for payload in verb_items:
-                VerbEntry.objects.create(stream=stream, **payload)
+                examples = payload.pop("examples", "")
+                lines = [line.strip() for line in examples.split("\n") if line.strip()]
+                VerbEntry.objects.create(
+                    stream=stream,
+                    examples_infinitive="\n".join(lines[0:1]),
+                    examples_present="\n".join(lines[1:2]),
+                    examples_past="\n".join(lines[2:3]),
+                    examples_perfect="\n".join(lines[3:4]),
+                    **payload,
+                )
                 created_verbs += 1
 
         self.stdout.write(
