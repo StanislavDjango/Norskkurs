@@ -472,24 +472,27 @@ const App = () => {
                   <span>{t("present")}</span>
                   <span>{t("past")}</span>
                   <span>{t("perfect")}</span>
+                  <span>{t("showExample")}</span>
                 </div>
                 <div className="verbs-table">
                   {verbs.map((verb) => (
                     <div key={verb.id} className="verbs-row">
-                      {(["infinitive", "present", "past", "perfect"] as const).map((form) => (
-                        <div key={form} className="verbs-cell">
-                          <strong>{verb[form]}</strong>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveVerb(verb);
-                              setActiveForm(form);
-                            }}
-                          >
-                            {t("showExample")}
-                          </button>
+                      {verbFormOrder.map((formKey) => (
+                        <div key={formKey} className="verbs-cell">
+                          <strong>{verb[formKey]}</strong>
                         </div>
                       ))}
+                      <div className="verbs-cta">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveVerb(verb);
+                            setActiveForm("infinitive");
+                          }}
+                        >
+                          {t("showExample")}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -807,10 +810,15 @@ const App = () => {
             </header>
             <div className="verb-modal__forms">
               {verbFormOrder.map((formKey) => (
-                <div key={formKey} className={formKey === activeForm ? "active-form" : ""}>
+                <button
+                  key={formKey}
+                  type="button"
+                  className={formKey === activeForm ? "active-form" : ""}
+                  onClick={() => setActiveForm(formKey)}
+                >
                   <span>{t(`formTitles.${formKey}`)}</span>
                   <strong>{activeVerb[formKey]}</strong>
-                </div>
+                </button>
               ))}
             </div>
             <div className="verb-modal__examples">
