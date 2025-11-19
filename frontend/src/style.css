@@ -166,6 +166,55 @@ h2 {
   gap: 4px;
 }
 
+.verbs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.verb-card {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: #fff;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.verb-card__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.verb-forms {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.verb-forms .label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.verb-forms strong {
+  display: block;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.verb-examples {
+  background: rgba(14, 165, 233, 0.05);
+  border-radius: 12px;
+  padding: 10px;
+  border: 1px dashed rgba(14, 165, 233, 0.3);
+}
+
 .question,
 .review-card {
   line-height: 1.5;
