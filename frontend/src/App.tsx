@@ -38,6 +38,7 @@ import type {
 const levelOrder: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4 };
 const verbFormOrder = ["infinitive", "present", "past", "perfect"] as const;
 type VerbForm = (typeof verbFormOrder)[number];
+const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 type Section =
   | "dashboard"
@@ -86,6 +87,7 @@ const App = () => {
   const [glossary, setGlossary] = useState<GlossaryTerm[]>([]);
   const [activeVerb, setActiveVerb] = useState<VerbEntry | null>(null);
   const [activeForm, setActiveForm] = useState<VerbForm>("infinitive");
+  const [verbLetter, setVerbLetter] = useState<string>("all");
 
   useEffect(() => {
     localStorage.setItem("norskkurs_stream", stream);
@@ -459,47 +461,78 @@ const App = () => {
             )}
           </>
         );
-      case "verbs":
-        return (
-          <>
-            <h2 className="sr-only">{t("nav.verbs")}</h2>
-            {verbs.length === 0 ? (
-              <p className="muted">{t("emptyList")}</p>
-            ) : (
-              <div className="verbs-board">
-                <div className="verbs-board__header">
-                  <span>{t("infinitive")}</span>
-                  <span>{t("present")}</span>
-                  <span>{t("past")}</span>
-                  <span>{t("perfect")}</span>
-                  <span>{t("showExample")}</span>
-                </div>
-                <div className="verbs-table">
-                  {verbs.map((verb) => (
-                    <div key={verb.id} className="verbs-row">
-                      {verbFormOrder.map((formKey) => (
-                        <div key={formKey} className="verbs-cell">
-                          <strong>{verb[formKey]}</strong>
+        case "verbs":
+          return (
+            <>
+              <h2 className="sr-only">{t("nav.verbs")}</h2>
+              {verbs.length === 0 ? (
+                <p className="muted">{t("emptyList")}</p>
+              ) : (
+                <div className="verbs-board">
+                  <div className="verbs-alphabet">
+                    <button
+                      type="button"
+                      className={verbLetter === "all" ? "active" : ""}
+                      onClick={() => setVerbLetter("all")}
+                    >
+                      {t("alphabetAll")}
+                    </button>
+                    {alphabet.map((letter) => {
+                      const hasLetter = verbs.some(
+                        (verb) => verb.verb.charAt(0).toUpperCase() === letter,
+                      );
+                      return (
+                        <button
+                          key={letter}
+                          type="button"
+                          disabled={!hasLetter}
+                          className={verbLetter === letter ? "active" : ""}
+                          onClick={() => setVerbLetter(letter)}
+                        >
+                          {letter}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="verbs-board__header">
+                    <span>{t("infinitive")}</span>
+                    <span>{t("present")}</span>
+                    <span>{t("past")}</span>
+                    <span>{t("perfect")}</span>
+                    <span>{t("showExample")}</span>
+                  </div>
+                  <div className="verbs-table">
+                    {verbs
+                      .filter((verb) =>
+                        verbLetter === "all"
+                          ? true
+                          : verb.verb.charAt(0).toUpperCase() === verbLetter,
+                      )
+                      .map((verb) => (
+                        <div key={verb.id} className="verbs-row">
+                          {verbFormOrder.map((formKey) => (
+                            <div key={formKey} className="verbs-cell">
+                              <strong>{verb[formKey]}</strong>
+                            </div>
+                          ))}
+                          <div className="verbs-cta">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveVerb(verb);
+                                setActiveForm("infinitive");
+                              }}
+                            >
+                              {t("showExample")}
+                            </button>
+                          </div>
                         </div>
                       ))}
-                      <div className="verbs-cta">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveVerb(verb);
-                            setActiveForm("infinitive");
-                          }}
-                        >
-                          {t("showExample")}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
-        );
+              )}
+            </>
+          );
       case "expressions":
         return (
           <>
