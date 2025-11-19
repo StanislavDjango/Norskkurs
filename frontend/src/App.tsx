@@ -443,7 +443,6 @@ const App = () => {
             ) : (
               <div className="verbs-board">
                 <div className="verbs-board__header">
-                  <span className="verbs-spacer" aria-hidden="true" />
                   <span>{t("infinitive")}</span>
                   <span>{t("present")}</span>
                   <span>{t("past")}</span>
@@ -452,7 +451,6 @@ const App = () => {
                 <div className="verbs-table">
                   {verbs.map((verb) => (
                     <div key={verb.id} className="verbs-row">
-                      <div className="verbs-row__title">{verb.verb}</div>
                       <div>{verb.infinitive}</div>
                       <div>{verb.present}</div>
                       <div>{verb.past}</div>

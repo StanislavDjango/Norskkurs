@@ -185,18 +185,14 @@ h2 {
 
 .verbs-board__header {
   display: grid;
-  grid-template-columns: 220px repeat(4, minmax(160px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 0;
   padding: 16px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
   font-size: 0.85rem;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-}
-
-.verbs-spacer {
-  display: block;
 }
 
 .verbs-table {
@@ -206,9 +202,9 @@ h2 {
 
 .verbs-row {
   display: grid;
-  grid-template-columns: 220px repeat(4, minmax(140px, 1fr));
-  gap: 20px;
-  padding: 18px 16px;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 0;
+  padding: 0;
   border-bottom: 1px solid rgba(148, 163, 184, 0.15);
 }
 
@@ -216,33 +212,25 @@ h2 {
   border-bottom: none;
 }
 
-.verbs-row__title {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.verbs-row__title {
-  font-size: 1rem;
-  color: #0f172a;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-}
-
 .verbs-row > div {
   display: flex;
   align-items: center;
   font-weight: 600;
   color: #0f172a;
+  padding: 18px 16px;
+  border-right: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.verbs-row > div:last-child {
+  border-right: none;
 }
 
 .verbs-row__examples {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
   gap: 12px;
-  margin-top: 12px;
+  padding: 12px 16px 18px;
 }
 
 .verbs-row__examples span {
