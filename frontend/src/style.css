@@ -237,10 +237,12 @@ h2 {
   gap: 4px;
 }
 
-.verbs-row__title strong {
+.verbs-row__title {
   font-size: 1rem;
   color: #0f172a;
   font-weight: 600;
+  display: flex;
+  align-items: center;
 }
 
 .verbs-row > div {
@@ -259,8 +261,16 @@ h2 {
   border: 1px dashed rgba(14, 165, 233, 0.3);
 }
 
-.verbs-row__examples p {
+.examples-label {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+.examples-list p {
   margin: 4px 0;
+  color: #475569;
 }
 
 @media (max-width: 900px) {

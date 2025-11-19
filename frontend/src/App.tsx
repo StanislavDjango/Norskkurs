@@ -455,21 +455,19 @@ const App = () => {
                 <div className="verbs-table">
                   {verbs.map((verb) => (
                     <div key={verb.id} className="verbs-row">
-                      <div className="verbs-row__title">
-                        <strong>{verb.verb}</strong>
-                      </div>
+                      <div className="verbs-row__title">{verb.verb}</div>
                       <div>{verb.infinitive}</div>
                       <div>{verb.present}</div>
                       <div>{verb.past}</div>
                       <div>{verb.perfect}</div>
                       {verb.examples && (
                         <div className="verbs-row__examples">
-                          <span className="muted small">{t("examples")}:</span>
-                          {verb.examples.split("\n").map((line, idx) => (
-                            <p key={idx} className="muted small">
-                              {line}
-                            </p>
-                          ))}
+                          <span className="muted small examples-label">{t("examples")}</span>
+                          <div className="examples-list">
+                            {verb.examples.split("\n").map((line, idx) => (
+                              <p key={idx}>{line}</p>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
