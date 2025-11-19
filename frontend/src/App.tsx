@@ -83,6 +83,7 @@ const App = () => {
   const [expressions, setExpressions] = useState<Expression[]>([]);
   const [glossary, setGlossary] = useState<GlossaryTerm[]>([]);
   const [activeVerb, setActiveVerb] = useState<VerbEntry | null>(null);
+  const [activeForm, setActiveForm] = useState<"infinitive" | "present" | "past" | "perfect" | null>(null);
 
   useEffect(() => {
     localStorage.setItem("norskkurs_stream", stream);
@@ -452,15 +453,20 @@ const App = () => {
                 <div className="verbs-table">
                   {verbs.map((verb) => (
                     <div key={verb.id} className="verbs-row">
-                      <div>{verb.infinitive}</div>
-                      <div>{verb.present}</div>
-                      <div>{verb.past}</div>
-                      <div>{verb.perfect}</div>
-                      <div className="verbs-row__cta">
-                        <button type="button" onClick={() => setActiveVerb(verb)}>
-                          {t("viewExamples")}
-                        </button>
-                      </div>
+                      {(["infinitive", "present", "past", "perfect"] as const).map((form) => (
+                        <div key={form} className="verbs-cell">
+                          <strong>{verb[form]}</strong>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveVerb(verb);
+                              setActiveForm(form);
+                            }}
+                          >
+                            {t("showExample")}
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
@@ -765,7 +771,14 @@ const App = () => {
                 <p className="muted small">{streamLabel(stream)}</p>
                 <h3>{activeVerb.verb}</h3>
               </div>
-              <button type="button" onClick={() => setActiveVerb(null)} aria-label={t("close")}>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveVerb(null);
+                  setActiveForm(null);
+                }}
+                aria-label={t("close")}
+              >
                 ×
               </button>
             </header>
@@ -788,6 +801,7 @@ const App = () => {
               </div>
             </div>
             <div className="verb-modal__examples">
+              <h4>{activeForm ? t(`formTitles.${activeForm}`) : t("examples")}</h4>
               {activeVerb.examples.split("\n").map((line, idx) => (
                 <p key={idx}>{line}</p>
               ))}

@@ -202,7 +202,7 @@ h2 {
 
 .verbs-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(160px, 1fr)) minmax(140px, 1fr);
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
   gap: 0;
   padding: 0;
   border-bottom: 1px solid rgba(148, 163, 184, 0.15);
@@ -212,35 +212,38 @@ h2 {
   border-bottom: none;
 }
 
-.verbs-row > div {
+.verbs-cell {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  font-weight: 600;
-  color: #0f172a;
-  padding: 18px 16px;
+  text-align: center;
+  gap: 8px;
+  padding: 18px 12px;
   border-right: 1px solid rgba(148, 163, 184, 0.15);
 }
 
-.verbs-row > div:last-child {
+.verbs-cell:last-child {
   border-right: none;
 }
 
-.verbs-row__cta {
-  justify-content: center;
+.verbs-cell strong {
+  font-size: 1rem;
+  color: #0f172a;
 }
 
-.verbs-row__cta button {
-  padding: 10px 18px;
+.verbs-cell button {
+  padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid rgba(14, 165, 233, 0.4);
   background: rgba(14, 165, 233, 0.1);
   color: #0284c7;
   font-weight: 600;
+  font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.verbs-row__cta button:hover {
+.verbs-cell button:hover {
   background: rgba(14, 165, 233, 0.2);
   border-color: rgba(14, 165, 233, 0.6);
 }
@@ -317,6 +320,7 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-top: 8px;
 }
 
 .verb-modal__examples p {
