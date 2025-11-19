@@ -443,7 +443,7 @@ const App = () => {
             ) : (
               <div className="verbs-board">
                 <div className="verbs-board__header">
-                  <span className="verb-col">{t("verb")}</span>
+                  <span className="verbs-spacer" aria-hidden="true" />
                   <span>{t("infinitive")}</span>
                   <span>{t("present")}</span>
                   <span>{t("past")}</span>
