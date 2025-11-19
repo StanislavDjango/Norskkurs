@@ -443,20 +443,20 @@ const App = () => {
             ) : (
               <div className="verbs-board">
                 <header className="verbs-board__header">
-                  <span className="muted">{streamLabel(stream)}</span>
-                  <div className="verbs-legend">
-                    <span>{t("infinitive")}</span>
-                    <span>{t("present")}</span>
-                    <span>{t("past")}</span>
-                    <span>{t("perfect")}</span>
+                  <div className="verbs-header-stream">
+                    <span className="muted small">{t("stream")}</span>
+                    <strong>{streamLabel(stream)}</strong>
                   </div>
+                  <span>{t("infinitive")}</span>
+                  <span>{t("present")}</span>
+                  <span>{t("past")}</span>
+                  <span>{t("perfect")}</span>
                 </header>
                 <div className="verbs-table">
                   {verbs.map((verb) => (
                     <div key={verb.id} className="verbs-row">
                       <div className="verbs-row__title">
                         <strong>{verb.verb}</strong>
-                        <span className="muted small">{streamLabel(verb.stream)}</span>
                       </div>
                       <div>{verb.infinitive}</div>
                       <div>{verb.present}</div>
@@ -464,6 +464,7 @@ const App = () => {
                       <div>{verb.perfect}</div>
                       {verb.examples && (
                         <div className="verbs-row__examples">
+                          <span className="muted small">{t("examples")}:</span>
                           {verb.examples.split("\n").map((line, idx) => (
                             <p key={idx} className="muted small">
                               {line}

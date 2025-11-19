@@ -95,7 +95,7 @@ VERBS_BY_STREAM = {
             "present": "er",
             "past": "var",
             "perfect": "har vært",
-            "examples": "Jeg er klar.\nVi har vært i Trondheim.",
+            "examples": "Jeg er klar.\nVi har vært i Trondheim.\nHan er ofte hjemme.\nBarna har vært stille i dag.",
             "tags": ["core", "irregular"],
         },
         {
@@ -104,7 +104,7 @@ VERBS_BY_STREAM = {
             "present": "gjør",
             "past": "gjorde",
             "perfect": "har gjort",
-            "examples": "Hva gjør du i kveld?\nHun har gjort leksene sine.",
+            "examples": "Hva gjør du i kveld?\nHun har gjort leksene sine.\nVi gjør dette sammen hver uke.\nElevene gjør oppgavene sine nå.",
             "tags": ["action"],
         },
         {
@@ -113,7 +113,7 @@ VERBS_BY_STREAM = {
             "present": "reiser",
             "past": "reiste",
             "perfect": "har reist",
-            "examples": "De reiser til Bergen hver sommer.",
+            "examples": "De reiser til Bergen hver sommer.\nJeg reiser tidlig i morgen.\nVi har reist gjennom hele landet.\nHun reiste alene til Tromsø.",
             "tags": ["travel"],
         },
         {
@@ -122,7 +122,7 @@ VERBS_BY_STREAM = {
             "present": "skriver",
             "past": "skrev",
             "perfect": "har skrevet",
-            "examples": "Han skriver en rapport.\nVi har skrevet mange e-poster i dag.",
+            "examples": "Han skriver en rapport.\nVi har skrevet mange e-poster i dag.\nLæreren skriver på tavlen.\nHun har skrevet tre kapitler.",
             "tags": ["study"],
         },
     ],
@@ -133,7 +133,7 @@ VERBS_BY_STREAM = {
             "present": "er",
             "past": "var",
             "perfect": "har vore",
-            "examples": "Me er klare no.\nDei har vore i Ålesund.",
+            "examples": "Me er klare no.\nDei har vore i Ålesund.\nHan er ofte tidleg.\nBarna har vore stille i dag.",
             "tags": ["core", "irregular"],
         },
         {
@@ -142,7 +142,7 @@ VERBS_BY_STREAM = {
             "present": "bur",
             "past": "budde",
             "perfect": "har budd",
-            "examples": "Eg bur i Volda.\nVi har budd her i tre år.",
+            "examples": "Eg bur i Volda.\nVi har budd her i tre år.\nFamilien bur i sentrum.\nDei har budd i huset sidan 2015.",
             "tags": ["daily"],
         },
         {
@@ -151,7 +151,7 @@ VERBS_BY_STREAM = {
             "present": "lærer",
             "past": "lærte",
             "perfect": "har lært",
-            "examples": "Ho lærer nynorsk kvar dag.",
+            "examples": "Ho lærer nynorsk kvar dag.\nMe har lært mykje på kurset.\nHan lærer barna å lese.\nElevane har lært fire nye verb.",
             "tags": ["study"],
         },
         {
@@ -160,7 +160,7 @@ VERBS_BY_STREAM = {
             "present": "ser",
             "past": "såg",
             "perfect": "har sett",
-            "examples": "Vi ser på fjella.\nHar du sett den nye filmen?",
+            "examples": "Vi ser på fjella.\nHar du sett den nye filmen?\nHo ser ofte på nyheitene.\nMe har sett mange stader i landet.",
             "tags": ["irregular"],
         },
     ],
@@ -171,7 +171,7 @@ VERBS_BY_STREAM = {
             "present": "study / studies",
             "past": "studied",
             "perfect": "have studied",
-            "examples": "I study Norwegian after work.\nShe has studied Bokmål for two years.",
+            "examples": "I study Norwegian after work.\nShe has studied Bokmål for two years.\nThey study together every Tuesday.\nWe have studied verbs all week.",
             "tags": ["daily"],
         },
         {
@@ -180,7 +180,7 @@ VERBS_BY_STREAM = {
             "present": "travel / travels",
             "past": "traveled",
             "perfect": "have traveled",
-            "examples": "We travel to Norway every winter.",
+            "examples": "We travel to Norway every winter.\nShe has traveled alone across the fjords.\nThey travel by train in the summer.\nI have traveled with classmates before.",
             "tags": ["travel"],
         },
         {
@@ -189,7 +189,7 @@ VERBS_BY_STREAM = {
             "present": "teach / teaches",
             "past": "taught",
             "perfect": "have taught",
-            "examples": "They teach Norwegian online.\nHe has taught for ten years.",
+            "examples": "They teach Norwegian online.\nHe has taught for ten years.\nI teach evening classes twice a week.\nWe have taught more than fifty students.",
             "tags": ["work"],
         },
         {
@@ -198,7 +198,7 @@ VERBS_BY_STREAM = {
             "present": "practice / practices",
             "past": "practiced",
             "perfect": "have practiced",
-            "examples": "Practice speaking every day for better progress.",
+            "examples": "Practice speaking every day for better progress.\nShe has practiced the dialogues many times.\nWe practice grammar after lunch.\nThey have practiced together before the test.",
             "tags": ["study"],
         },
     ],

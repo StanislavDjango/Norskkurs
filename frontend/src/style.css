@@ -184,21 +184,34 @@ h2 {
 }
 
 .verbs-board__header {
+  display: grid;
+  grid-template-columns: 220px repeat(4, minmax(160px, 1fr));
+  gap: 20px;
   padding: 16px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.verbs-legend {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(100px, 1fr));
-  gap: 20px;
   font-size: 0.85rem;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.verbs-board__header span {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.verbs-header-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.verbs-header-stream strong {
+  color: #0f172a;
+  font-size: 1rem;
 }
 
 .verbs-table {
@@ -225,8 +238,9 @@ h2 {
 }
 
 .verbs-row__title strong {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: #0f172a;
+  font-weight: 600;
 }
 
 .verbs-row > div {
