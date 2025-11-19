@@ -95,7 +95,7 @@ VERBS_BY_STREAM = {
             "present": "er",
             "past": "var",
             "perfect": "har vært",
-            "examples": "Jeg er klar.\nVi har vært i Trondheim.\nHan er ofte hjemme.\nBarna har vært stille i dag.",
+            "examples": "Det er godt å være sammen med dere.\nHun er alltid presis på jobb.\nVi var i Bergen i fjor sommer.\nDe har vært i Oslo mange ganger.",
             "tags": ["core", "irregular"],
         },
         {
@@ -104,7 +104,7 @@ VERBS_BY_STREAM = {
             "present": "gjør",
             "past": "gjorde",
             "perfect": "har gjort",
-            "examples": "Hva gjør du i kveld?\nHun har gjort leksene sine.\nVi gjør dette sammen hver uke.\nElevene gjør oppgavene sine nå.",
+            "examples": "Jeg prøver å gjøre alt riktig.\nHva gjør du i kveld?\nHun gjorde ferdig rapporten i går.\nVi har gjort leksene våre allerede.",
             "tags": ["action"],
         },
         {
@@ -113,7 +113,7 @@ VERBS_BY_STREAM = {
             "present": "reiser",
             "past": "reiste",
             "perfect": "har reist",
-            "examples": "De reiser til Bergen hver sommer.\nJeg reiser tidlig i morgen.\nVi har reist gjennom hele landet.\nHun reiste alene til Tromsø.",
+            "examples": "Familien liker å reise sammen.\nVi reiser tidlig i morgen.\nHan reiste alene til Tromsø.\nDe har reist gjennom hele landet.",
             "tags": ["travel"],
         },
         {
@@ -122,7 +122,7 @@ VERBS_BY_STREAM = {
             "present": "skriver",
             "past": "skrev",
             "perfect": "har skrevet",
-            "examples": "Han skriver en rapport.\nVi har skrevet mange e-poster i dag.\nLæreren skriver på tavlen.\nHun har skrevet tre kapitler.",
+            "examples": "Det er nyttig å skrive litt hver dag.\nJeg skriver en rapport nå.\nLæreren skrev melding til foreldrene.\nVi har skrevet mange artikler denne uka.",
             "tags": ["study"],
         },
     ],
@@ -133,7 +133,7 @@ VERBS_BY_STREAM = {
             "present": "er",
             "past": "var",
             "perfect": "har vore",
-            "examples": "Me er klare no.\nDei har vore i Ålesund.\nHan er ofte tidleg.\nBarna har vore stille i dag.",
+            "examples": "Det er trygt å vere ute.\nHan er alltid tidleg på møte.\nMe var på kino i går.\nDei har vore i Ålesund fleire gongar.",
             "tags": ["core", "irregular"],
         },
         {
@@ -142,7 +142,7 @@ VERBS_BY_STREAM = {
             "present": "bur",
             "past": "budde",
             "perfect": "har budd",
-            "examples": "Eg bur i Volda.\nVi har budd her i tre år.\nFamilien bur i sentrum.\nDei har budd i huset sidan 2015.",
+            "examples": "Eg drøymer om å bu ved sjøen.\nHo bur i sentrum no.\nDei budde i Bergen i fjor.\nMe har budd her sidan 2015.",
             "tags": ["daily"],
         },
         {
@@ -151,7 +151,7 @@ VERBS_BY_STREAM = {
             "present": "lærer",
             "past": "lærte",
             "perfect": "har lært",
-            "examples": "Ho lærer nynorsk kvar dag.\nMe har lært mykje på kurset.\nHan lærer barna å lese.\nElevane har lært fire nye verb.",
+            "examples": "Det er kjekt å lære nye ord.\nHo lærer nynorsk kvar dag.\nHan lærte barna å lese i går.\nMe har lært mykje på kurset.",
             "tags": ["study"],
         },
         {
@@ -160,7 +160,7 @@ VERBS_BY_STREAM = {
             "present": "ser",
             "past": "såg",
             "perfect": "har sett",
-            "examples": "Vi ser på fjella.\nHar du sett den nye filmen?\nHo ser ofte på nyheitene.\nMe har sett mange stader i landet.",
+            "examples": "Eg vil sjå fjella i morgon.\nHo ser ofte på nyheitene.\nMe såg ein ny film i helga.\nDei har sett mange stader i landet.",
             "tags": ["irregular"],
         },
     ],
@@ -171,7 +171,7 @@ VERBS_BY_STREAM = {
             "present": "study / studies",
             "past": "studied",
             "perfect": "have studied",
-            "examples": "I study Norwegian after work.\nShe has studied Bokmål for two years.\nThey study together every Tuesday.\nWe have studied verbs all week.",
+            "examples": "I plan to study every evening.\nThey study together on Tuesdays.\nShe studied grammar yesterday.\nWe have studied verbs all week.",
             "tags": ["daily"],
         },
         {
@@ -180,7 +180,7 @@ VERBS_BY_STREAM = {
             "present": "travel / travels",
             "past": "traveled",
             "perfect": "have traveled",
-            "examples": "We travel to Norway every winter.\nShe has traveled alone across the fjords.\nThey travel by train in the summer.\nI have traveled with classmates before.",
+            "examples": "They hope to travel more next year.\nShe travels by train every day.\nHe traveled across the fjords last month.\nWe have traveled with classmates before.",
             "tags": ["travel"],
         },
         {
@@ -189,7 +189,7 @@ VERBS_BY_STREAM = {
             "present": "teach / teaches",
             "past": "taught",
             "perfect": "have taught",
-            "examples": "They teach Norwegian online.\nHe has taught for ten years.\nI teach evening classes twice a week.\nWe have taught more than fifty students.",
+            "examples": "I love to teach new students.\nShe teaches evening classes twice a week.\nThey taught pronunciation yesterday.\nHe has taught for ten years already.",
             "tags": ["work"],
         },
         {
@@ -198,7 +198,7 @@ VERBS_BY_STREAM = {
             "present": "practice / practices",
             "past": "practiced",
             "perfect": "have practiced",
-            "examples": "Practice speaking every day for better progress.\nShe has practiced the dialogues many times.\nWe practice grammar after lunch.\nThey have practiced together before the test.",
+            "examples": "Remember to practice every day.\nShe practices the dialogues each morning.\nWe practiced pronunciation last night.\nThey have practiced together before the test.",
             "tags": ["study"],
         },
     ],
