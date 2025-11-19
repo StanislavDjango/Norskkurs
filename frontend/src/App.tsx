@@ -82,6 +82,7 @@ const App = () => {
   const [verbs, setVerbs] = useState<VerbEntry[]>([]);
   const [expressions, setExpressions] = useState<Expression[]>([]);
   const [glossary, setGlossary] = useState<GlossaryTerm[]>([]);
+  const [activeVerb, setActiveVerb] = useState<VerbEntry | null>(null);
 
   useEffect(() => {
     localStorage.setItem("norskkurs_stream", stream);
@@ -455,10 +456,10 @@ const App = () => {
                       <div>{verb.present}</div>
                       <div>{verb.past}</div>
                       <div>{verb.perfect}</div>
-                      <div className="verbs-row__examples">
-                        {verb.examples.split("\n").map((line, idx) => (
-                          <span key={idx}>{line}</span>
-                        ))}
+                      <div className="verbs-row__cta">
+                        <button type="button" onClick={() => setActiveVerb(verb)}>
+                          {t("viewExamples")}
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -755,6 +756,45 @@ const App = () => {
         </div>
       )}
       <Footer />
+      {activeVerb && (
+        <div className="verb-modal" role="dialog" aria-modal="true">
+          <div className="verb-modal__backdrop" onClick={() => setActiveVerb(null)} />
+          <div className="verb-modal__card">
+            <header>
+              <div>
+                <p className="muted small">{streamLabel(stream)}</p>
+                <h3>{activeVerb.verb}</h3>
+              </div>
+              <button type="button" onClick={() => setActiveVerb(null)} aria-label={t("close")}>
+                ×
+              </button>
+            </header>
+            <div className="verb-modal__forms">
+              <div>
+                <span>{t("infinitive")}</span>
+                <strong>{activeVerb.infinitive}</strong>
+              </div>
+              <div>
+                <span>{t("present")}</span>
+                <strong>{activeVerb.present}</strong>
+              </div>
+              <div>
+                <span>{t("past")}</span>
+                <strong>{activeVerb.past}</strong>
+              </div>
+              <div>
+                <span>{t("perfect")}</span>
+                <strong>{activeVerb.perfect}</strong>
+              </div>
+            </div>
+            <div className="verb-modal__examples">
+              {activeVerb.examples.split("\n").map((line, idx) => (
+                <p key={idx}>{line}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
