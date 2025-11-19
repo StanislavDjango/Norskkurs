@@ -437,12 +437,13 @@ const App = () => {
       case "verbs":
         return (
           <>
-            <h2>{t("nav.verbs")}</h2>
+            <h2 className="sr-only">{t("nav.verbs")}</h2>
             {verbs.length === 0 ? (
               <p className="muted">{t("emptyList")}</p>
             ) : (
               <div className="verbs-board">
                 <div className="verbs-board__header">
+                  <span className="verb-col">{t("verb")}</span>
                   <span>{t("infinitive")}</span>
                   <span>{t("present")}</span>
                   <span>{t("past")}</span>
@@ -459,9 +460,9 @@ const App = () => {
                       {verb.examples && (
                         <div className="verbs-row__examples">
                           <span className="examples-label">{t("examples")}</span>
-                          <div className="examples-list">
+                          <div className="examples-inline">
                             {verb.examples.split("\n").map((line, idx) => (
-                              <p key={idx}>{line}</p>
+                              <span key={idx}>{line}</span>
                             ))}
                           </div>
                         </div>

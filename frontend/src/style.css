@@ -185,7 +185,7 @@ h2 {
 
 .verbs-board__header {
   display: grid;
-  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  grid-template-columns: 220px repeat(4, minmax(160px, 1fr));
   gap: 20px;
   padding: 16px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
@@ -193,6 +193,10 @@ h2 {
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.verbs-board__header .verb-col {
+  text-align: left;
 }
 
 .verbs-table {
@@ -243,17 +247,33 @@ h2 {
 }
 
 .examples-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   letter-spacing: 0.08em;
   color: #0ea5e9;
-  border-bottom: 1px solid rgba(14, 165, 233, 0.3);
-  padding-bottom: 4px;
-  margin-bottom: 8px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
-.examples-list p {
-  margin: 4px 0;
+.examples-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(14, 165, 233, 0.3);
+}
+
+.examples-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.examples-inline span {
+  background: rgba(14, 165, 233, 0.08);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
   color: #475569;
 }
 
@@ -1090,3 +1110,14 @@ button.ghost {
 
 
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
