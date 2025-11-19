@@ -36,6 +36,8 @@ import type {
 } from "./types";
 
 const levelOrder: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4 };
+const verbFormOrder = ["infinitive", "present", "past", "perfect"] as const;
+type VerbForm = (typeof verbFormOrder)[number];
 
 type Section =
   | "dashboard"
@@ -83,7 +85,7 @@ const App = () => {
   const [expressions, setExpressions] = useState<Expression[]>([]);
   const [glossary, setGlossary] = useState<GlossaryTerm[]>([]);
   const [activeVerb, setActiveVerb] = useState<VerbEntry | null>(null);
-  const [activeForm, setActiveForm] = useState<"infinitive" | "present" | "past" | "perfect" | null>(null);
+  const [activeForm, setActiveForm] = useState<VerbForm>("infinitive");
 
   useEffect(() => {
     localStorage.setItem("norskkurs_stream", stream);
@@ -316,6 +318,27 @@ const App = () => {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const getExamplesForForm = (verb: VerbEntry, form: VerbForm): string[] => {
+    const lines = verb.examples
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const formValue = {
+      infinitive: verb.infinitive,
+      present: verb.present,
+      past: verb.past,
+      perfect: verb.perfect,
+    }[form];
+    const variants = formValue
+      .split("/")
+      .map((token) => token.trim().toLowerCase())
+      .filter(Boolean);
+    const matches = lines.filter((line) =>
+      variants.some((variant) => line.toLowerCase().includes(variant)),
+    );
+    return matches.length ? matches : lines;
   };
 
   const renderSectionContent = () => {
@@ -775,7 +798,7 @@ const App = () => {
                 type="button"
                 onClick={() => {
                   setActiveVerb(null);
-                  setActiveForm(null);
+                  setActiveForm("infinitive");
                 }}
                 aria-label={t("close")}
               >
@@ -783,26 +806,16 @@ const App = () => {
               </button>
             </header>
             <div className="verb-modal__forms">
-              <div>
-                <span>{t("infinitive")}</span>
-                <strong>{activeVerb.infinitive}</strong>
-              </div>
-              <div>
-                <span>{t("present")}</span>
-                <strong>{activeVerb.present}</strong>
-              </div>
-              <div>
-                <span>{t("past")}</span>
-                <strong>{activeVerb.past}</strong>
-              </div>
-              <div>
-                <span>{t("perfect")}</span>
-                <strong>{activeVerb.perfect}</strong>
-              </div>
+              {verbFormOrder.map((formKey) => (
+                <div key={formKey} className={formKey === activeForm ? "active-form" : ""}>
+                  <span>{t(`formTitles.${formKey}`)}</span>
+                  <strong>{activeVerb[formKey]}</strong>
+                </div>
+              ))}
             </div>
             <div className="verb-modal__examples">
-              <h4>{activeForm ? t(`formTitles.${activeForm}`) : t("examples")}</h4>
-              {activeVerb.examples.split("\n").map((line, idx) => (
+              <h4>{t(`formTitles.${activeForm}`)}</h4>
+              {getExamplesForForm(activeVerb, activeForm).map((line, idx) => (
                 <p key={idx}>{line}</p>
               ))}
             </div>
