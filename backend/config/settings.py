@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 
 import environ
 
@@ -81,12 +81,9 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
-
 LANGUAGE_CODE = "en"
 LANGUAGES = [
     ("en", "English"),
-    ("nb", "Norsk"),
-    ("ru", "Русский"),
 ]
 LOCALE_PATHS = [BASE_DIR / "locale"]
 
@@ -124,7 +121,7 @@ REST_FRAMEWORK = {
 JAZZMIN_SETTINGS = {
     "site_title": "Norskkurs Admin",
     "site_header": "Norskkurs",
-    "welcome_sign": "Velkommen til Norskkurs adminkonsoll",
+    "welcome_sign": "Welcome to the Norskkurs admin console",
     "copyright": "Norskkurs",
     "language_chooser": False,
 }
