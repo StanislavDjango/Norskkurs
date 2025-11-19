@@ -15,7 +15,7 @@ type Props = {
 };
 
 const streams: Array<{ key: Stream; label: string }> = [
-  { key: "bokmaal", label: "BokmГҐl" },
+  { key: "bokmaal", label: "Bokmal" },
   { key: "nynorsk", label: "Nynorsk" },
   { key: "english", label: "English" },
 ];
@@ -35,40 +35,104 @@ const Header: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
 
+  const renderUserActions = () => {
+    if (auth?.is_authenticated) {
+      return (
+        <>
+          <span className="user-name">{auth.display_name || auth.username}</span>
+          {isTeacher && (
+            <a
+              href="http://localhost:8001/admin/"
+              className="admin-link"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              {t("adminMenu")}
+            </a>
+          )}
+          <button onClick={onLogout} className="logout-btn">
+            {t("logout")}
+          </button>
+        </>
+      );
+    }
+
+    return (
+      <a
+        href="http://localhost:8001/admin/login/?next=/admin/"
+        className="login-link"
+        target="_blank"
+        rel="noreferrer noopener"
+      >
+        {t("login")}
+      </a>
+    );
+  };
+
+  const languageButtonSet = () => (
+    <>
+      <button
+        className={`lang-btn ${currentLang === "en" ? "active" : ""}`}
+        onClick={() => changeLanguage("en")}
+      >
+        EN
+      </button>
+      <button
+        className={`lang-btn ${currentLang === "nb" ? "active" : ""}`}
+        onClick={() => changeLanguage("nb")}
+      >
+        NO
+      </button>
+      <button
+        className={`lang-btn ${currentLang === "ru" ? "active" : ""}`}
+        onClick={() => changeLanguage("ru")}
+      >
+        RU
+      </button>
+    </>
+  );
+
   return (
     <header className="site-header">
-      <div className="header-brand">
-        <div className="logo-icon">N</div>
-        <div className="brand-info">
-          <h1 className="brand-title">{t("appTitle")}</h1>
-          <p className="brand-subtitle">{t("appSubtitle")}</p>
+      <div className="header-top">
+        <div className="header-brand">
+          <div className="logo-icon">N</div>
+          <div className="brand-info">
+            <h1 className="brand-title">{t("appTitle")}</h1>
+            <p className="brand-subtitle">{t("appSubtitle")}</p>
+          </div>
+        </div>
+
+        <div className="header-actions">
+          <div className="lang-group compact">{languageButtonSet()}</div>
+          <div className="user-section">{renderUserActions()}</div>
         </div>
       </div>
 
-      <nav className="header-nav">
-        <div className="stream-group">
+      <div className="header-controls">
+        <div className="control-block">
           <span className="group-label">{t("stream")}</span>
-          {streams.map((item) => (
-            <button
-              key={item.key}
-              className={`lang-btn ${stream === item.key ? "active" : ""}`}
-              onClick={() => onChangeStream(item.key)}
-              title={item.label}
-            >
-              {item.label}
-            </button>
-          ))}
+          <div className="control-buttons stretch">
+            {streams.map((item) => (
+              <button
+                key={item.key}
+                className={`lang-btn ${stream === item.key ? "active" : ""}`}
+                onClick={() => onChangeStream(item.key)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="stream-group">
+        <div className="control-block">
           <span className="group-label">{t("level")}</span>
-          <div className="level-buttons">
+          <div className="control-buttons tight">
             {levels.map((lvl) => (
               <button
                 key={lvl}
                 className={`lang-btn ${level === lvl ? "active" : ""}`}
                 onClick={() => onChangeLevel(lvl)}
-                title={lvl}
               >
                 {lvl}
               </button>
@@ -76,60 +140,11 @@ const Header: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="lang-group">
-          <button
-            className={`lang-btn ${currentLang === "en" ? "active" : ""}`}
-            onClick={() => changeLanguage("en")}
-            title="English"
-          >
-            EN
-          </button>
-          <button
-            className={`lang-btn ${currentLang === "nb" ? "active" : ""}`}
-            onClick={() => changeLanguage("nb")}
-            title="Norsk Bokmal"
-          >
-            NO
-          </button>
-          <button
-            className={`lang-btn ${currentLang === "ru" ? "active" : ""}`}
-            onClick={() => changeLanguage("ru")}
-            title="Russian"
-          >
-            RU
-          </button>
+        <div className="control-block language-block">
+          <span className="group-label">{t("language")}</span>
+          <div className="control-buttons">{languageButtonSet()}</div>
         </div>
-
-        <div className="user-section">
-          {auth?.is_authenticated ? (
-            <>
-              <span className="user-name">{auth.display_name || auth.username}</span>
-              {isTeacher && (
-                <a
-                  href="http://localhost:8001/admin/"
-                  className="admin-link"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  {t("adminMenu")}
-                </a>
-              )}
-              <button onClick={onLogout} className="logout-btn">
-                {t("logout")}
-              </button>
-            </>
-          ) : (
-            <a
-              href="http://localhost:8001/admin/login/?next=/admin/"
-              className="login-link"
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              {t("login")}
-            </a>
-          )}
-        </div>
-      </nav>
+      </div>
     </header>
   );
 };
