@@ -239,42 +239,21 @@ h2 {
 
 .verbs-row__examples {
   grid-column: 1 / -1;
-  background: rgba(14, 165, 233, 0.04);
-  border-radius: 12px;
-  padding: 10px 14px;
-  margin-top: 12px;
-  border: 1px dashed rgba(14, 165, 233, 0.3);
-}
-
-.examples-label {
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  color: #0ea5e9;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-
-.examples-label::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: rgba(14, 165, 233, 0.3);
-}
-
-.examples-inline {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
+  margin-top: 12px;
 }
 
-.examples-inline span {
+.verbs-row__examples span {
+  display: block;
+  padding: 10px 14px;
+  border-radius: 12px;
   background: rgba(14, 165, 233, 0.08);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 0.9rem;
-  color: #475569;
+  color: #0f172a;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  border: 1px solid rgba(14, 165, 233, 0.2);
 }
 
 @media (max-width: 900px) {
