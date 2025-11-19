@@ -166,53 +166,89 @@ h2 {
   gap: 4px;
 }
 
-.verbs-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-}
-
-.verb-card {
-  padding: 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+.verbs-board {
+  width: 100%;
   background: #fff;
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.verbs-board__header {
+  padding: 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.verb-card__title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.verb-forms {
+.verbs-legend {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.verb-forms .label {
-  font-size: 0.75rem;
+  grid-template-columns: repeat(4, minmax(100px, 1fr));
+  gap: 20px;
+  font-size: 0.85rem;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #64748b;
 }
 
-.verb-forms strong {
-  display: block;
-  font-size: 1rem;
+.verbs-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.verbs-row {
+  display: grid;
+  grid-template-columns: 220px repeat(4, minmax(140px, 1fr));
+  gap: 20px;
+  padding: 18px 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.verbs-row:last-child {
+  border-bottom: none;
+}
+
+.verbs-row__title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.verbs-row__title strong {
+  font-size: 1.1rem;
   color: #0f172a;
 }
 
-.verb-examples {
-  background: rgba(14, 165, 233, 0.05);
+.verbs-row > div {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.verbs-row__examples {
+  grid-column: 1 / -1;
+  background: rgba(14, 165, 233, 0.04);
   border-radius: 12px;
-  padding: 10px;
+  padding: 10px 14px;
+  margin-top: 12px;
   border: 1px dashed rgba(14, 165, 233, 0.3);
+}
+
+.verbs-row__examples p {
+  margin: 4px 0;
+}
+
+@media (max-width: 900px) {
+  .verbs-row {
+    grid-template-columns: 1fr;
+  }
+
+  .verbs-legend {
+    display: none;
+  }
 }
 
 .question,

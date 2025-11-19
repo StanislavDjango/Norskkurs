@@ -441,45 +441,39 @@ const App = () => {
             {verbs.length === 0 ? (
               <p className="muted">{t("emptyList")}</p>
             ) : (
-              <div className="verbs-grid">
-                {verbs.map((verb) => (
-                  <article key={verb.id} className="verb-card">
-                    <header className="verb-card__head">
-                      <div>
-                        <span className="verb-card__title">{verb.verb}</span>
-                        <p className="muted small">{streamLabel(verb.stream)}</p>
+              <div className="verbs-board">
+                <header className="verbs-board__header">
+                  <span className="muted">{streamLabel(stream)}</span>
+                  <div className="verbs-legend">
+                    <span>{t("infinitive")}</span>
+                    <span>{t("present")}</span>
+                    <span>{t("past")}</span>
+                    <span>{t("perfect")}</span>
+                  </div>
+                </header>
+                <div className="verbs-table">
+                  {verbs.map((verb) => (
+                    <div key={verb.id} className="verbs-row">
+                      <div className="verbs-row__title">
+                        <strong>{verb.verb}</strong>
+                        <span className="muted small">{streamLabel(verb.stream)}</span>
                       </div>
-                    </header>
-                    <div className="verb-forms">
-                      <div>
-                        <span className="label">{t("infinitive")}</span>
-                        <strong>{verb.infinitive}</strong>
-                      </div>
-                      <div>
-                        <span className="label">{t("present")}</span>
-                        <strong>{verb.present}</strong>
-                      </div>
-                      <div>
-                        <span className="label">{t("past")}</span>
-                        <strong>{verb.past}</strong>
-                      </div>
-                      <div>
-                        <span className="label">{t("perfect")}</span>
-                        <strong>{verb.perfect}</strong>
-                      </div>
+                      <div>{verb.infinitive}</div>
+                      <div>{verb.present}</div>
+                      <div>{verb.past}</div>
+                      <div>{verb.perfect}</div>
+                      {verb.examples && (
+                        <div className="verbs-row__examples">
+                          {verb.examples.split("\n").map((line, idx) => (
+                            <p key={idx} className="muted small">
+                              {line}
+                            </p>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    {verb.examples && (
-                      <div className="verb-examples">
-                        <span className="badge ghost">{t("examples")}</span>
-                        {verb.examples.split("\n").map((line, idx) => (
-                          <p key={idx} className="muted small">
-                            {line}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                  </article>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </>
