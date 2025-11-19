@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 
+from exams.data.verb_library import VERBS_BY_STREAM
 from exams.models import Option, Question, Test, VerbEntry
 
 
@@ -87,124 +88,6 @@ def create_test_with_questions(slug: str, title: str, description: str, level: s
             )
 
 
-VERBS_BY_STREAM = {
-    Test.Stream.BOKMAAL: [
-        {
-            "verb": "å være",
-            "infinitive": "å være",
-            "present": "er",
-            "past": "var",
-            "perfect": "har vært",
-            "examples": "Det er godt å være sammen med dere.\nHun er alltid presis på jobb.\nVi var i Bergen i fjor sommer.\nDe har vært i Oslo mange ganger.",
-            "tags": ["core", "irregular"],
-        },
-        {
-            "verb": "å gjøre",
-            "infinitive": "å gjøre",
-            "present": "gjør",
-            "past": "gjorde",
-            "perfect": "har gjort",
-            "examples": "Jeg prøver å gjøre alt riktig.\nHva gjør du i kveld?\nHun gjorde ferdig rapporten i går.\nVi har gjort leksene våre allerede.",
-            "tags": ["action"],
-        },
-        {
-            "verb": "å reise",
-            "infinitive": "å reise",
-            "present": "reiser",
-            "past": "reiste",
-            "perfect": "har reist",
-            "examples": "Familien liker å reise sammen.\nVi reiser tidlig i morgen.\nHan reiste alene til Tromsø.\nDe har reist gjennom hele landet.",
-            "tags": ["travel"],
-        },
-        {
-            "verb": "å skrive",
-            "infinitive": "å skrive",
-            "present": "skriver",
-            "past": "skrev",
-            "perfect": "har skrevet",
-            "examples": "Det er nyttig å skrive litt hver dag.\nJeg skriver en rapport nå.\nLæreren skrev melding til foreldrene.\nVi har skrevet mange artikler denne uka.",
-            "tags": ["study"],
-        },
-    ],
-    Test.Stream.NYNORSK: [
-        {
-            "verb": "å vere",
-            "infinitive": "å vere",
-            "present": "er",
-            "past": "var",
-            "perfect": "har vore",
-            "examples": "Det er trygt å vere ute.\nHan er alltid tidleg på møte.\nMe var på kino i går.\nDei har vore i Ålesund fleire gongar.",
-            "tags": ["core", "irregular"],
-        },
-        {
-            "verb": "å bu",
-            "infinitive": "å bu",
-            "present": "bur",
-            "past": "budde",
-            "perfect": "har budd",
-            "examples": "Eg drøymer om å bu ved sjøen.\nHo bur i sentrum no.\nDei budde i Bergen i fjor.\nMe har budd her sidan 2015.",
-            "tags": ["daily"],
-        },
-        {
-            "verb": "å lære",
-            "infinitive": "å lære",
-            "present": "lærer",
-            "past": "lærte",
-            "perfect": "har lært",
-            "examples": "Det er kjekt å lære nye ord.\nHo lærer nynorsk kvar dag.\nHan lærte barna å lese i går.\nMe har lært mykje på kurset.",
-            "tags": ["study"],
-        },
-        {
-            "verb": "å sjå",
-            "infinitive": "å sjå",
-            "present": "ser",
-            "past": "såg",
-            "perfect": "har sett",
-            "examples": "Eg vil sjå fjella i morgon.\nHo ser ofte på nyheitene.\nMe såg ein ny film i helga.\nDei har sett mange stader i landet.",
-            "tags": ["irregular"],
-        },
-    ],
-    Test.Stream.ENGLISH: [
-        {
-            "verb": "to study",
-            "infinitive": "to study",
-            "present": "study / studies",
-            "past": "studied",
-            "perfect": "have studied",
-            "examples": "I plan to study every evening.\nThey study together on Tuesdays.\nShe studied grammar yesterday.\nWe have studied verbs all week.",
-            "tags": ["daily"],
-        },
-        {
-            "verb": "to travel",
-            "infinitive": "to travel",
-            "present": "travel / travels",
-            "past": "traveled",
-            "perfect": "have traveled",
-            "examples": "They hope to travel more next year.\nShe travels by train every day.\nHe traveled across the fjords last month.\nWe have traveled with classmates before.",
-            "tags": ["travel"],
-        },
-        {
-            "verb": "to teach",
-            "infinitive": "to teach",
-            "present": "teach / teaches",
-            "past": "taught",
-            "perfect": "have taught",
-            "examples": "I love to teach new students.\nShe teaches evening classes twice a week.\nThey taught pronunciation yesterday.\nHe has taught for ten years already.",
-            "tags": ["work"],
-        },
-        {
-            "verb": "to practice",
-            "infinitive": "to practice",
-            "present": "practice / practices",
-            "past": "practiced",
-            "perfect": "have practiced",
-            "examples": "Remember to practice every day.\nShe practices the dialogues each morning.\nWe practiced pronunciation last night.\nThey have practiced together before the test.",
-            "tags": ["study"],
-        },
-    ],
-}
-
-
 class Command(BaseCommand):
     help = "Seed curated Norwegian tests with real content (A1-B2) and verb tables."
 
@@ -239,3 +122,4 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(f"Seed complete. Added {created_tests} tests and {created_verbs} verbs.")
         )
+
