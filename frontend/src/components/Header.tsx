@@ -15,7 +15,7 @@ type Props = {
 };
 
 const streams: Array<{ key: Stream; label: string }> = [
-  { key: "bokmaal", label: "Bokmal" },
+  { key: "bokmaal", label: "Bokmål" },
   { key: "nynorsk", label: "Nynorsk" },
   { key: "english", label: "English" },
 ];

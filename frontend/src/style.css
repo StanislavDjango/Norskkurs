@@ -634,7 +634,7 @@ button.ghost {
   width: 52px;
   height: 52px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #0ea5e9, #14b8a6);
+  background: linear-gradient(135deg, #2563eb, #38bdf8);
   color: #fff;
   font-size: 1.5rem;
   font-weight: 800;
@@ -661,10 +661,8 @@ button.ghost {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #0284c7 0%, #06b6d4 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #0f172a;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .brand-subtitle {
