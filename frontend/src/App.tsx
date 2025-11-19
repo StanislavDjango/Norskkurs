@@ -38,7 +38,37 @@ import type {
 const levelOrder: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4 };
 const verbFormOrder = ["infinitive", "present", "past", "perfect"] as const;
 type VerbForm = (typeof verbFormOrder)[number];
-const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const alphabet = [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+  "I",
+  "J",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+  "P",
+  "Q",
+  "R",
+  "S",
+  "T",
+  "U",
+  "V",
+  "W",
+  "X",
+  "Y",
+  "Z",
+  "Æ",
+  "Ø",
+  "Å",
+];
 
 type Section =
   | "dashboard"
