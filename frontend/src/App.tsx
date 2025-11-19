@@ -761,7 +761,7 @@ const App = () => {
           </main>
         </div>
       ) : (
-        <div className="layout single-panel">
+        <div className={`layout ${activeSection === "verbs" ? "full-width-panel" : "single-panel"}`}>
           <main className="panel">{renderSectionContent()}</main>
         </div>
       )}

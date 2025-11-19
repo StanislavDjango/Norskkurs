@@ -109,6 +109,14 @@ h2 {
   gap: 16px;
 }
 
+.layout.single-panel {
+  grid-template-columns: 1fr;
+}
+
+.layout.full-width-panel {
+  grid-template-columns: 1fr;
+}
+
 .section-nav {
   display: flex;
   align-items: center;
