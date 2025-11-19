@@ -462,10 +462,10 @@ const App = () => {
                       <div>{verb.perfect}</div>
                       {verb.examples && (
                         <div className="verbs-row__examples">
-                          <span className="muted small examples-label">{t("examples")}</span>
-                          <div className="examples-list">
+                          <span className="examples-label">{t("examples")}</span>
+                          <div className="examples-inline">
                             {verb.examples.split("\n").map((line, idx) => (
-                              <p key={idx}>{line}</p>
+                              <span key={idx}>{line}</span>
                             ))}
                           </div>
                         </div>

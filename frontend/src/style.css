@@ -262,15 +262,33 @@ h2 {
 }
 
 .examples-label {
-  font-weight: 700;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 6px;
+  color: #0ea5e9;
+  border-bottom: 1px solid rgba(14, 165, 233, 0.3);
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+  display: inline-block;
 }
 
-.examples-list p {
-  margin: 4px 0;
+.examples-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   color: #475569;
+}
+
+.examples-inline span {
+  position: relative;
+  padding-left: 12px;
+}
+
+.examples-inline span::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #94a3b8;
 }
 
 @media (max-width: 900px) {
