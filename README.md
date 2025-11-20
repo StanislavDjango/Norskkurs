@@ -36,6 +36,7 @@ Placement tests for Norwegian proficiency levels A1–B2 with a React UI and Dja
 - **Import updated CSV:** `python manage.py import_verbs_csv data.csv [--update]`
   - Without `--update` existing verbs (same `stream+verb`) are skipped; with `--update` they’re overwritten.
   - New rows are created automatically; tags split by `;`, examples use ` | ` to represent line breaks which become multi-line examples again.
+- The Verb entries admin list now has buttons for the same actions (Download CSV template / Import CSV) so non-technical teachers can run it directly in the UI.
 
 ## Tests
 - Backend (in compose): `docker compose exec backend python manage.py test exams` (sqlite fallback if no DATABASE_URL).

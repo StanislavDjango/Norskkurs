@@ -1,4 +1,13 @@
-from django.contrib import admin
+import csv
+import io
+
+from django import forms
+from django.contrib import admin, messages
+from django.http import HttpResponse
+from django.shortcuts import redirect
+from django.template.response import TemplateResponse
+from django.urls import path
+from django.utils.translation import gettext_lazy as _
 
 from .models import (
     Answer,
@@ -15,6 +24,7 @@ from .models import (
     Test,
     VerbEntry,
 )
+from .utils.verb_csv import export_verbs_to_file, import_verbs_from_reader
 
 
 class OptionInline(admin.TabularInline):
@@ -112,11 +122,80 @@ class ExerciseAdmin(admin.ModelAdmin):
     list_filter = ("stream", "level", "kind")
 
 
+class VerbImportForm(forms.Form):
+    csv_file = forms.FileField(label=_("CSV file"))
+    update_existing = forms.BooleanField(required=False, label=_("Update existing entries"))
+
+
 @admin.register(VerbEntry)
 class VerbEntryAdmin(admin.ModelAdmin):
     list_display = ("verb", "stream", "infinitive", "present", "past", "perfect")
     search_fields = ("verb", "infinitive", "tags")
     list_filter = ("stream",)
+    change_list_template = "admin/exams/verbentry/change_list.html"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "export-csv/",
+                self.admin_site.admin_view(self.export_csv_view),
+                name="exams_verbentry_export_csv",
+            ),
+            path(
+                "import-csv/",
+                self.admin_site.admin_view(self.import_csv_view),
+                name="exams_verbentry_import_csv",
+            ),
+        ]
+        return custom_urls + urls
+
+    def export_csv_view(self, request):
+        queryset = self.get_queryset(request)
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="verbs-template.csv"'
+        export_verbs_to_file(response, queryset)
+        return response
+
+    def import_csv_view(self, request):
+        if request.method == "POST":
+            form = VerbImportForm(request.POST, request.FILES)
+            if form.is_valid():
+                upload = form.cleaned_data["csv_file"]
+                try:
+                    decoded = upload.read().decode("utf-8")
+                except UnicodeDecodeError:
+                    form.add_error("csv_file", _("File must be UTF-8 encoded."))
+                else:
+                    reader = csv.DictReader(io.StringIO(decoded))
+                    try:
+                        stats = import_verbs_from_reader(
+                            reader, update=form.cleaned_data["update_existing"]
+                        )
+                    except ValueError as exc:
+                        form.add_error("csv_file", str(exc))
+                    else:
+                        messages.success(
+                            request,
+                            _(
+                                "Import finished. Created: %(created)d Updated: %(updated)d Skipped: %(skipped)d"
+                            )
+                            % {
+                                "created": stats.created,
+                                "updated": stats.updated,
+                                "skipped": stats.skipped,
+                            },
+                        )
+                        return redirect("admin:exams_verbentry_changelist")
+        else:
+            form = VerbImportForm()
+        context = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "form": form,
+            "title": _("Import verbs from CSV"),
+        }
+        return TemplateResponse(request, "admin/exams/verbentry/import_csv.html", context)
 
 
 @admin.register(Expression)

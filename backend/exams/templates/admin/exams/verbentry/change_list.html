@@ -1,0 +1,18 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+  {{ block.super }}
+  <li>
+    <a class="button success" href="{% url 'admin:exams_verbentry_export_csv' %}">
+      <span class="icon icon-download"></span>
+      {% trans "Download CSV template" %}
+    </a>
+  </li>
+  <li>
+    <a class="button primary" href="{% url 'admin:exams_verbentry_import_csv' %}">
+      <span class="icon icon-upload"></span>
+      {% trans "Import CSV" %}
+    </a>
+  </li>
+{% endblock %}

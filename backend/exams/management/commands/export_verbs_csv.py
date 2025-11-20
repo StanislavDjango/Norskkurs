@@ -3,9 +3,10 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
 from exams.models import VerbEntry
+from exams.utils.verb_csv import export_verbs_to_file
 
 
 class Command(BaseCommand):
@@ -42,23 +43,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("No verbs found; writing empty template."))
 
         with output_path.open("w", newline="", encoding="utf-8") as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(header)
-            for entry in queryset:
-                writer.writerow(
-                    [
-                        entry.verb,
-                        entry.stream,
-                        entry.infinitive,
-                        entry.present,
-                        entry.past,
-                        entry.perfect,
-                        entry.examples_infinitive.replace("\n", " | "),
-                        entry.examples_present.replace("\n", " | "),
-                        entry.examples_past.replace("\n", " | "),
-                        entry.examples_perfect.replace("\n", " | "),
-                        ";".join(entry.tags or []),
-                    ]
-                )
+            export_verbs_to_file(csvfile, queryset)
 
         self.stdout.write(self.style.SUCCESS(f"Exported {queryset.count()} verbs to {output_path}"))
