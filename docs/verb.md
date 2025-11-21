@@ -15,6 +15,7 @@ This file describes the changes and how to operate them.
 ### 2.1 Layout and filters
 - **Alphabet filter** (`verbLetter`) – three-state logic: “All”, letter, letter+topic.
 - **Topic filter** (`verbTag`) – tags derived from verb metadata (`work`, `travel`, `culture`, ...). Selecting a topic resets alphabet filter to “All” and vice versa.
+- **Search bar** – positioned to the right of topic chips; strips leading `å/to` automatically so the teacher can type bare verb forms.
 - **Pagination** – Intersection Observer + manual “Load more” fallback. Default 15 verbs per batch.
 - **Responsive table** – columns: Infinitive / Present / Past / Perfect / “Show example”; badges display `stream` and `level`. Tags shown as chips.
 
@@ -28,10 +29,11 @@ This file describes the changes and how to operate them.
 - View switcher `verbView` (All verbs / Bookmarks) sits below topics. When `verbView === "favorites"`, the alphabet and topic filters continue to work but only within favorites.
 
 ### 2.4 Usage instructions
-1. **Filter by letter** – click letter buttons; disabled ones indicate no verbs for that letter under current topic/view.
-2. **Filter by topic** – select chip under alphabet; label `All topics` resets.
-3. **Bookmark** – click the star icon; a counter shows within the “Bookmarks” tab.
-4. **Show example** – click CTA, choose tense in modal, review sentences, close with “×”.
+1. **Search** – type base verb without article (system strips leading `å/to` automatically).
+2. **Filter by letter** – click letter buttons; disabled ones indicate no verbs for that letter under current topic/view.
+3. **Filter by topic** – select chip under alphabet; label `All topics` resets.
+4. **Bookmark** – click the star icon; a counter shows within the “Bookmarks” tab.
+5. **Show example** – click CTA, choose tense in modal, review sentences, close with “×”.
 
 Translations for new elements live in `frontend/src/i18n.ts`.
 

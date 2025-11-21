@@ -119,6 +119,7 @@ const App = () => {
   const [activeForm, setActiveForm] = useState<VerbForm>("infinitive");
   const [verbLetter, setVerbLetter] = useState<string>("all");
   const [verbTag, setVerbTag] = useState<string>("all");
+  const [verbSearch, setVerbSearch] = useState<string>("");
   const [verbVisibleCount, setVerbVisibleCount] = useState<number>(15);
   const [verbView, setVerbView] = useState<"all" | "favorites">("all");
   const [verbFavorites, setVerbFavorites] = useState<number[]>(() => {
@@ -142,7 +143,7 @@ const App = () => {
 
   useEffect(() => {
     setVerbVisibleCount(15);
-  }, [verbLetter, verbTag, verbView, verbs]);
+  }, [verbLetter, verbTag, verbView, verbs, verbSearch]);
 
   useEffect(() => {
     setVerbLetter("all");
@@ -153,16 +154,27 @@ const App = () => {
   }, [verbFavorites]);
 
   const filteredVerbs = useMemo(
-    () =>
-      verbs.filter((verb) => {
+    () => {
+      const query = normalizeVerbToken(verbSearch);
+      return verbs.filter((verb) => {
         const letterMatch =
           verbLetter === "all" ? true : getVerbStartingLetter(verb) === verbLetter;
         const tagMatch = verbTag === "all" ? true : (verb.tags || []).includes(verbTag);
         const viewMatch =
           verbView === "all" ? true : verbFavorites.includes(verb.id);
-        return letterMatch && tagMatch && viewMatch;
-      }),
-    [verbs, verbLetter, verbTag, verbView, verbFavorites],
+        const searchMatch =
+          !query ||
+          [
+            verb.infinitive,
+            verb.present,
+            verb.past,
+            verb.perfect,
+            verb.verb,
+          ].some((form) => matchesSearch(form, query));
+        return letterMatch && tagMatch && viewMatch && searchMatch;
+      });
+    },
+    [verbs, verbLetter, verbTag, verbView, verbFavorites, verbSearch],
   );
 
   const verbTags = useMemo(() => {
@@ -173,16 +185,32 @@ const App = () => {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [verbs]);
 
-  function getVerbStartingLetter(verb: VerbEntry): string {
-    const base = (verb.present || verb.infinitive || verb.verb || "")
-      .split("/")[0]
-      .trim();
-    const cleaned = base.replace(/^(a|to)\s+/i, "").trim();
-    const match = cleaned.match(/[A-ZÆØÅ]/i);
-    const letter = (match ? match[0] : cleaned.charAt(0) || verb.verb.charAt(0) || "A").toUpperCase();
-    return letter;
+  function getVerbStartingLetter(verb: VerbEntry): string {
+    const base = (verb.present || verb.infinitive || verb.verb || "")
+      .split("/")[0]
+      .trim();
+    const cleaned = stripArticle(base);
+    const match = cleaned.match(/[A-Z??N??:]/i);
+    const letter = (match ? match[0] : cleaned.charAt(0) || verb.verb.charAt(0) || "A").toUpperCase();
+    return letter;
+  }
+
+  function stripArticle(value: string): string {
+    return value.replace(/^(?:\u00E5|to)\s+/i, "").trim();
   }
-
+
+  function normalizeVerbToken(value: string): string {
+    return stripArticle(value).toLowerCase();
+  }
+
+  function matchesSearch(form: string, query: string): boolean {
+    if (!query) return true;
+    return form
+      .split(/[\/,]/)
+      .map((part) => normalizeVerbToken(part))
+      .some((token) => token.includes(query));
+  }
+
 
   useEffect(() => {
     const sentinel = verbLoadMoreRef.current;
@@ -622,22 +650,32 @@ const App = () => {
                       ))}
                     </div>
                   )}
-                  <div className="verbs-view-toggle">
-                    <button
-                      type="button"
-                      className={verbView === "all" ? "active" : ""}
-                      onClick={() => setVerbView("all")}
-                    >
-                      {t("verbTabs.all")}
-                    </button>
-                    <button
-                      type="button"
-                      className={verbView === "favorites" ? "active" : ""}
-                      onClick={() => setVerbView("favorites")}
-                      disabled={verbFavorites.length === 0}
-                    >
-                      {t("verbTabs.favorites")} ({verbFavorites.length})
-                    </button>
+                  <div className="verbs-controls">
+                    <div className="verb-search">
+                      <input
+                        type="text"
+                        value={verbSearch}
+                        placeholder={t("verbSearchPlaceholder")}
+                        onChange={(e) => setVerbSearch(e.target.value)}
+                      />
+                    </div>
+                    <div className="verbs-view-toggle">
+                      <button
+                        type="button"
+                        className={verbView === "all" ? "active" : ""}
+                        onClick={() => setVerbView("all")}
+                      >
+                        {t("verbTabs.all")}
+                      </button>
+                      <button
+                        type="button"
+                        className={verbView === "favorites" ? "active" : ""}
+                        onClick={() => setVerbView("favorites")}
+                        disabled={verbFavorites.length === 0}
+                      >
+                        {t("verbTabs.favorites")} ({verbFavorites.length})
+                      </button>
+                    </div>
                   </div>
                   <div className="verbs-board__header">
                     <span>{t("infinitive")}</span>
@@ -1116,3 +1154,5 @@ const QuestionBlock = React.forwardRef<HTMLDivElement, QuestionBlockProps>(
 QuestionBlock.displayName = "QuestionBlock";
 
 export default App;
+
+
