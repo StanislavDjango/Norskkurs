@@ -37,6 +37,12 @@ This file describes the changes and how to operate them.
 
 Translations for new elements live in `frontend/src/i18n.ts`.
 
+### 2.5 Component split
+- The verbose JSX/state that previously lived inside `App.tsx` now resides in `frontend/src/pages/VerbsPage.tsx`. This keeps the main shell lean and makes it easier to reason about verb-specific behavior.
+- `App.tsx` passes three props: `stream`, `currentLevel`, and `studentEmail`. Any new filters (e.g., level overrides) should be added to the prop list rather than re-introducing local `useEffect`s inside `App.tsx`.
+- `VerbsPage` owns: API call (`fetchVerbs`), Intersection Observer pagination, favorites localStorage sync, search/tag/alphabet state, modal rendering, and the bookmark tab logic.
+- When adding UI around verbs, extend `VerbsPage` (or split it further into child components) and keep `App.tsx` limited to navigation/layout concerns.
+
 ---
 
 ## 3. Admin (Jazzmin Django Admin)
@@ -97,6 +103,17 @@ stream, tags, verb
 - `python manage.py export_verbs_csv --output verbs-template.csv`
 - `python manage.py import_verbs_csv verbs-template.csv --update`
 - `docker compose run --rm backend python manage.py seed_sample_data`
+
+---
+
+## 6. Code structure reference
+- `frontend/src/pages/VerbsPage.tsx` — main React container for the verb module (state, filters, modal). `App.tsx` simply renders this page when the “Verb” tab is active.
+- `frontend/src/style.css` — contains `verbs-*` styles, including the new search input and controls wrapper.
+- `frontend/src/i18n.ts` — owns verb-specific translations (alphabet label, topics, bookmarks, search placeholder, modal labels).
+- `backend/exams/templates/admin/exams/verbentry/*.html` — Jazzmin templates for changelist buttons and the import form.
+- `backend/exams/utils/verb_csv.py` — helper for CSV import/export; reused by admin actions and management commands.
+- `backend/exams/data/verb_library.py` — verb definitions for seed/migration.
+- `backend/exams/management/commands/*` — CLI utilities for seeding, exporting, and importing verbs.
 
 ---
 
