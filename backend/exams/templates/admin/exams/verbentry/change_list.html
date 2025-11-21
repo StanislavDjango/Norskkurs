@@ -6,14 +6,15 @@
   <style>
     .object-tools li.csv-action {
       display: inline-block;
-      margin-left: 8px;
+      margin-left: 16px;
+      margin-right: 4px;
     }
     .object-tools li.csv-action a.btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       border-radius: 999px;
-      padding: 6px 16px;
+      padding: 8px 20px;
       font-weight: 600;
       box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
     }
@@ -23,12 +24,12 @@
 {% block object-tools-items %}
   {{ block.super }}
   <li class="csv-action">
-    <a class="btn btn-success btn-sm addlink" href="{% url 'admin:exams_verbentry_export_csv' %}">
+    <a class="btn btn-success addlink" href="{% url 'admin:exams_verbentry_export_csv' %}">
       {% trans "Download CSV template" %}
     </a>
   </li>
   <li class="csv-action">
-    <a class="btn btn-success btn-sm addlink" href="{% url 'admin:exams_verbentry_import_csv' %}">
+    <a class="btn btn-success addlink" href="{% url 'admin:exams_verbentry_import_csv' %}">
       {% trans "Import CSV" %}
     </a>
   </li>
