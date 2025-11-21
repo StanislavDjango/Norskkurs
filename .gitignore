@@ -14,3 +14,4 @@ dist/
 .vscode/
 frontend/node_modules/
 frontend/dist/
+backend/config/*.json
