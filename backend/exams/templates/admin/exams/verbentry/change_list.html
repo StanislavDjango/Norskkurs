@@ -4,10 +4,17 @@
 {% block extrastyle %}
   {{ block.super }}
   <style>
+    .object-tools {
+      list-style: none;
+    }
+    .object-tools li,
+    .object-tools li:before {
+      list-style: none;
+    }
     .object-tools li + li.csv-action,
     .object-tools li.csv-action + li {
       display: inline-block;
-      margin-left: 20px;
+      margin-left: 44px;
     }
     .object-tools li.csv-action a.btn {
       display: inline-flex;
