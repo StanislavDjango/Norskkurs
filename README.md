@@ -26,6 +26,13 @@ Placement tests for Norwegian proficiency levels A1–B2 with a React UI and Dja
 - `GET /api/profile/me/` — auth info `{is_authenticated,is_teacher,...}`.
 - `POST /api/profile/logout/` — logout (CSRF-exempt).
 
+## Verb section highlights
+- Full-width React verb board with alphabet picker, topic filter, and infinite scroll.
+- “Show example” modal displays tense-specific sentences per verb (infinitive/present/past/perfect).
+- “Bookmarks” mode lets the teacher or student mark verbs as favorites (persisted in localStorage) for quick review.
+- Daily UI tweaks: grid layout, badge labels for stream/level, and verb cards with tag chips.
+- Admin verbs list includes visually consistent action buttons (Add / Download CSV / Import CSV) and a clean import form.
+
 ## Admin
 - Jazzmin admin in English; manage Tests (A1–B2), Questions, Options, Assignments (student_email access). Content of questions is Norwegian only; UI EN.
 
