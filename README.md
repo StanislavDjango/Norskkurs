@@ -58,6 +58,10 @@ Placement tests for Norwegian proficiency levels A1–B2 with a React UI and Dja
 ## CI / Docker Hub
 - Workflow `.github/workflows/docker-build.yml` builds/pushes backend/frontend images with tags `latest` and `${{ github.sha }}`. Set secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`.
 
+## Auto-deploy to server
+- Workflow `.github/workflows/deploy.yml` срабатывает на `push` в ветку `main` и по SSH запускает на сервере `scripts/deploy.sh`.
+- Скрипт деплоя обновляет код до `origin/main`, пересобирает Docker-контейнеры, выполняет миграции/collectstatic и перезапускает стэк (`db`, `backend`, `frontend`).
+
 ## Git tips / rollback
 - Полный лог важных коммитов есть в `git reflog`; последний набор: `Make API endpoints CSRF-exempt...`, `Seed real Norwegian tests...`, `Lock admin UI to English`, `Add handoff notes...`.
 - Быстрый откат к известному коммиту: `git reset --hard <sha>` и при необходимости `git push -f origin main`.
