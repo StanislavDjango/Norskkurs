@@ -35,6 +35,12 @@ const Header: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
 
+  const apiBase = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  const adminBase =
+    (import.meta.env.VITE_ADMIN_URL as string | undefined) ||
+    (apiBase ? apiBase.replace(/\/api\/?$/, "/admin/") : "https://norskkurs.xyz/admin/");
+  const adminLogin = `${adminBase.replace(/\/*$/, "/")}login/?next=/admin/`;
+
   const renderUserActions = () => {
     if (auth?.is_authenticated) {
       return (
@@ -42,7 +48,7 @@ const Header: React.FC<Props> = ({
           <span className="user-name">{auth.display_name || auth.username}</span>
           {isTeacher && (
             <a
-              href="http://localhost:8001/admin/"
+              href={adminBase}
               className="admin-link"
               target="_blank"
               rel="noreferrer noopener"
@@ -59,7 +65,7 @@ const Header: React.FC<Props> = ({
 
     return (
       <a
-        href="http://localhost:8001/admin/login/?next=/admin/"
+        href={adminLogin}
         className="login-link"
         target="_blank"
         rel="noreferrer noopener"

@@ -24,12 +24,12 @@ services:
              python manage.py runserver 0.0.0.0:8000"
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/norskkurs
-      ALLOWED_HOSTS: localhost,backend,frontend
+      ALLOWED_HOSTS: localhost,127.0.0.1,backend,frontend,norskkurs.xyz,www.norskkurs.xyz
       DEBUG: "1"
     volumes:
       - ./backend:/app
     ports:
-      - "8001:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy

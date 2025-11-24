@@ -11,13 +11,19 @@ Placement tests for Norwegian proficiency levels A1–B2 with a React UI and Dja
 1. Copy backend env: `cp backend/.env.example backend/.env` (adjust secrets if needed).
 2. Build & run: `docker compose up --build`.
 3. Seed data: `docker compose run --rm backend python manage.py seed_sample_data`
-4. Admin UI: `http://localhost:8001/admin/` (create superuser once: `docker compose run --rm backend python manage.py createsuperuser`).
-5. Frontend: `http://localhost:5173` (inside compose uses `http://backend:8000/api/`; from host use `http://localhost:8001/api/`).
+4. Admin UI: `http://localhost:8000/admin/` (create superuser once: `docker compose run --rm backend python manage.py createsuperuser`).
+5. Frontend: `http://localhost:5173` (inside compose uses `http://backend:8000/api/`; from host use `http://localhost:8000/api/`).
 
 ## Local development (no Docker)
 1. Backend: `python -m venv .venv && .\.venv\Scripts\activate` then `pip install -r backend/requirements.txt`.
 2. Create `backend/.env` from example; run `python backend/manage.py migrate && python backend/manage.py seed_sample_data && python backend/manage.py runserver 0.0.0.0:8000`.
-3. Frontend: `cd frontend && npm install` (Node 20.19+ or 22.12+), then `npm run dev` with `VITE_API_BASE_URL=http://localhost:8001/api/`.
+3. Frontend: `cd frontend && npm install` (Node 20.19+ or 22.12+), then `npm run dev` with `VITE_API_BASE_URL=http://localhost:8000/api/`.
+
+## Production (Cloudflare → Nginx → backend)
+- Keep Cloudflare proxy on (orange cloud), SSL mode “Full (strict)”.
+- Generate an Origin Certificate in Cloudflare for `norskkurs.xyz`, place it on the server (see `deploy/nginx.conf` for paths).
+- Install Nginx on the server, place the config from `deploy/nginx.conf`, reload Nginx; it terminates TLS on 443 and proxies to backend `127.0.0.1:8000`.
+- Backend stays on 127.0.0.1:8000 via Docker; set frontend env `VITE_API_BASE_URL=https://norskkurs.xyz/api/` for production builds.
 
 ## API
 - `GET /api/tests/?student_email=` — list tests (respects assignments if `is_restricted`).
