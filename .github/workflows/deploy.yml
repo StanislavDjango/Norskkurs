@@ -12,26 +12,54 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configure SSH
+      - name: Install cloudflared (for Cloudflare Access SSH)
+        run: |
+          curl -L "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb" -o /tmp/cloudflared.deb
+          sudo dpkg -i /tmp/cloudflared.deb
+
+      - name: Configure SSH (with optional Cloudflare Access)
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          CF_ACCESS_HOSTNAME: ${{ secrets.CF_ACCESS_HOSTNAME }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
-          mkdir -p ~/.ssh
+          set -euo pipefail
+
+          install -m 700 -d ~/.ssh
           echo "$DEPLOY_SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p "${DEPLOY_PORT:-22}" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
+
+          HOSTNAME="${CF_ACCESS_HOSTNAME:-$DEPLOY_HOST}"
+          PORT="${DEPLOY_PORT:-22}"
+          USERNAME="${DEPLOY_USER:-stanislav}"
+
+          if [ -z "$HOSTNAME" ]; then
+            echo "CF_ACCESS_HOSTNAME or DEPLOY_HOST must be set." >&2
+            exit 1
+          fi
+
+          {
+            echo "Host deploy"
+            echo "  HostName ${HOSTNAME}"
+            echo "  User ${USERNAME}"
+            echo "  Port ${PORT}"
+            echo "  IdentityFile ~/.ssh/id_rsa"
+            if [ -n "${CF_ACCESS_CLIENT_ID:-}" ] && [ -n "${CF_ACCESS_CLIENT_SECRET:-}" ] && [ -n "${CF_ACCESS_HOSTNAME:-}" ]; then
+              echo "  ProxyCommand cloudflared access ssh --hostname ${CF_ACCESS_HOSTNAME} --service-token-id ${CF_ACCESS_CLIENT_ID} --service-token-secret ${CF_ACCESS_CLIENT_SECRET}"
+            fi
+            echo "  StrictHostKeyChecking no"
+            echo "  UserKnownHostsFile=/dev/null"
+          } > ~/.ssh/config
 
       - name: Run deploy script on server
         env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_APP_DIR: ${{ secrets.DEPLOY_APP_DIR }}
         run: |
-          ssh -p "${DEPLOY_PORT:-22}" "${DEPLOY_USER}@${DEPLOY_HOST}" "\
+          ssh deploy "\
             cd \"${DEPLOY_APP_DIR:-/srv/norskkurs/Norskkurs}\" && \
             chmod +x ./scripts/deploy.sh && \
             APP_DIR=${DEPLOY_APP_DIR:-/srv/norskkurs/Norskkurs} ./scripts/deploy.sh \

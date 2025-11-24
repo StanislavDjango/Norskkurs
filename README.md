@@ -60,6 +60,7 @@ Placement tests for Norwegian proficiency levels A1–B2 with a React UI and Dja
 
 ## Auto-deploy to server
 - Workflow `.github/workflows/deploy.yml` срабатывает на `push` в ветку `main` и по SSH запускает на сервере `scripts/deploy.sh`.
+- SSH ходит через Cloudflare Access-туннель `ssh.norskkurs.xyz` (ProxyCommand `cloudflared access ssh`) при наличии секретов `CF_ACCESS_HOSTNAME`, `CF_ACCESS_CLIENT_ID`, `CF_ACCESS_CLIENT_SECRET`; в качестве ключа/пользователя используются `DEPLOY_SSH_KEY` и `DEPLOY_USER`. Можно fallback-ом указать `DEPLOY_HOST`/`DEPLOY_PORT`, если Access временно не нужен.
 - Скрипт деплоя обновляет код до `origin/main`, пересобирает Docker-контейнеры, выполняет миграции/collectstatic и перезапускает стэк (`db`, `backend`, `frontend`).
 
 ## Git tips / rollback
