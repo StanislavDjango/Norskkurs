@@ -1,0 +1,15 @@
+tunnel: a40c36ff-cf21-40e0-8663-6c4ae3648878
+credentials-file: /home/stanislav/.cloudflared/a40c36ff-cf21-40e0-8663-6c4ae3648878.json
+
+ingress:
+  - hostname: norskkurs.xyz
+    path: /api/*
+    service: http://localhost:8000
+  - hostname: norskkurs.xyz
+    path: /admin/*
+    service: http://localhost:8000
+  - hostname: www.norskkurs.xyz
+    service: http://localhost:5173
+  - hostname: norskkurs.xyz
+    service: http://localhost:5173
+  - service: http_status:404
