@@ -37,8 +37,10 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+        VITE_API_BASE_URL: https://norskkurs.xyz/api/
     environment:
-      VITE_API_BASE_URL: http://backend:8000/api/
+      VITE_API_BASE_URL: https://norskkurs.xyz/api/
     ports:
       - "5173:5173"
     depends_on:
