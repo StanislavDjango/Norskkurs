@@ -12,20 +12,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install cloudflared (for Cloudflare Access SSH)
-        run: |
-          curl -L "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb" -o /tmp/cloudflared.deb
-          sudo dpkg -i /tmp/cloudflared.deb
-
-      - name: Configure SSH (with optional Cloudflare Access)
+      - name: Configure SSH
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          CF_ACCESS_HOSTNAME: ${{ secrets.CF_ACCESS_HOSTNAME }}
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           set -euo pipefail
 
@@ -33,22 +25,12 @@ jobs:
           echo "$DEPLOY_SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          # Decide whether to use Cloudflare Access or direct SSH.
-          USE_ACCESS=0
-          if [ -n "${CF_ACCESS_CLIENT_ID:-}" ] && [ -n "${CF_ACCESS_CLIENT_SECRET:-}" ]; then
-            USE_ACCESS=1
-          fi
-
+          HOSTNAME="${DEPLOY_HOST:-}"
           PORT="${DEPLOY_PORT:-22}"
           USERNAME="${DEPLOY_USER:-stanislav}"
-          if [ "$USE_ACCESS" -eq 1 ]; then
-            HOSTNAME="ssh.norskkurs.xyz"
-          else
-            HOSTNAME="${DEPLOY_HOST:-}"
-          fi
 
           if [ -z "$HOSTNAME" ]; then
-            echo "When Cloudflare Access is not used, DEPLOY_HOST must be set." >&2
+            echo "DEPLOY_HOST must be set." >&2
             exit 1
           fi
 
@@ -58,9 +40,6 @@ jobs:
             echo "  User ${USERNAME}"
             echo "  Port ${PORT}"
             echo "  IdentityFile ~/.ssh/id_rsa"
-            if [ "$USE_ACCESS" -eq 1 ]; then
-              echo "  ProxyCommand cloudflared access ssh --hostname ssh.norskkurs.xyz --service-token-id ${CF_ACCESS_CLIENT_ID} --service-token-secret ${CF_ACCESS_CLIENT_SECRET}"
-            fi
             echo "  StrictHostKeyChecking no"
             echo "  UserKnownHostsFile=/dev/null"
           } > ~/.ssh/config
