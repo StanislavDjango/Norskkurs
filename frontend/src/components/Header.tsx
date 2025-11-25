@@ -102,7 +102,10 @@ const Header: React.FC<Props> = ({
     <header className="site-header">
       <div className="header-top">
         <div className="header-brand">
-          <div className="logo-icon">N</div>
+          <div className="logo-icon logo-icon--festive">
+            <span className="logo-letter">N</span>
+            <span className="logo-hat" aria-hidden="true" />
+          </div>
           <div className="brand-info">
             <h1 className="brand-title">{t("appTitle")}</h1>
             <p className="brand-subtitle">{t("appSubtitle")}</p>
