@@ -16,8 +16,7 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: ./backend
+    image: stanyslav/norskkurs-backend:latest
     command: >
       sh -c "python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
@@ -35,10 +34,7 @@ services:
         condition: service_healthy
 
   frontend:
-    build:
-      context: ./frontend
-      args:
-        VITE_API_BASE_URL: https://norskkurs.xyz/api/
+    image: stanyslav/norskkurs-frontend:latest
     environment:
       VITE_API_BASE_URL: https://norskkurs.xyz/api/
     ports:

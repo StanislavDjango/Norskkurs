@@ -18,8 +18,7 @@ fi
 echo "New commits detected ($LOCAL_SHA -> $REMOTE_SHA), running deploy..."
 git reset --hard origin/main
 
-docker compose pull
-docker compose build
+docker compose pull || docker compose build
 
 docker compose up -d db
 docker compose run --rm backend python manage.py migrate
