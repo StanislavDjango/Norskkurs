@@ -22,18 +22,5 @@ docker compose exec -T db pg_dump -U "$DB_USER" -d "$DB_NAME" | gzip > "$BACKUP_
 
 echo "[$(date --iso-8601=seconds)] Backup completed: $BACKUP_FILE"
 
-# Локальная ротация: храним бэкапы за последние 7 дней
-find "$BACKUP_DIR" -type f -name 'norskkurs-*.sql.gz' -mtime +7 -print -delete || true
-
-# Если установлен rclone и настроен remote gdrive-norskkurs, заливаем копию в Google Drive
-if command -v rclone >/dev/null 2>&1; then
-  if rclone listremotes 2>/dev/null | grep -q '^gdrive-norskkurs:'; then
-    echo "[$(date --iso-8601=seconds)] Uploading backup to gdrive-norskkurs:norskkurs-backups"
-    rclone copy "$BACKUP_FILE" "gdrive-norskkurs:norskkurs-backups" || echo "rclone upload failed (see logs)"
-  else
-    echo "[$(date --iso-8601=seconds)] rclone installed, but remote gdrive-norskkurs: is not configured; skipping upload."
-  fi
-else
-  echo "[$(date --iso-8601=seconds)] rclone not installed; skipping upload to cloud."
-fi
-
+# Локальная ротация: храним бэкапы за последние 14 дней
+find "$BACKUP_DIR" -type f -name 'norskkurs-*.sql.gz' -mtime +14 -print -delete || true
