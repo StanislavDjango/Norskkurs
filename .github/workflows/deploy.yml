@@ -57,7 +57,7 @@ jobs:
             echo "  Port ${PORT}"
             echo "  IdentityFile ~/.ssh/id_rsa"
             if [ "$USE_ACCESS" -eq 1 ]; then
-              echo "  ProxyCommand env CF_ACCESS_CLIENT_ID=${CF_ACCESS_CLIENT_ID} CF_ACCESS_CLIENT_SECRET=${CF_ACCESS_CLIENT_SECRET} cloudflared access ssh --hostname ssh.norskkurs.xyz"
+              echo "  ProxyCommand env CF_ACCESS_CLIENT_ID=${CF_ACCESS_CLIENT_ID} CF_ACCESS_CLIENT_SECRET=${CF_ACCESS_CLIENT_SECRET} cloudflared access ssh --hostname ssh.norskkurs.xyz --loglevel debug --logfile /tmp/cloudflared-access.log"
             fi
             echo "  StrictHostKeyChecking no"
             echo "  UserKnownHostsFile=/dev/null"
@@ -72,6 +72,16 @@ jobs:
             chmod +x ./scripts/deploy.sh && \
             APP_DIR=${DEPLOY_APP_DIR:-/srv/norskkurs/Norskkurs} ./scripts/deploy.sh \
           "
+
+      - name: Dump cloudflared Access log
+        if: always()
+        run: |
+          if [ -f /tmp/cloudflared-access.log ]; then
+            echo "===== cloudflared Access debug log (tail) ====="
+            tail -n 200 /tmp/cloudflared-access.log || true
+          else
+            echo "No /tmp/cloudflared-access.log found"
+          fi
 
       - name: Health check application
         run: |
