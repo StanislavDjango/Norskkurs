@@ -57,7 +57,7 @@ jobs:
             echo "  Port ${PORT}"
             echo "  IdentityFile ~/.ssh/id_rsa"
             if [ "$USE_ACCESS" -eq 1 ]; then
-              echo "  ProxyCommand env CF_ACCESS_CLIENT_ID=${CF_ACCESS_CLIENT_ID} CF_ACCESS_CLIENT_SECRET=${CF_ACCESS_CLIENT_SECRET} cloudflared access ssh --hostname ssh.norskkurs.xyz"
+              echo "  ProxyCommand cloudflared access ssh --hostname ssh.norskkurs.xyz --service-token-id ${CF_ACCESS_CLIENT_ID} --service-token-secret ${CF_ACCESS_CLIENT_SECRET}"
             fi
             echo "  StrictHostKeyChecking no"
             echo "  UserKnownHostsFile=/dev/null"
