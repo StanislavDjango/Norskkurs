@@ -19,6 +19,8 @@
   - `CF_ACCESS_CLIENT_SECRET` = (Client Secret из сервис-токена)
   - (опционально как резерв без Access) `DEPLOY_HOST` = `91.126.3.118`, `DEPLOY_PORT` = `22`
 
+Важное сетевое ограничение: интернет‑провайдер этого сервера блокирует прямой SSH снаружи, поэтому вариант деплоя из GitHub Actions через `DEPLOY_HOST`/`DEPLOY_PORT` фактически не работает. Для CI‑деплоя нужно использовать Cloudflare Access‑туннель `ssh.norskkurs.xyz` с корректными `CF_ACCESS_CLIENT_ID`/`CF_ACCESS_CLIENT_SECRET`.
+
 ## Как проверить
 - В GitHub Actions запустить workflow `Deploy` вручную (`workflow_dispatch`) или сделать `git push main` и посмотреть логи: должен установиться `cloudflared`, подняться SSH через Access и выполниться `scripts/deploy.sh`.
 - Cron продолжает деплой каждые 5 минут (лог: `~/norskkurs-auto-deploy.log`) — можно оставить как резерв.

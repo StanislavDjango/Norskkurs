@@ -109,6 +109,7 @@
    - Не хватает Access‑приложения в Cloudflare Zero Trust для `ssh.norskkurs.xyz`, чтобы:
      - Можно было делать `cloudflared access login https://ssh.norskkurs.xyz`.
      - Использовать защищённый SSH через браузер/клиент.
+   - ВАЖНО: для этого сервера провайдер блокирует прямой SSH‑доступ из интернета, поэтому деплой из GitHub Actions в реальности должен идти именно через Cloudflare Access‑туннель (`ssh.norskkurs.xyz` + service token), а попытки прямого подключения к `DEPLOY_HOST`/`DEPLOY_PORT` будут упираться в timeouts.
 
 4. **Безопасность секретов**:
    - В этой сессии использовались реальные токены (GitHub PAT, SSH‑ключ, Cloudflare/Tailscale).
@@ -135,4 +136,3 @@
   - Настроить Cloudflare Access‑app и service token.
   - Обновить `deploy.yml`, чтобы SSH шёл через `cloudflared access ssh`.
   - После этого можно будет убрать/ослабить cron или оставить его как резервный механизм.
-

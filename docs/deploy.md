@@ -19,6 +19,8 @@ Cloudflare Access (recommended for SSH over the tunnel):
 - `CF_ACCESS_CLIENT_ID`: service token ID from the Access app.
 - `CF_ACCESS_CLIENT_SECRET`: service token secret from the Access app.
 
+Important note for this project: the hosting ISP blocks direct SSH from the public internet, so **GitHub Actions cannot достучаться до сервера напрямую по `DEPLOY_HOST`/`DEPLOY_PORT`**. Для автодеплоя из CI требуется рабочий Cloudflare Access‑туннель `ssh.norskkurs.xyz` и корректные `CF_ACCESS_CLIENT_ID`/`CF_ACCESS_CLIENT_SECRET`.
+
 ### Cloudflare Access quick setup
 1. In Cloudflare Zero Trust → Access → Applications create a self-hosted app for `ssh.norskkurs.xyz` pointing to the existing SSH tunnel.
 2. Add an Access policy that allows the service token.
@@ -28,6 +30,8 @@ Cloudflare Access (recommended for SSH over the tunnel):
 Fallback if you want to bypass Cloudflare Access (public SSH):
 - `DEPLOY_HOST`: server IP or hostname (used when `CF_ACCESS_HOSTNAME` is empty).
 - `DEPLOY_PORT`: SSH port (default `22`).
+
+For this server, this fallback is only suitable for **manual SSH from machines that already have network access to the server** (локальная сеть, VPN, Tailscale). From GitHub Actions it will typically fail with timeouts because the ISP blocks direct SSH.
 
 ## How the workflow deploys
 On `push` to `main` (or manual `workflow_dispatch`), GitHub Actions:
