@@ -63,6 +63,12 @@ Placement tests for Norwegian proficiency levels A1–B2 with a React UI and Dja
 - ВАЖНО: для этого сервера интернет‑провайдер режет прямой SSH снаружи, поэтому автодеплой из GitHub Actions должен идти через Cloudflare Access‑туннель `ssh.norskkurs.xyz` (ProxyCommand `cloudflared access ssh`) при наличии секретов `CF_ACCESS_CLIENT_ID`, `CF_ACCESS_CLIENT_SECRET`; в качестве ключа/пользователя используются `DEPLOY_SSH_KEY` и `DEPLOY_USER`. Пара `DEPLOY_HOST`/`DEPLOY_PORT` годится как fallback только для ручных деплоев с машин, у которых есть прямой SSH‑доступ до сервера (локальная сеть, VPN и т.п.).
 - Скрипт деплоя обновляет код до `origin/main`, пересобирает Docker-контейнеры, выполняет миграции/collectstatic и перезапускает стэк (`db`, `backend`, `frontend`).
 
+## Push local DB to server (manual)
+- Скрипт: `scripts/push_db_to_prod.sh` (использует SSH `stanislav@100.66.15.89` и каталог `/srv/norskkurs/Norskkurs`).
+- Запуск из корня проекта (Git Bash/PowerShell с bash): `bash scripts/push_db_to_prod.sh`.
+- Что делает: дампит локальную БД из docker-compose → копирует на сервер → стопает backend/frontend → пересоздаёт БД `norskkurs` → импортирует дамп → миграции → поднимает стек.
+- Требования: рабочий SSH, docker compose/psql в контейнерах. Внимание: скрипт перезаписывает прод-БД локальными данными.
+
 ## Git tips / rollback
 - Полный лог важных коммитов есть в `git reflog`; последний набор: `Make API endpoints CSRF-exempt...`, `Seed real Norwegian tests...`, `Lock admin UI to English`, `Add handoff notes...`.
 - Быстрый откат к известному коммиту: `git reset --hard <sha>` и при необходимости `git push -f origin main`.

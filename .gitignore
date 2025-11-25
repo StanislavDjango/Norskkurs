@@ -17,3 +17,9 @@ frontend/dist/
 backend/config/*.json
 .cloudflared/
 run.sh
+docker-compose.local.yml
+deploy_key
+deploy_key.pub
+norskkurs_dump.sql
+norskkurs-local.sql
+scripts/github_deploy_setup.sh
