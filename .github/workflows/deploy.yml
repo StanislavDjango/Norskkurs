@@ -57,7 +57,7 @@ jobs:
             echo "  Port ${PORT}"
             echo "  IdentityFile ~/.ssh/id_rsa"
             if [ "$USE_ACCESS" -eq 1 ]; then
-              echo "  ProxyCommand cloudflared access ssh --hostname ssh.norskkurs.xyz --service-token-id ${CF_ACCESS_CLIENT_ID} --service-token-secret ${CF_ACCESS_CLIENT_SECRET}"
+              echo "  ProxyCommand env CF_ACCESS_CLIENT_ID=${CF_ACCESS_CLIENT_ID} CF_ACCESS_CLIENT_SECRET=${CF_ACCESS_CLIENT_SECRET} cloudflared access ssh --hostname ssh.norskkurs.xyz"
             fi
             echo "  StrictHostKeyChecking no"
             echo "  UserKnownHostsFile=/dev/null"
@@ -72,3 +72,8 @@ jobs:
             chmod +x ./scripts/deploy.sh && \
             APP_DIR=${DEPLOY_APP_DIR:-/srv/norskkurs/Norskkurs} ./scripts/deploy.sh \
           "
+
+      - name: Health check application
+        run: |
+          set -euo pipefail
+          curl -f https://norskkurs.xyz/ -o /dev/null
