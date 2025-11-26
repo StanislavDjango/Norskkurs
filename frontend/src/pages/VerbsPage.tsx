@@ -53,6 +53,7 @@ const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail }) => {
       nynorsk: t("streamLabels.nynorsk"),
       english: t("streamLabels.english"),
     }[value] ?? value);
+
   const [verbs, setVerbs] = useState<VerbEntry[]>([]);
   const [activeVerb, setActiveVerb] = useState<VerbEntry | null>(null);
   const [activeForm, setActiveForm] = useState<VerbForm>("infinitive");
@@ -307,7 +308,7 @@ const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail }) => {
                 }}
                 aria-label={t("close")}
               >
-                ×
+                ✕
               </button>
             </header>
             <div className="verb-modal__forms">
@@ -342,7 +343,8 @@ function getVerbStartingLetter(verb: VerbEntry): string {
     .trim();
   const cleaned = stripArticle(base);
   const match = cleaned.match(/[A-ZÆØÅ]/i);
-  const letter = (match ? match[0] : cleaned.charAt(0) || verb.verb.charAt(0) || "A").toUpperCase();
+  const letter =
+    (match ? match[0] : cleaned.charAt(0) || verb.verb.charAt(0) || "A").toUpperCase();
   return letter;
 }
 
