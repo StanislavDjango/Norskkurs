@@ -12,19 +12,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install cloudflared (for Cloudflare Access SSH)
-        run: |
-          curl -L "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb" -o /tmp/cloudflared.deb
-          sudo dpkg -i /tmp/cloudflared.deb
-
       - name: Configure SSH
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           set -euo pipefail
 
@@ -32,23 +25,14 @@ jobs:
           echo "$DEPLOY_SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          USE_ACCESS=0
-          if [ -n "${CF_ACCESS_CLIENT_ID:-}" ] && [ -n "${CF_ACCESS_CLIENT_SECRET:-}" ]; then
-            USE_ACCESS=1
+          HOSTNAME="${DEPLOY_HOST:-}"
+          if [ -z "$HOSTNAME" ]; then
+            echo "DEPLOY_HOST must be set." >&2
+            exit 1
           fi
 
           PORT="${DEPLOY_PORT:-22}"
           USERNAME="${DEPLOY_USER:-stanislav}"
-
-          if [ "$USE_ACCESS" -eq 1 ]; then
-            HOSTNAME="ssh.norskkurs.xyz"
-          else
-            HOSTNAME="${DEPLOY_HOST:-}"
-            if [ -z "$HOSTNAME" ]; then
-              echo "DEPLOY_HOST must be set when Cloudflare Access is not used." >&2
-              exit 1
-            fi
-          fi
 
           {
             echo "Host deploy"
@@ -56,9 +40,6 @@ jobs:
             echo "  User ${USERNAME}"
             echo "  Port ${PORT}"
             echo "  IdentityFile ~/.ssh/id_rsa"
-            if [ "$USE_ACCESS" -eq 1 ]; then
-              echo "  ProxyCommand env CF_ACCESS_CLIENT_ID=${CF_ACCESS_CLIENT_ID} CF_ACCESS_CLIENT_SECRET=${CF_ACCESS_CLIENT_SECRET} cloudflared access ssh --hostname ssh.norskkurs.xyz --loglevel debug --logfile /tmp/cloudflared-access.log"
-            fi
             echo "  StrictHostKeyChecking no"
             echo "  UserKnownHostsFile=/dev/null"
           } > ~/.ssh/config
@@ -72,16 +53,6 @@ jobs:
             chmod +x ./scripts/deploy.sh && \
             APP_DIR=${DEPLOY_APP_DIR:-/srv/norskkurs/Norskkurs} ./scripts/deploy.sh \
           "
-
-      - name: Dump cloudflared Access log
-        if: always()
-        run: |
-          if [ -f /tmp/cloudflared-access.log ]; then
-            echo "===== cloudflared Access debug log (tail) ====="
-            tail -n 200 /tmp/cloudflared-access.log || true
-          else
-            echo "No /tmp/cloudflared-access.log found"
-          fi
 
       - name: Health check application
         run: |
