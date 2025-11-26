@@ -80,6 +80,7 @@ const App = () => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [expressions, setExpressions] = useState<Expression[]>([]);
   const [glossary, setGlossary] = useState<GlossaryTerm[]>([]);
+  const [isNavOpen, setIsNavOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("norskkurs_stream", stream);
@@ -516,12 +517,26 @@ const App = () => {
         onChangeLevel={handleLevelChange}
       />
 
-      <div className="section-nav">
+      <div className="mobile-nav-toggle">
+        <button
+          className="pill"
+          onClick={() => setIsNavOpen((o) => !o)}
+          aria-expanded={isNavOpen}
+        >
+          {"Menu \u2192 "} 
+          {navItems.find((n) => n.key === activeSection)?.label || "Menu"}
+        </button>
+      </div>
+
+      <div className={`section-nav ${isNavOpen ? "is-open" : "is-closed"}`}>
         {navItems.map((item) => (
           <button
             key={item.key}
             className={`pill ${activeSection === item.key ? "pill--active" : ""}`}
-            onClick={() => setActiveSection(item.key)}
+            onClick={() => {
+              setActiveSection(item.key);
+              setIsNavOpen(false);
+            }}
           >
             {item.label}
           </button>
