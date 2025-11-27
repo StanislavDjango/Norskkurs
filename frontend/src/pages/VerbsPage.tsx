@@ -43,9 +43,10 @@ type Props = {
   stream: Stream;
   currentLevel: Level;
   studentEmail: string;
+  defaultTag?: string;
 };
 
-const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail }) => {
+const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail, defaultTag = "all" }) => {
   const { t } = useTranslation();
   const streamLabel = (value: Stream) =>
     ({
@@ -58,7 +59,7 @@ const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail }) => {
   const [activeVerb, setActiveVerb] = useState<VerbEntry | null>(null);
   const [activeForm, setActiveForm] = useState<VerbForm>("infinitive");
   const [verbLetter, setVerbLetter] = useState<string>("all");
-  const [verbTag, setVerbTag] = useState<string>("all");
+  const [verbTag, setVerbTag] = useState<string>(defaultTag);
   const [verbSearch, setVerbSearch] = useState<string>("");
   const [verbVisibleCount, setVerbVisibleCount] = useState<number>(15);
   const [verbView, setVerbView] = useState<"all" | "favorites">("all");

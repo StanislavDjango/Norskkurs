@@ -43,6 +43,7 @@ type Section =
   | "tests"
   | "homework"
   | "verbs"
+  | "irregularVerbs"
   | "expressions"
   | "glossary"
   | "contact";
@@ -266,6 +267,7 @@ const App = () => {
       { key: "tests" as Section, label: t("nav.tests") },
       { key: "homework" as Section, label: t("nav.homework") },
       { key: "verbs" as Section, label: t("nav.verbs") },
+      { key: "irregularVerbs" as Section, label: t("nav.irregularVerbs", { defaultValue: "Irregular verbs" }) },
       { key: "expressions" as Section, label: t("nav.expressions") },
       { key: "glossary" as Section, label: t("nav.glossary") },
       { key: "contact" as Section, label: t("nav.contact") },
@@ -459,6 +461,15 @@ const App = () => {
               studentEmail={studentEmail}
             />
           );
+      case "irregularVerbs":
+        return (
+          <VerbsPage
+            stream={stream}
+            currentLevel={currentLevel}
+            studentEmail={studentEmail}
+            defaultTag="irregular"
+          />
+        );
       case "expressions":
         return (
           <>
