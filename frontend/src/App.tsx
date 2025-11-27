@@ -566,13 +566,6 @@ const App = () => {
         <div className="layout">
           <aside className="panel">
             <h2>{t("selectTest")}</h2>
-            <div className="card">
-              <p className="muted small">
-                Tests debug: <strong>{filteredTests.length}</strong> items for{" "}
-                <strong>{streamLabel(stream)}</strong> / <strong>{filterLevel}</strong> /{" "}
-                <strong>{filterMode}</strong>.
-              </p>
-            </div>
             <div className="search-row">
               <input
                 type="email"
