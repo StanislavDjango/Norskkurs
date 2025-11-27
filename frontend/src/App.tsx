@@ -414,6 +414,23 @@ const App = () => {
         return (
           <>
             <h2>{t("nav.homework")}</h2>
+            <section className="card">
+              <h3>Mobile debug</h3>
+              <p className="muted small">
+                This block is rendered by React. If you see it on your phone,
+                JavaScript is running.
+              </p>
+              <p className="muted small">
+                Logged in as: <strong>{auth?.display_name || auth?.username || "anonymous"}</strong>
+              </p>
+              <p className="muted small">
+                Current stream: <strong>{streamLabel(stream)}</strong>, level:{" "}
+                <strong>{levelLabel(currentLevel)}</strong>
+              </p>
+              <p className="muted small">
+                Render time: <strong>{new Date().toLocaleString()}</strong>
+              </p>
+            </section>
             {homework.length === 0 ? (
               <p className="muted">{t("emptyList")}</p>
             ) : (
@@ -541,17 +558,6 @@ const App = () => {
             {item.label}
           </button>
         ))}
-      </div>
-
-      <div className="stream-banner">
-        <div>
-          <p className="muted small">{t("currentStream")}</p>
-          <strong>{streamLabel(stream)}</strong>
-        </div>
-        <div>
-          <p className="muted small">{t("currentLevel")}</p>
-          <strong>{levelLabel(currentLevel)}</strong>
-        </div>
       </div>
 
       {error && <div className="alert">{error}</div>}
