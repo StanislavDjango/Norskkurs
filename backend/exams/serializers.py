@@ -175,6 +175,9 @@ class VerbEntrySerializer(serializers.ModelSerializer):
             "examples_present",
             "examples_past",
             "examples_perfect",
+            "translation_en",
+            "translation_ru",
+            "translation_nb",
             "tags",
         )
 

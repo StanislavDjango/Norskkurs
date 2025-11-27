@@ -331,6 +331,23 @@ const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail }) => {
               ))}
             </div>
             <div className="verb-modal__examples">
+              <div className="verb-modal__translations">
+                {(
+                  activeVerb.stream === "english"
+                    ? [
+                        { label: "NO", value: activeVerb.translation_nb || "—" },
+                        { label: "RU", value: activeVerb.translation_ru || "—" },
+                      ]
+                    : [
+                        { label: "EN", value: activeVerb.translation_en || "—" },
+                        { label: "RU", value: activeVerb.translation_ru || "—" },
+                      ]
+                ).map((item) => (
+                  <span key={item.label} className="verb-translation-chip">
+                    <strong>{item.label}:</strong> {item.value}
+                  </span>
+                ))}
+              </div>
               <h4>{t(`formTitles.${activeForm}`)}</h4>
               {getExamplesForForm(activeVerb, activeForm).map((line, idx) => (
                 <p key={idx}>{line}</p>

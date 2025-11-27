@@ -128,6 +128,9 @@ export interface VerbEntry {
   examples_present: string;
   examples_past: string;
   examples_perfect: string;
+   translation_en: string;
+   translation_ru: string;
+   translation_nb: string;
   tags: string[];
 }
 

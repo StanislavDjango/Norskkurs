@@ -17,6 +17,9 @@ CSV_HEADER = [
     "examples_present",
     "examples_past",
     "examples_perfect",
+    "translation_en",
+    "translation_ru",
+    "translation_nb",
     "tags",
 ]
 
@@ -40,6 +43,9 @@ def export_verbs_to_file(file_obj: TextIO, queryset: Iterable[VerbEntry]) -> Non
                 entry.examples_present.replace("\n", EXAMPLE_SEPARATOR),
                 entry.examples_past.replace("\n", EXAMPLE_SEPARATOR),
                 entry.examples_perfect.replace("\n", EXAMPLE_SEPARATOR),
+                entry.translation_en,
+                entry.translation_ru,
+                entry.translation_nb,
                 ";".join(entry.tags or []),
             ]
         )
@@ -73,6 +79,9 @@ def import_verbs_from_reader(reader: csv.DictReader, *, update: bool = False) ->
             "examples_present": _parse_examples(row["examples_present"]),
             "examples_past": _parse_examples(row["examples_past"]),
             "examples_perfect": _parse_examples(row["examples_perfect"]),
+            "translation_en": row.get("translation_en", "").strip(),
+            "translation_ru": row.get("translation_ru", "").strip(),
+            "translation_nb": row.get("translation_nb", "").strip(),
             "tags": tags,
         }
         verb_key = row["verb"].strip()
