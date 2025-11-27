@@ -141,6 +141,12 @@ const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail }) => {
   return (
     <>
       <h2 className="sr-only">{t("nav.verbs")}</h2>
+      <div className="card verbs-debug">
+        <p className="muted small">
+          Verbs debug: <strong>{verbs.length}</strong> items loaded for{" "}
+          <strong>{streamLabel(stream)}</strong> / <strong>{currentLevel}</strong>.
+        </p>
+      </div>
       {verbs.length === 0 ? (
         <p className="muted">{t("emptyList")}</p>
       ) : (
