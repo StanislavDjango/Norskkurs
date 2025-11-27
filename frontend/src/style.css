@@ -1630,7 +1630,7 @@ button.ghost {
   }
 
   .verbs-row {
-    grid-template-columns: repeat(4, minmax(120px, 1fr)) minmax(140px, 1fr);
+    grid-template-columns: 1fr;
     border: 1px solid rgba(148, 163, 184, 0.2);
     border-radius: 14px;
     overflow: hidden;

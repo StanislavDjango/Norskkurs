@@ -4,6 +4,8 @@ import csv
 from dataclasses import dataclass
 from typing import Iterable, TextIO
 
+from django.core.exceptions import MultipleObjectsReturned
+
 from exams.models import Test, VerbEntry
 
 CSV_HEADER = [
@@ -85,15 +87,23 @@ def import_verbs_from_reader(reader: csv.DictReader, *, update: bool = False) ->
             "tags": tags,
         }
         verb_key = row["verb"].strip()
-        entry, created_flag = VerbEntry.objects.get_or_create(
-            verb=verb_key,
-            stream=stream,
-            defaults=defaults,
-        )
+        try:
+            entry, created_flag = VerbEntry.objects.get_or_create(
+                verb=verb_key,
+                stream=stream,
+                defaults=defaults,
+            )
+        except MultipleObjectsReturned:
+            entry = (
+                VerbEntry.objects.filter(verb=verb_key, stream=stream)
+                .order_by("id")
+                .first()
+            )
+            created_flag = False
+
         if created_flag:
             stats.created += 1
-            continue
-        if update:
+        elif update and entry:
             for field, value in defaults.items():
                 setattr(entry, field, value)
             entry.save()
