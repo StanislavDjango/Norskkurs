@@ -55,6 +55,19 @@ const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail }) => {
     }[value] ?? value);
 
   const [verbs, setVerbs] = useState<VerbEntry[]>([]);
+  const [verbsDebug, setVerbsDebug] = useState<{
+    length: number;
+    params: Record<string, string | undefined>;
+    filters: {
+      letter: string;
+      tag: string;
+      view: string;
+      search: string;
+      favoritesCount: number;
+    };
+    sample: string;
+    error?: string;
+  } | null>(null);
   const [activeVerb, setActiveVerb] = useState<VerbEntry | null>(null);
   const [activeForm, setActiveForm] = useState<VerbForm>("infinitive");
   const [verbLetter, setVerbLetter] = useState<string>("all");
@@ -78,8 +91,41 @@ const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail }) => {
       level: currentLevel,
       student_email: studentEmail || undefined,
     };
-    fetchVerbs(params).then(setVerbs).catch(() => setVerbs([]));
-  }, [stream, currentLevel, studentEmail]);
+    fetchVerbs(params)
+      .then((data) => {
+        setVerbs(data);
+        setVerbsDebug({
+          length: data.length,
+          params,
+          filters: {
+            letter: verbLetter,
+            tag: verbTag,
+            view: verbView,
+            search: verbSearch,
+            favoritesCount: verbFavorites.length,
+          },
+          sample: data.slice(0, 3).map((v) => v.verb).join(", ") || "empty",
+        });
+      })
+      .catch((error: unknown) => {
+        const status = (error as any)?.response?.status;
+        const data = (error as any)?.response?.data;
+        setVerbs([]);
+        setVerbsDebug({
+          length: 0,
+          params,
+          filters: {
+            letter: verbLetter,
+            tag: verbTag,
+            view: verbView,
+            search: verbSearch,
+            favoritesCount: verbFavorites.length,
+          },
+          sample: "error",
+          error: status ? `status ${status}: ${JSON.stringify(data).slice(0, 200)}` : String(error),
+        });
+      });
+  }, [stream, currentLevel, studentEmail, verbLetter, verbTag, verbView, verbSearch, verbFavorites.length]);
 
   useEffect(() => {
     setVerbVisibleCount(15);
@@ -146,6 +192,24 @@ const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail }) => {
           Verbs debug: <strong>{verbs.length}</strong> items loaded for{" "}
           <strong>{streamLabel(stream)}</strong> / <strong>{currentLevel}</strong>.
         </p>
+        {verbsDebug && (
+          <>
+            <p className="muted x-small">
+              Params: {JSON.stringify(verbsDebug.params)}
+            </p>
+            <p className="muted x-small">
+              Filters: {JSON.stringify(verbsDebug.filters)}
+            </p>
+            <p className="muted x-small">
+              Sample: {verbsDebug.sample}
+            </p>
+            {verbsDebug.error && (
+              <p className="muted x-small verbs-debug__error">
+                Error: {verbsDebug.error}
+              </p>
+            )}
+          </>
+        )}
       </div>
       {verbs.length === 0 ? (
         <p className="muted">{t("emptyList")}</p>

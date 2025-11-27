@@ -476,6 +476,14 @@ h2 {
 .verbs-debug {
   margin-bottom: 10px;
 }
+.verbs-debug .x-small {
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+.verbs-debug__error {
+  color: #b91c1c;
+  font-weight: 700;
+}
 
 .verb-modal {
   position: fixed;
