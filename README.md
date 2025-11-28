@@ -109,3 +109,16 @@ Email: put_your_email_here@example.com
 Укажи лицензию в LICENSE (если ещё нет) — рекомендую MIT.
 
 Спасибо за репозиторий — он уже содержит хорошую архитектуру; этот README делает его визуально приятнее и понятнее для преподавателей, студентов и разработчиков.
+# Report (recent work)
+- Added verb translations (EN/RU/NB) to backend (model, serializer, CSV import/export).
+- Added Irregular verbs section (tag `irregular`) with sample data (3 per stream).
+- Translations moved into the “Show example” modal for a compact verbs table.
+- Mobile verbs layout fixed (controls and CTA visible).
+- CSV import now tolerates duplicate verb+stream without crashing.
+- Navigation label for Irregular verbs is localized (EN/NB/RU).
+- Custom favicon added.
+
+Deploy notes:
+- Run `python manage.py migrate` (includes 0006_verbentry_translations).
+- CSV headers: `verb,stream,infinitive,present,past,perfect,examples_infinitive,examples_present,examples_past,examples_perfect,translation_en,translation_ru,translation_nb,tags`.
+- Rebuild frontend: `cd frontend && npm install && npm run build`.
