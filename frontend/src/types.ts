@@ -158,6 +158,12 @@ export interface GlossaryTerm {
   tags: string[];
 }
 
+export interface GlossarySearchParams {
+  stream?: Stream;
+  level?: Level;
+  q?: string;
+}
+
 export interface Reading {
   id: number;
   title: string;

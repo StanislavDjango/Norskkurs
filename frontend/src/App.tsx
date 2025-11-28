@@ -39,7 +39,7 @@ import VerbsPage from "./pages/VerbsPage";
 const levelOrder: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4 };
 
 type Section =
-  | "dashboard"
+  | "readings"
   | "materials"
   | "exercises"
   | "tests"
@@ -77,12 +77,13 @@ const App = () => {
     const stored = localStorage.getItem("norskkurs_level") as Level | null;
     return stored || "A1";
   });
-  const [activeSection, setActiveSection] = useState<Section>("dashboard");
+  const [activeSection, setActiveSection] = useState<Section>("readings");
   const [materials, setMaterials] = useState<Material[]>([]);
   const [homework, setHomework] = useState<Homework[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [expressions, setExpressions] = useState<Expression[]>([]);
   const [glossary, setGlossary] = useState<GlossaryTerm[]>([]);
+  const [glossarySearch, setGlossarySearch] = useState("");
   const [readings, setReadings] = useState<Reading[]>([]);
   const [openTranslations, setOpenTranslations] = useState<Set<number>>(new Set());
   const [isNavOpen, setIsNavOpen] = useState(false);
@@ -139,7 +140,7 @@ const App = () => {
     fetchHomework(params).then(setHomework).catch(() => setHomework([]));
     fetchExercises(params).then(setExercises).catch(() => setExercises([]));
     fetchExpressions(params).then(setExpressions).catch(() => setExpressions([]));
-    fetchGlossary(params).then(setGlossary).catch(() => setGlossary([]));
+    fetchGlossary({ ...params, q: glossarySearch || undefined }).then(setGlossary).catch(() => setGlossary([]));
     fetchReadings(params)
       .then((data) => {
         setReadings(data);
@@ -149,7 +150,7 @@ const App = () => {
         setReadings([]);
         setOpenTranslations(new Set());
       });
-  }, [stream, currentLevel, studentEmail]);
+  }, [stream, currentLevel, studentEmail, glossarySearch]);
 
   const selectTest = async (slug: string) => {
     setLoading(true);
@@ -274,7 +275,7 @@ const App = () => {
 
   const navItems = useMemo(
     () => [
-      { key: "dashboard" as Section, label: t("nav.dashboard") },
+      { key: "readings" as Section, label: t("nav.readings") },
       { key: "materials" as Section, label: t("nav.materials") },
       { key: "exercises" as Section, label: t("nav.exercises") },
       { key: "tests" as Section, label: t("nav.tests") },
@@ -333,10 +334,10 @@ const App = () => {
 
   const renderSectionContent = () => {
     switch (activeSection) {
-      case "dashboard":
+      case "readings":
         return (
           <>
-            <h2>{t("nav.dashboard")}</h2>
+            <h2>{t("nav.readings")}</h2>
             {readings.length === 0 ? (
               <p className="muted">{t("readings.empty")}</p>
             ) : (
@@ -524,6 +525,14 @@ const App = () => {
         return (
           <>
             <h2>{t("nav.glossary")}</h2>
+            <div className="search-row">
+              <input
+                type="search"
+                placeholder={t("glossarySearchPlaceholder")}
+                value={glossarySearch}
+                onChange={(e) => setGlossarySearch(e.target.value)}
+              />
+            </div>
             {glossary.length === 0 ? (
               <p className="muted">{t("emptyList")}</p>
             ) : (

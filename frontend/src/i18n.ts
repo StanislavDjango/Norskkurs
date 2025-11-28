@@ -115,6 +115,7 @@ const resources = {
         hideTranslation: "Hide translation",
         empty: "No reading texts yet for this level/stream.",
       },
+      glossarySearchPlaceholder: "Search a word...",
     },
   },
   nb: {
@@ -230,6 +231,7 @@ const resources = {
         hideTranslation: "Skjul oversettelse",
         empty: "Ingen tekster ennå for denne retningen/nivået.",
       },
+      glossarySearchPlaceholder: "Søk etter ord...",
     },
   },
   ru: {
@@ -345,6 +347,7 @@ const resources = {
         hideTranslation: "Скрыть перевод",
         empty: "Пока нет текстов для этого направления/уровня.",
       },
+      glossarySearchPlaceholder: "Найдите слово...",
     },
   },
 };

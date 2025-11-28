@@ -19,5 +19,6 @@
 - VS Code: обновлён `.vscode/settings.json` (format on save, Prettier как форматтер для JS/TS, включён для Python).
 - Direnv: в копии `/home/strengerst/Norskkurs` скопирован `.envrc` (из `/mnt/e/Norskkurs`) и разрешён `direnv allow` — venv активируется автоматически при входе.
 - Добавлен раздел чтений: модель `Reading` + API `/api/readings/` (list/retrieve по slug), сиды с тремя текстами (bokmål, nynorsk, english) и переводом; админка `Readings` для учителя. Фронт: вкладка «Читать рассказы» с кнопкой показа перевода.
+- Docker-compose: frontend теперь собирается из `./frontend` с `VITE_API_BASE_URL=http://backend:8000/api/` (build args + env), чтобы фронт ходил на локальный backend.
 
 Применить настройки профиля: открыть новую сессию PowerShell. Для Unix-утилит можно использовать новую сессию PowerShell (после обновления профиля) или Git Bash/WSL.

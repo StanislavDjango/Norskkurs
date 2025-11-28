@@ -367,9 +367,15 @@ class GlossaryTermViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     def get_queryset(self):
         qs = GlossaryTerm.objects.all()
-        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by(
-            "term"
-        )
+        qs = FilteredStreamLevelMixin.filter_by_stream_level(self, qs)
+        search_term = (self.request.query_params.get("q") or "").strip()
+        if search_term:
+            qs = qs.filter(
+                models.Q(term__icontains=search_term)
+                | models.Q(translation__icontains=search_term)
+                | models.Q(explanation__icontains=search_term)
+            )
+        return qs.order_by("term")
 
 
 class ReadingViewSet(

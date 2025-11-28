@@ -3,6 +3,7 @@ import type {
   AnswerPayload,
   Exercise,
   GlossaryTerm,
+  GlossarySearchParams,
   Homework,
   Material,
   ProfileInfo,
@@ -91,7 +92,7 @@ export const fetchExpressions = async (params?: FilterParams): Promise<Expressio
   return res.data;
 };
 
-export const fetchGlossary = async (params?: FilterParams): Promise<GlossaryTerm[]> => {
+export const fetchGlossary = async (params?: GlossarySearchParams): Promise<GlossaryTerm[]> => {
   const res = await api.get<GlossaryTerm[]>("glossary/", { params });
   return res.data;
 };
