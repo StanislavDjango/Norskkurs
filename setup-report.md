@@ -9,5 +9,9 @@
 - В Windows контейнеры старого сайта остановлены: из `E:\Norskkurs` выполнен `docker compose down`; дополнительно остановлен `saytnorsk_frontend`. Текущий `docker ps` пуст.
 - 16:55 подняты контейнеры в WSL: `docker compose up --build -d` в `~/Norskkurs` (предупреждение про `version` в compose). Статус: backend Up (127.0.0.1:8000), frontend Up (0.0.0.0:5173), db healthy.
 - Исправлен перевод меню (ru `nav.dashboard` → «Читать рассказы»), пересобран frontend-образ в WSL (`docker build -t stanyslav/norskkurs-frontend:latest frontend`), перезапущен frontend (`docker compose up -d frontend`). Теперь локальный образ с обновлёнными строками.
+- Добавлен Makefile с удобными целями (`up`, `down`, `ps`, `logs`, `backend-test`, `frontend-build`, `install-*`).
+- В WSL поставлен nvm + Node 22.21.1 (`~/.nvm`, alias default 22); выполнен `npm install` в `~/Norskkurs/frontend`.
+- В `~/.bashrc` добавлены алиасы: `dcu/dcd/dps/dcl` (docker compose из `~/Norskkurs`), `mkproj` (make в корне проекта).
+- Установлен `python3.12-venv` (WSL), создан venv в `~/Norskkurs/.venv`, установлены зависимости `pip install -r backend/requirements.txt`.
 
 Применить настройки профиля: открыть новую сессию PowerShell. Для Unix-утилит можно использовать новую сессию PowerShell (после обновления профиля) или Git Bash/WSL.
