@@ -98,7 +98,7 @@ const resources = {
         B2: "B2 - Upper intermediate",
       },
       nav: {
-        dashboard: "Dashboard",
+        dashboard: "Readings",
         materials: "Materialer",
         exercises: "Øvinger",
         tests: "Test",
@@ -207,7 +207,7 @@ const resources = {
         B2: "B2 - Høyere mellomnivå",
       },
       nav: {
-        dashboard: "Dashbord",
+        dashboard: "Lesing",
         materials: "Materialer",
         exercises: "Øvinger",
         tests: "Test",
@@ -316,7 +316,7 @@ const resources = {
         B2: "B2 - Выше среднего",
       },
       nav: {
-        dashboard: "Дашборд",
+        dashboard: "Читать рассказы",
         materials: "Материалы",
         exercises: "Упражнения",
         tests: "Тест",
