@@ -13,5 +13,9 @@
 - В WSL поставлен nvm + Node 22.21.1 (`~/.nvm`, alias default 22); выполнен `npm install` в `~/Norskkurs/frontend`.
 - В `~/.bashrc` добавлены алиасы: `dcu/dcd/dps/dcl` (docker compose из `~/Norskkurs`), `mkproj` (make в корне проекта).
 - Установлен `python3.12-venv` (WSL), создан venv в `~/Norskkurs/.venv`, установлены зависимости `pip install -r backend/requirements.txt`.
+- Установлен direnv (`apt-get install direnv`), в `~/.bashrc` добавлен hook; добавлен `.envrc` для активации `.venv` через `layout activate`.
+- Настроен pre-commit: установлен в venv (`pip install pre-commit black isort`), добавлен `.pre-commit-config.yaml` и выполнен `pre-commit install`.
+- Frontend: добавлены ESLint/Prettier конфиги (`frontend/.eslintrc.cjs`, `.prettierrc`), скрипты `npm run lint/format`, обновлены devDependencies; `npm install` выполнен (package-lock обновлён).
+- VS Code: обновлён `.vscode/settings.json` (format on save, Prettier как форматтер для JS/TS, включён для Python).
 
 Применить настройки профиля: открыть новую сессию PowerShell. Для Unix-утилит можно использовать новую сессию PowerShell (после обновления профиля) или Git Bash/WSL.
