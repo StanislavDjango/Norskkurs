@@ -157,3 +157,14 @@ export interface GlossaryTerm {
   level: Level;
   tags: string[];
 }
+
+export interface Reading {
+  id: number;
+  title: string;
+  slug: string;
+  stream: Stream;
+  level: Level;
+  body: string;
+  translation: string;
+  tags: string[];
+}

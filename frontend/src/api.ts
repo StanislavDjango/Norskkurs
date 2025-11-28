@@ -6,6 +6,7 @@ import type {
   Homework,
   Material,
   ProfileInfo,
+  Reading,
   Stream,
   SubmissionResponse,
   Test,
@@ -92,5 +93,10 @@ export const fetchExpressions = async (params?: FilterParams): Promise<Expressio
 
 export const fetchGlossary = async (params?: FilterParams): Promise<GlossaryTerm[]> => {
   const res = await api.get<GlossaryTerm[]>("glossary/", { params });
+  return res.data;
+};
+
+export const fetchReadings = async (params?: FilterParams): Promise<Reading[]> => {
+  const res = await api.get<Reading[]>("readings/", { params });
   return res.data;
 };

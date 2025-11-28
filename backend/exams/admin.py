@@ -19,6 +19,7 @@ from .models import (
     Material,
     Option,
     Question,
+    Reading,
     StudentProfile,
     Submission,
     Test,
@@ -41,7 +42,14 @@ class QuestionInline(admin.StackedInline):
 
 @admin.register(Test)
 class TestAdmin(admin.ModelAdmin):
-    list_display = ("title", "stream", "level", "is_published", "question_count", "updated_at")
+    list_display = (
+        "title",
+        "stream",
+        "level",
+        "is_published",
+        "question_count",
+        "updated_at",
+    )
     list_filter = ("stream", "level", "is_published")
     search_fields = ("title", "description", "slug")
     prepopulated_fields = {"slug": ("title",)}
@@ -66,7 +74,15 @@ class AnswerInline(admin.TabularInline):
 
 @admin.register(Submission)
 class SubmissionAdmin(admin.ModelAdmin):
-    list_display = ("test", "name", "email", "score", "total_questions", "percent", "created_at")
+    list_display = (
+        "test",
+        "name",
+        "email",
+        "score",
+        "total_questions",
+        "percent",
+        "created_at",
+    )
     list_filter = ("test__level", "created_at")
     search_fields = ("name", "email")
     readonly_fields = ("score", "total_questions", "percent", "created_at")
@@ -96,35 +112,73 @@ class AssignmentAdmin(admin.ModelAdmin):
 
 @admin.register(StudentProfile)
 class StudentProfileAdmin(admin.ModelAdmin):
-    list_display = ("email", "stream", "level", "allow_stream_change", "teacher", "updated_at")
+    list_display = (
+        "email",
+        "stream",
+        "level",
+        "allow_stream_change",
+        "teacher",
+        "updated_at",
+    )
     search_fields = ("email",)
     list_filter = ("stream", "level", "allow_stream_change")
 
 
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin):
-    list_display = ("title", "stream", "level", "material_type", "is_published", "assigned_to_email")
+    list_display = (
+        "title",
+        "stream",
+        "level",
+        "material_type",
+        "is_published",
+        "assigned_to_email",
+    )
     search_fields = ("title", "tags")
     list_filter = ("stream", "level", "material_type", "is_published")
 
 
+@admin.register(Reading)
+class ReadingAdmin(admin.ModelAdmin):
+    list_display = ("title", "stream", "level", "is_published", "updated_at")
+    search_fields = ("title", "tags", "body")
+    list_filter = ("stream", "level", "is_published")
+    prepopulated_fields = {"slug": ("title",)}
+
+
 @admin.register(Homework)
 class HomeworkAdmin(admin.ModelAdmin):
-    list_display = ("title", "stream", "level", "status", "due_date", "assigned_to_email")
+    list_display = (
+        "title",
+        "stream",
+        "level",
+        "status",
+        "due_date",
+        "assigned_to_email",
+    )
     search_fields = ("title", "instructions")
     list_filter = ("stream", "level", "status")
 
 
 @admin.register(Exercise)
 class ExerciseAdmin(admin.ModelAdmin):
-    list_display = ("title", "stream", "level", "kind", "estimated_minutes", "assigned_to_email")
+    list_display = (
+        "title",
+        "stream",
+        "level",
+        "kind",
+        "estimated_minutes",
+        "assigned_to_email",
+    )
     search_fields = ("title", "prompt", "tags")
     list_filter = ("stream", "level", "kind")
 
 
 class VerbImportForm(forms.Form):
     csv_file = forms.FileField(label=_("CSV file"))
-    update_existing = forms.BooleanField(required=False, label=_("Update existing entries"))
+    update_existing = forms.BooleanField(
+        required=False, label=_("Update existing entries")
+    )
 
 
 @admin.register(VerbEntry)
@@ -195,7 +249,9 @@ class VerbEntryAdmin(admin.ModelAdmin):
             "form": form,
             "title": _("Import verbs from CSV"),
         }
-        return TemplateResponse(request, "admin/exams/verbentry/import_csv.html", context)
+        return TemplateResponse(
+            request, "admin/exams/verbentry/import_csv.html", context
+        )
 
 
 @admin.register(Expression)

@@ -99,6 +99,7 @@ const resources = {
       },
       nav: {
         dashboard: "Readings",
+        readings: "Readings",
         materials: "Materialer",
         exercises: "Øvinger",
         tests: "Test",
@@ -108,6 +109,11 @@ const resources = {
         expressions: "Uttrykk",
         glossary: "Ordliste",
         contact: "Kontakt",
+      },
+      readings: {
+        showTranslation: "Show translation",
+        hideTranslation: "Hide translation",
+        empty: "No reading texts yet for this level/stream.",
       },
     },
   },
@@ -208,6 +214,7 @@ const resources = {
       },
       nav: {
         dashboard: "Lesing",
+        readings: "Lesing",
         materials: "Materialer",
         exercises: "Øvinger",
         tests: "Test",
@@ -217,6 +224,11 @@ const resources = {
         expressions: "Uttrykk",
         glossary: "Ordliste",
         contact: "Kontakt",
+      },
+      readings: {
+        showTranslation: "Vis oversettelse",
+        hideTranslation: "Skjul oversettelse",
+        empty: "Ingen tekster ennå for denne retningen/nivået.",
       },
     },
   },
@@ -317,6 +329,7 @@ const resources = {
       },
       nav: {
         dashboard: "Читать рассказы",
+        readings: "Читать рассказы",
         materials: "Материалы",
         exercises: "Упражнения",
         tests: "Тест",
@@ -326,6 +339,11 @@ const resources = {
         expressions: "Выражения",
         glossary: "Глоссарий",
         contact: "Контакты",
+      },
+      readings: {
+        showTranslation: "Показать перевод",
+        hideTranslation: "Скрыть перевод",
+        empty: "Пока нет текстов для этого направления/уровня.",
       },
     },
   },

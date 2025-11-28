@@ -72,7 +72,9 @@ class Question(models.Model):
 
 
 class Option(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="options")
+    question = models.ForeignKey(
+        Question, on_delete=models.CASCADE, related_name="options"
+    )
     text = models.CharField(max_length=255)
     is_correct = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=1)
@@ -92,7 +94,9 @@ class Submission(models.Model):
     total_questions = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     locale = models.CharField(
-        max_length=5, choices=[("en", "English"), ("nb", "Norsk"), ("ru", "Russian")], default="en"
+        max_length=5,
+        choices=[("en", "English"), ("nb", "Norsk"), ("ru", "Russian")],
+        default="en",
     )
 
     class Meta:
@@ -132,7 +136,11 @@ class Assignment(models.Model):
     test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="assignments")
     student_email = models.EmailField()
     assigned_by = models.ForeignKey(
-        "auth.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_tests"
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_tests",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField(null=True, blank=True)
@@ -157,7 +165,9 @@ class StudentProfile(models.Model):
         related_name="student_profile",
     )
     email = models.EmailField(unique=True)
-    stream = models.CharField(max_length=20, choices=Stream.choices, default=Stream.BOKMAAL)
+    stream = models.CharField(
+        max_length=20, choices=Stream.choices, default=Stream.BOKMAAL
+    )
     level = models.CharField(max_length=2, choices=Level.choices, default=Level.A1)
     allow_stream_change = models.BooleanField(default=True)
     teacher = models.ForeignKey(
@@ -184,14 +194,43 @@ class Material(models.Model):
         AUDIO = "audio", _("Audio")
 
     title = models.CharField(max_length=255)
-    stream = models.CharField(max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL)
-    level = models.CharField(max_length=2, choices=Test.Level.choices, default=Test.Level.A1)
-    material_type = models.CharField(max_length=10, choices=MaterialType.choices, default=MaterialType.TEXT)
+    stream = models.CharField(
+        max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL
+    )
+    level = models.CharField(
+        max_length=2, choices=Test.Level.choices, default=Test.Level.A1
+    )
+    material_type = models.CharField(
+        max_length=10, choices=MaterialType.choices, default=MaterialType.TEXT
+    )
     body = models.TextField(blank=True)
     url = models.URLField(blank=True)
     tags = models.JSONField(default=list, blank=True)
     is_published = models.BooleanField(default=True)
     assigned_to_email = models.EmailField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["level", "title"]
+
+    def __str__(self) -> str:
+        return f"{self.title} ({self.stream}, {self.level})"
+
+
+class Reading(models.Model):
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True)
+    stream = models.CharField(
+        max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL
+    )
+    level = models.CharField(
+        max_length=2, choices=Test.Level.choices, default=Test.Level.A1
+    )
+    body = models.TextField()
+    translation = models.TextField(blank=True)
+    tags = models.JSONField(default=list, blank=True)
+    is_published = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -209,12 +248,18 @@ class Homework(models.Model):
         CLOSED = "closed", _("Closed")
 
     title = models.CharField(max_length=255)
-    stream = models.CharField(max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL)
-    level = models.CharField(max_length=2, choices=Test.Level.choices, default=Test.Level.A1)
+    stream = models.CharField(
+        max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL
+    )
+    level = models.CharField(
+        max_length=2, choices=Test.Level.choices, default=Test.Level.A1
+    )
     due_date = models.DateTimeField(null=True, blank=True)
     instructions = models.TextField()
     attachments = models.JSONField(default=list, blank=True)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PUBLISHED)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PUBLISHED
+    )
     assigned_to_email = models.EmailField(blank=True, null=True)
     student_submission = models.TextField(blank=True)
     feedback = models.TextField(blank=True)
@@ -242,9 +287,15 @@ class Exercise(models.Model):
         FLASHCARD = "flashcard", _("Flashcard")
 
     title = models.CharField(max_length=255)
-    stream = models.CharField(max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL)
-    level = models.CharField(max_length=2, choices=Test.Level.choices, default=Test.Level.A1)
-    kind = models.CharField(max_length=20, choices=ExerciseKind.choices, default=ExerciseKind.QUIZ)
+    stream = models.CharField(
+        max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL
+    )
+    level = models.CharField(
+        max_length=2, choices=Test.Level.choices, default=Test.Level.A1
+    )
+    kind = models.CharField(
+        max_length=20, choices=ExerciseKind.choices, default=ExerciseKind.QUIZ
+    )
     prompt = models.TextField(blank=True)
     data = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(default=list, blank=True)
@@ -262,7 +313,9 @@ class Exercise(models.Model):
 
 class VerbEntry(models.Model):
     verb = models.CharField(max_length=120)
-    stream = models.CharField(max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL)
+    stream = models.CharField(
+        max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL
+    )
     infinitive = models.CharField(max_length=120)
     present = models.CharField(max_length=120)
     past = models.CharField(max_length=120)
@@ -289,7 +342,9 @@ class Expression(models.Model):
     phrase = models.CharField(max_length=255)
     meaning = models.TextField()
     example = models.TextField(blank=True)
-    stream = models.CharField(max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL)
+    stream = models.CharField(
+        max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL
+    )
     tags = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -305,8 +360,12 @@ class GlossaryTerm(models.Model):
     term = models.CharField(max_length=255)
     translation = models.CharField(max_length=255, blank=True)
     explanation = models.TextField(blank=True)
-    stream = models.CharField(max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL)
-    level = models.CharField(max_length=2, choices=Test.Level.choices, default=Test.Level.A1)
+    stream = models.CharField(
+        max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL
+    )
+    level = models.CharField(
+        max_length=2, choices=Test.Level.choices, default=Test.Level.A1
+    )
     tags = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

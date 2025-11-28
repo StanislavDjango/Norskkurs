@@ -9,6 +9,7 @@ import {
   fetchGlossary,
   fetchHomework,
   fetchMaterials,
+  fetchReadings,
   fetchProfile,
   fetchTestDetail,
   fetchTests,
@@ -23,6 +24,7 @@ import type {
   GlossaryTerm,
   Homework,
   Material,
+  Reading,
   Question,
   QuestionReview,
   ProfileInfo,
@@ -81,6 +83,8 @@ const App = () => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [expressions, setExpressions] = useState<Expression[]>([]);
   const [glossary, setGlossary] = useState<GlossaryTerm[]>([]);
+  const [readings, setReadings] = useState<Reading[]>([]);
+  const [openTranslations, setOpenTranslations] = useState<Set<number>>(new Set());
   const [isNavOpen, setIsNavOpen] = useState(false);
 
   useEffect(() => {
@@ -136,6 +140,15 @@ const App = () => {
     fetchExercises(params).then(setExercises).catch(() => setExercises([]));
     fetchExpressions(params).then(setExpressions).catch(() => setExpressions([]));
     fetchGlossary(params).then(setGlossary).catch(() => setGlossary([]));
+    fetchReadings(params)
+      .then((data) => {
+        setReadings(data);
+        setOpenTranslations(new Set());
+      })
+      .catch(() => {
+        setReadings([]);
+        setOpenTranslations(new Set());
+      });
   }, [stream, currentLevel, studentEmail]);
 
   const selectTest = async (slug: string) => {
@@ -324,40 +337,55 @@ const App = () => {
         return (
           <>
             <h2>{t("nav.dashboard")}</h2>
-            <div className="grid">
-              <div className="card info">
-                <p className="muted small">{t("currentStream")}</p>
-                <h3>{streamLabel(stream)}</h3>
-                <p className="muted small">{t("currentLevel")}: {levelLabel(currentLevel)}</p>
+            {readings.length === 0 ? (
+              <p className="muted">{t("readings.empty")}</p>
+            ) : (
+              <div className="card-list">
+                {readings.map((item) => {
+                  const isOpen = openTranslations.has(item.id);
+                  return (
+                    <article key={item.id} className="card">
+                      <div className="card-meta">
+                        <span className="badge">{streamLabel(item.stream)}</span>
+                        <span className="badge">{item.level}</span>
+                        {item.tags && item.tags.length > 0 && (
+                          <span className="badge ghost">{item.tags.join(", ")}</span>
+                        )}
+                      </div>
+                      <h3>{item.title}</h3>
+                      <div className="muted small">
+                        {item.body.split(/\\n+/).map((para, idx) => (
+                          <p key={idx}>{para}</p>
+                        ))}
+                      </div>
+                      <button
+                        className="ghost"
+                        onClick={() => {
+                          setOpenTranslations((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(item.id)) {
+                              next.delete(item.id);
+                            } else {
+                              next.add(item.id);
+                            }
+                            return next;
+                          });
+                        }}
+                      >
+                        {isOpen ? t("readings.hideTranslation") : t("readings.showTranslation")}
+                      </button>
+                      {isOpen && (
+                        <div className="muted small">
+                          {item.translation.split(/\\n+/).map((para, idx) => (
+                            <p key={idx}>{para}</p>
+                          ))}
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
               </div>
-              <div className="card">
-                <p className="muted small">{t("summary.tests")}</p>
-                <strong>{tests.length}</strong>
-              </div>
-              <div className="card">
-                <p className="muted small">{t("summary.materials")}</p>
-                <strong>{materials.length}</strong>
-              </div>
-              <div className="card">
-                <p className="muted small">{t("summary.homework")}</p>
-                <strong>{homework.length}</strong>
-              </div>
-            </div>
-            <div className="card">
-              <h3>{t("summary.quickStart")}</h3>
-              <p className="muted">{t("summary.quickHint")}</p>
-              <div className="pill-row">
-                <button className="pill pill--active" onClick={() => setActiveSection("exercises")}>
-                  {t("nav.exercises")}
-                </button>
-                <button className="pill pill--active" onClick={() => setActiveSection("tests")}>
-                  {t("nav.tests")}
-                </button>
-                <button className="pill pill--active" onClick={() => setActiveSection("materials")}>
-                  {t("nav.materials")}
-                </button>
-              </div>
-            </div>
+            )}
           </>
         );
       case "materials":
@@ -551,7 +579,7 @@ const App = () => {
           onClick={() => setIsNavOpen((o) => !o)}
           aria-expanded={isNavOpen}
         >
-          {"Menu \u2192 "} 
+          {"Menu \u2192 "}
           {navItems.find((n) => n.key === activeSection)?.label || "Menu"}
         </button>
       </div>
@@ -842,5 +870,3 @@ const QuestionBlock = React.forwardRef<HTMLDivElement, QuestionBlockProps>(
 QuestionBlock.displayName = "QuestionBlock";
 
 export default App;
-
-

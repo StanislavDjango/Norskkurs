@@ -5,9 +5,9 @@ from typing import Any, Dict, Optional
 from django.contrib.auth import logout
 from django.db import models, transaction
 from rest_framework import mixins, status, viewsets
+from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.authentication import SessionAuthentication
 
 from .models import (
     Answer,
@@ -19,6 +19,7 @@ from .models import (
     Material,
     Option,
     Question,
+    Reading,
     StudentProfile,
     Submission,
     Test,
@@ -33,6 +34,7 @@ from .serializers import (
     GlossaryTermSerializer,
     HomeworkSerializer,
     MaterialSerializer,
+    ReadingSerializer,
     StudentProfileSerializer,
     SubmissionSerializer,
     TestDetailSerializer,
@@ -53,7 +55,9 @@ class TestViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_value_regex = "[^/]+"
 
     def get_queryset(self):
-        base_qs = Test.objects.filter(is_published=True).prefetch_related("questions__options")
+        base_qs = Test.objects.filter(is_published=True).prefetch_related(
+            "questions__options"
+        )
         stream = (self.request.query_params.get("stream") or "").strip().lower()
         level = (self.request.query_params.get("level") or "").strip().upper()
         if stream:
@@ -64,12 +68,12 @@ class TestViewSet(viewsets.ReadOnlyModelViewSet):
         if not email:
             return base_qs.filter(is_restricted=False).order_by("level", "title")
 
-        allowed_ids = Assignment.objects.filter(
-            student_email=email
-        ).values_list("test_id", flat=True)
-        return base_qs.filter(models.Q(is_restricted=False) | models.Q(id__in=allowed_ids)).order_by(
-            "level", "title"
+        allowed_ids = Assignment.objects.filter(student_email=email).values_list(
+            "test_id", flat=True
         )
+        return base_qs.filter(
+            models.Q(is_restricted=False) | models.Q(id__in=allowed_ids)
+        ).order_by("level", "title")
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -82,7 +86,9 @@ class TestViewSet(viewsets.ReadOnlyModelViewSet):
         test = self.get_object()
         email = (request.data.get("email") or "").strip().lower()
         if test.is_restricted and email:
-            has_assignment = Assignment.objects.filter(test=test, student_email=email).exists()
+            has_assignment = Assignment.objects.filter(
+                test=test, student_email=email
+            ).exists()
             if not has_assignment:
                 return Response(
                     {"detail": "This test is restricted. Ask your teacher for access."},
@@ -134,7 +140,9 @@ class TestViewSet(viewsets.ReadOnlyModelViewSet):
                     for option in question.options.filter(is_correct=True)
                 ]
                 normalized_response = text_response.strip().casefold()
-                is_correct = normalized_response in correct_texts if correct_texts else False
+                is_correct = (
+                    normalized_response in correct_texts if correct_texts else False
+                )
 
             if is_correct:
                 score += 1
@@ -204,7 +212,9 @@ class ProfileViewSet(viewsets.ViewSet):
         is_teacher = bool(is_authenticated and (user.is_staff or user.is_superuser))
         display_name = ""
         username = ""
-        student_email = (request.query_params.get("student_email") or "").strip().lower()
+        student_email = (
+            (request.query_params.get("student_email") or "").strip().lower()
+        )
         profile_email = student_email or getattr(user, "email", "") or ""
         profile = None
         if profile_email:
@@ -246,11 +256,19 @@ class ProfileViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["post"])
     def stream(self, request):
-        email = (request.data.get("email") or request.data.get("student_email") or "").strip().lower()
+        email = (
+            (request.data.get("email") or request.data.get("student_email") or "")
+            .strip()
+            .lower()
+        )
         if not email:
-            return Response({"detail": "Email required to update stream."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Email required to update stream."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         profile, _ = StudentProfile.objects.get_or_create(
-            email=email, defaults={"stream": Test.Stream.BOKMAAL, "level": Test.Level.A1}
+            email=email,
+            defaults={"stream": Test.Stream.BOKMAAL, "level": Test.Level.A1},
         )
         if not profile.allow_stream_change:
             return Response(
@@ -275,35 +293,50 @@ class FilteredStreamLevelMixin:
         if level and hasattr(qs.model, "level"):
             qs = qs.filter(level=level)
         if hasattr(qs.model, "assigned_to_email") and email:
-            qs = qs.filter(models.Q(assigned_to_email__isnull=True) | models.Q(assigned_to_email=email))
+            qs = qs.filter(
+                models.Q(assigned_to_email__isnull=True)
+                | models.Q(assigned_to_email=email)
+            )
         return qs
 
 
-class MaterialViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+class MaterialViewSet(
+    mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
+):
     authentication_classes = (CsrfExemptSessionAuthentication,)
     serializer_class = MaterialSerializer
 
     def get_queryset(self):
         qs = Material.objects.filter(is_published=True)
-        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by("level", "title")
+        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by(
+            "level", "title"
+        )
 
 
-class HomeworkViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+class HomeworkViewSet(
+    mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
+):
     authentication_classes = (CsrfExemptSessionAuthentication,)
     serializer_class = HomeworkSerializer
 
     def get_queryset(self):
         qs = Homework.objects.filter(status=Homework.Status.PUBLISHED)
-        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by("-due_date", "-created_at")
+        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by(
+            "-due_date", "-created_at"
+        )
 
 
-class ExerciseViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+class ExerciseViewSet(
+    mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
+):
     authentication_classes = (CsrfExemptSessionAuthentication,)
     serializer_class = ExerciseSerializer
 
     def get_queryset(self):
         qs = Exercise.objects.all()
-        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by("level", "title")
+        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by(
+            "level", "title"
+        )
 
 
 class VerbEntryViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -312,7 +345,9 @@ class VerbEntryViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     def get_queryset(self):
         qs = VerbEntry.objects.all()
-        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by("verb")
+        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by(
+            "verb"
+        )
 
 
 class ExpressionViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -321,7 +356,9 @@ class ExpressionViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     def get_queryset(self):
         qs = Expression.objects.all()
-        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by("phrase")
+        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by(
+            "phrase"
+        )
 
 
 class GlossaryTermViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -330,4 +367,21 @@ class GlossaryTermViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     def get_queryset(self):
         qs = GlossaryTerm.objects.all()
-        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by("term")
+        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by(
+            "term"
+        )
+
+
+class ReadingViewSet(
+    mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
+):
+    authentication_classes = (CsrfExemptSessionAuthentication,)
+    serializer_class = ReadingSerializer
+    lookup_field = "slug"
+    lookup_value_regex = "[^/]+"
+
+    def get_queryset(self):
+        qs = Reading.objects.filter(is_published=True)
+        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by(
+            "level", "title"
+        )

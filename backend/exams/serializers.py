@@ -10,6 +10,7 @@ from .models import (
     Material,
     Option,
     Question,
+    Reading,
     StudentProfile,
     Submission,
     Test,
@@ -65,7 +66,9 @@ class TestDetailSerializer(TestListSerializer):
 class AnswerInputSerializer(serializers.Serializer):
     question = serializers.IntegerField()
     selected_option = serializers.IntegerField(required=False, allow_null=True)
-    text_response = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    text_response = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
 
 
 class SubmissionSerializer(serializers.ModelSerializer):
@@ -73,7 +76,16 @@ class SubmissionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Submission
-        fields = ("id", "test", "name", "email", "score", "total_questions", "percent", "created_at")
+        fields = (
+            "id",
+            "test",
+            "name",
+            "email",
+            "score",
+            "total_questions",
+            "percent",
+            "created_at",
+        )
 
 
 class AnswerSerializer(serializers.ModelSerializer):
@@ -192,3 +204,21 @@ class GlossaryTermSerializer(serializers.ModelSerializer):
     class Meta:
         model = GlossaryTerm
         fields = ("id", "term", "translation", "explanation", "stream", "level", "tags")
+
+
+class ReadingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Reading
+        fields = (
+            "id",
+            "title",
+            "slug",
+            "stream",
+            "level",
+            "body",
+            "translation",
+            "tags",
+            "is_published",
+            "created_at",
+        )
+        read_only_fields = ("is_published", "created_at")
