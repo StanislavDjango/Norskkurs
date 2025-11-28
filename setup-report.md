@@ -18,5 +18,6 @@
 - Frontend: добавлены ESLint/Prettier конфиги (`frontend/.eslintrc.cjs`, `.prettierrc`), скрипты `npm run lint/format`, обновлены devDependencies; `npm install` выполнен (package-lock обновлён).
 - VS Code: обновлён `.vscode/settings.json` (format on save, Prettier как форматтер для JS/TS, включён для Python).
 - Direnv: в копии `/home/strengerst/Norskkurs` скопирован `.envrc` (из `/mnt/e/Norskkurs`) и разрешён `direnv allow` — venv активируется автоматически при входе.
+- Добавлен раздел чтений: модель `Reading` + API `/api/readings/` (list/retrieve по slug), сиды с тремя текстами (bokmål, nynorsk, english) и переводом; админка `Readings` для учителя. Фронт: вкладка «Читать рассказы» с кнопкой показа перевода.
 
 Применить настройки профиля: открыть новую сессию PowerShell. Для Unix-утилит можно использовать новую сессию PowerShell (после обновления профиля) или Git Bash/WSL.
