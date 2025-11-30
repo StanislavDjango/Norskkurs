@@ -140,7 +140,7 @@ const App = () => {
     fetchHomework(params).then(setHomework).catch(() => setHomework([]));
     fetchExercises(params).then(setExercises).catch(() => setExercises([]));
     fetchExpressions(params).then(setExpressions).catch(() => setExpressions([]));
-    fetchGlossary({ ...params, q: glossarySearch || undefined }).then(setGlossary).catch(() => setGlossary([]));
+    fetchGlossary({ stream, q: glossarySearch || undefined }).then(setGlossary).catch(() => setGlossary([]));
     fetchReadings(params)
       .then((data) => {
         setReadings(data);
@@ -541,7 +541,6 @@ const App = () => {
                   <article key={term.id} className="card">
                     <div className="card-meta">
                       <span className="badge">{streamLabel(term.stream)}</span>
-                      <span className="badge">{term.level}</span>
                     </div>
                     <h3>{term.term}</h3>
                     <p className="muted small">{term.translation}</p>
