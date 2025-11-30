@@ -203,7 +203,18 @@ class ExpressionSerializer(serializers.ModelSerializer):
 class GlossaryTermSerializer(serializers.ModelSerializer):
     class Meta:
         model = GlossaryTerm
-        fields = ("id", "term", "translation", "explanation", "stream", "level", "tags")
+        fields = (
+            "id",
+            "term",
+            "translation",
+            "translation_en",
+            "translation_ru",
+            "translation_nb",
+            "explanation",
+            "stream",
+            "level",
+            "tags",
+        )
 
 
 class ReadingSerializer(serializers.ModelSerializer):

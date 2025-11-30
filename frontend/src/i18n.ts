@@ -62,8 +62,6 @@ const resources = {
         past: "Past",
         perfect: "Perfect",
       },
-      alphabetAll: "All",
-      tagAll: "All topics",
       verbTabs: {
         all: "All verbs",
         favorites: "Bookmarks",
@@ -116,8 +114,6 @@ const resources = {
       empty: "No reading texts yet for this level/stream.",
     },
     glossarySearchPlaceholder: "Search a word...",
-    alphabetAll: "All",
-    tagAll: "All topics",
   },
 },
 nb: {
@@ -180,8 +176,6 @@ nb: {
         past: "Preteritum",
         perfect: "Perfektum",
       },
-      alphabetAll: "Alle",
-      tagAll: "Alle tema",
       verbTabs: {
         all: "Alle verb",
         favorites: "Mine favoritter",
@@ -234,8 +228,6 @@ nb: {
       empty: "Ingen tekster ennå for denne retningen/nivået.",
     },
     glossarySearchPlaceholder: "Søk etter ord...",
-    alphabetAll: "Alle",
-    tagAll: "Alle tema",
   },
 },
 ru: {
@@ -298,8 +290,6 @@ ru: {
         past: "Прошедшее",
         perfect: "Перфект",
       },
-      alphabetAll: "Все",
-      tagAll: "Все темы",
       verbTabs: {
         all: "Все глаголы",
         favorites: "Мой список",
@@ -352,8 +342,6 @@ ru: {
       empty: "Пока нет текстов для этого направления/уровня.",
     },
     glossarySearchPlaceholder: "Найдите слово...",
-    alphabetAll: "Все",
-    tagAll: "Все темы",
   },
 },
 };

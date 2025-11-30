@@ -547,6 +547,32 @@ const App = () => {
         return (
           <>
             <h2>{t("nav.glossary")}</h2>
+            <div className="filter-row level-row">
+              {glossaryLetters.map((letter) => (
+                <button
+                  key={letter}
+                  className={`pill ${glossaryLetter === letter ? "pill--active" : ""}`}
+                  onClick={() => setGlossaryLetter(letter)}
+                >
+                  {letter === "all" ? t("alphabetAll") : letter.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <div className="filter-row">
+              {glossaryTags.length === 0 ? (
+                <span className="muted small">{t("tagAll")}</span>
+              ) : (
+                glossaryTags.map((tag) => (
+                  <button
+                    key={tag}
+                    className={`pill ${glossaryTag === tag ? "pill--active" : ""}`}
+                    onClick={() => setGlossaryTag(tag)}
+                  >
+                    {tag === "all" ? t("tagAll") : tag}
+                  </button>
+                ))
+              )}
+            </div>
             <div className="search-row">
               <input
                 type="search"
@@ -559,28 +585,6 @@ const App = () => {
               <p className="muted">{t("emptyList")}</p>
             ) : (
               <div className="card-list">
-                <div className="filter-row level-row">
-                  {glossaryLetters.map((letter) => (
-                    <button
-                      key={letter}
-                      className={`pill ${glossaryLetter === letter ? "pill--active" : ""}`}
-                      onClick={() => setGlossaryLetter(letter)}
-                    >
-                      {letter === "all" ? t("alphabetAll") : letter.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-                <div className="filter-row">
-                  {glossaryTags.map((tag) => (
-                    <button
-                      key={tag}
-                      className={`pill ${glossaryTag === tag ? "pill--active" : ""}`}
-                      onClick={() => setGlossaryTag(tag)}
-                    >
-                      {tag === "all" ? t("tagAll") : tag}
-                    </button>
-                  ))}
-                </div>
                 {filteredGlossary.map((term) => (
                   <article key={term.id} className="card">
                     <div className="card-meta">
@@ -589,9 +593,9 @@ const App = () => {
                     <h3>{term.term}</h3>
                     <p className="muted small">{term.translation}</p>
                     <p className="muted small">
-                      {term.translation_en && <span>{term.translation_en}</span>}
-                      {term.translation_ru && <span> · {term.translation_ru}</span>}
-                      {term.translation_nb && <span> · {term.translation_nb}</span>}
+                      {[term.translation_en, term.translation_ru, term.translation_nb]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                     <p className="muted small">{term.explanation}</p>
                   </article>

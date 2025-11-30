@@ -7,6 +7,9 @@ def seed_glossary(apps, schema_editor):
         {
             "term": "kafe",
             "translation": "café",
+            "translation_en": "café",
+            "translation_ru": "кафе",
+            "translation_nb": "kafe",
             "explanation": "En liten kafe i byen, eksempel: Vi møtes på kafe etter timen.",
             "stream": "bokmaal",
             "level": "A2",
@@ -15,6 +18,9 @@ def seed_glossary(apps, schema_editor):
         {
             "term": "notatbok",
             "translation": "notebook",
+            "translation_en": "notebook",
+            "translation_ru": "блокнот",
+            "translation_nb": "notatbok",
             "explanation": "Ei bok for å skrive nye ord, eksempel: Han skriver setninger i notatboka.",
             "stream": "nynorsk",
             "level": "A2",
@@ -23,6 +29,9 @@ def seed_glossary(apps, schema_editor):
         {
             "term": "practice",
             "translation": "практика",
+            "translation_en": "practice",
+            "translation_ru": "практика",
+            "translation_nb": "øving",
             "explanation": "To practice Norwegian at a café, example: We practice new words together.",
             "stream": "english",
             "level": "A2",
@@ -49,4 +58,3 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(seed_glossary, reverse_code=unseed_glossary),
     ]
-
