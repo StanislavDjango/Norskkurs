@@ -152,6 +152,9 @@ export interface GlossaryTerm {
   id: number;
   term: string;
   translation: string;
+  translation_en: string;
+  translation_ru: string;
+  translation_nb: string;
   explanation: string;
   stream: Stream;
   level: Level;

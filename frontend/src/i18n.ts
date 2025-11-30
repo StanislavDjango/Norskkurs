@@ -107,19 +107,21 @@ const resources = {
         verbs: "Verb",
         irregularVerbs: "Irregular verbs",
         expressions: "Uttrykk",
-        glossary: "Ordliste",
-        contact: "Kontakt",
-      },
-      readings: {
-        showTranslation: "Show translation",
-        hideTranslation: "Hide translation",
-        empty: "No reading texts yet for this level/stream.",
-      },
-      glossarySearchPlaceholder: "Search a word...",
+      glossary: "Ordliste",
+      contact: "Kontakt",
     },
+    readings: {
+      showTranslation: "Show translation",
+      hideTranslation: "Hide translation",
+      empty: "No reading texts yet for this level/stream.",
+    },
+    glossarySearchPlaceholder: "Search a word...",
+    alphabetAll: "All",
+    tagAll: "All topics",
   },
-  nb: {
-    translation: {
+},
+nb: {
+  translation: {
       appTitle: "Norskkurs nivåtester",
       appSubtitle: "Sjekk norsknivået ditt fra A1 til B2",
       selectTest: "Velg en test for å starte",
@@ -223,19 +225,21 @@ const resources = {
         verbs: "Verb",
         irregularVerbs: "Uregelmessige verb",
         expressions: "Uttrykk",
-        glossary: "Ordliste",
-        contact: "Kontakt",
-      },
-      readings: {
-        showTranslation: "Vis oversettelse",
-        hideTranslation: "Skjul oversettelse",
-        empty: "Ingen tekster ennå for denne retningen/nivået.",
-      },
-      glossarySearchPlaceholder: "Søk etter ord...",
+      glossary: "Ordliste",
+      contact: "Kontakt",
     },
+    readings: {
+      showTranslation: "Vis oversettelse",
+      hideTranslation: "Skjul oversettelse",
+      empty: "Ingen tekster ennå for denne retningen/nivået.",
+    },
+    glossarySearchPlaceholder: "Søk etter ord...",
+    alphabetAll: "Alle",
+    tagAll: "Alle tema",
   },
-  ru: {
-    translation: {
+},
+ru: {
+  translation: {
       appTitle: "Тесты по норвежскому",
       appSubtitle: "Определи свой уровень от A1 до B2",
       selectTest: "Выберите тест для начала",
@@ -339,17 +343,19 @@ const resources = {
         verbs: "Глаголы",
         irregularVerbs: "Irregular verbs",
         expressions: "Выражения",
-        glossary: "Глоссарий",
-        contact: "Контакты",
-      },
-      readings: {
-        showTranslation: "Показать перевод",
-        hideTranslation: "Скрыть перевод",
-        empty: "Пока нет текстов для этого направления/уровня.",
-      },
-      glossarySearchPlaceholder: "Найдите слово...",
+      glossary: "Глоссарий",
+      contact: "Контакты",
     },
+    readings: {
+      showTranslation: "Показать перевод",
+      hideTranslation: "Скрыть перевод",
+      empty: "Пока нет текстов для этого направления/уровня.",
+    },
+    glossarySearchPlaceholder: "Найдите слово...",
+    alphabetAll: "Все",
+    tagAll: "Все темы",
   },
+},
 };
 
 i18n.use(initReactI18next).init({

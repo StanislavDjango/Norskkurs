@@ -359,6 +359,9 @@ class Expression(models.Model):
 class GlossaryTerm(models.Model):
     term = models.CharField(max_length=255)
     translation = models.CharField(max_length=255, blank=True)
+    translation_en = models.CharField(max_length=255, blank=True, default="")
+    translation_ru = models.CharField(max_length=255, blank=True, default="")
+    translation_nb = models.CharField(max_length=255, blank=True, default="")
     explanation = models.TextField(blank=True)
     stream = models.CharField(
         max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL

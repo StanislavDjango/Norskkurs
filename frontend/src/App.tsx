@@ -87,6 +87,28 @@ const App = () => {
   const [readings, setReadings] = useState<Reading[]>([]);
   const [openTranslations, setOpenTranslations] = useState<Set<number>>(new Set());
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [glossaryLetter, setGlossaryLetter] = useState<string>("all");
+  const [glossaryTag, setGlossaryTag] = useState<string>("all");
+
+  const glossaryLetters = useMemo(() => ["all", ..."abcdefghijklmnopqrstuvwxyz"], []);
+  const glossaryTags = useMemo(() => {
+    const tagsSet = new Set<string>();
+    glossary.forEach((item) => (item.tags || []).forEach((t) => tagsSet.add(t)));
+    return ["all", ...Array.from(tagsSet).sort()];
+  }, [glossary]);
+
+  const filteredGlossary = useMemo(() => {
+    return glossary.filter((item) => {
+      if (glossaryLetter !== "all") {
+        const first = (item.term || "").charAt(0).toLowerCase();
+        if (first !== glossaryLetter) return false;
+      }
+      if (glossaryTag !== "all") {
+        if (!item.tags || !item.tags.includes(glossaryTag)) return false;
+      }
+      return true;
+    });
+  }, [glossary, glossaryLetter, glossaryTag]);
 
   useEffect(() => {
     localStorage.setItem("norskkurs_stream", stream);
@@ -537,13 +559,40 @@ const App = () => {
               <p className="muted">{t("emptyList")}</p>
             ) : (
               <div className="card-list">
-                {glossary.map((term) => (
+                <div className="filter-row level-row">
+                  {glossaryLetters.map((letter) => (
+                    <button
+                      key={letter}
+                      className={`pill ${glossaryLetter === letter ? "pill--active" : ""}`}
+                      onClick={() => setGlossaryLetter(letter)}
+                    >
+                      {letter === "all" ? t("alphabetAll") : letter.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+                <div className="filter-row">
+                  {glossaryTags.map((tag) => (
+                    <button
+                      key={tag}
+                      className={`pill ${glossaryTag === tag ? "pill--active" : ""}`}
+                      onClick={() => setGlossaryTag(tag)}
+                    >
+                      {tag === "all" ? t("tagAll") : tag}
+                    </button>
+                  ))}
+                </div>
+                {filteredGlossary.map((term) => (
                   <article key={term.id} className="card">
                     <div className="card-meta">
                       <span className="badge">{streamLabel(term.stream)}</span>
                     </div>
                     <h3>{term.term}</h3>
                     <p className="muted small">{term.translation}</p>
+                    <p className="muted small">
+                      {term.translation_en && <span>{term.translation_en}</span>}
+                      {term.translation_ru && <span> · {term.translation_ru}</span>}
+                      {term.translation_nb && <span> · {term.translation_nb}</span>}
+                    </p>
                     <p className="muted small">{term.explanation}</p>
                   </article>
                 ))}
