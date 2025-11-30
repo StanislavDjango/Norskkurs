@@ -20,5 +20,6 @@
 - Direnv: в копии `/home/strengerst/Norskkurs` скопирован `.envrc` (из `/mnt/e/Norskkurs`) и разрешён `direnv allow` — venv активируется автоматически при входе.
 - Добавлен раздел чтений: модель `Reading` + API `/api/readings/` (list/retrieve по slug), сиды с тремя текстами (bokmål, nynorsk, english) и переводом; админка `Readings` для учителя. Фронт: вкладка «Читать рассказы» с кнопкой показа перевода.
 - Docker-compose: frontend теперь собирается из `./frontend` с `VITE_API_BASE_URL=http://backend:8000/api/` (build args + env), чтобы фронт ходил на локальный backend.
+- Глоссарий: добавлен поиск по `q`, уровень больше не фильтрует выдачу; добавлены сиды 0010–0012. Проблема «пустой словарь» решена обновлением WSL-копии до `origin/main` (где есть миграция 0012_seed_glossary_extras) и применением миграций в контейнере (`docker compose exec backend python manage.py migrate`).
 
 Применить настройки профиля: открыть новую сессию PowerShell. Для Unix-утилит можно использовать новую сессию PowerShell (после обновления профиля) или Git Bash/WSL.
