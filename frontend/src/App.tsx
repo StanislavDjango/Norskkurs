@@ -86,6 +86,7 @@ const App = () => {
   const [glossarySearch, setGlossarySearch] = useState("");
   const [readings, setReadings] = useState<Reading[]>([]);
   const [openTranslations, setOpenTranslations] = useState<Set<number>>(new Set());
+  const [openGlossaryExamples, setOpenGlossaryExamples] = useState<Set<number>>(new Set());
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [glossaryLetter, setGlossaryLetter] = useState<string>("all");
   const [glossaryTag, setGlossaryTag] = useState<string>("all");
@@ -587,22 +588,66 @@ const App = () => {
             {glossary.length === 0 ? (
               <p className="muted">{t("emptyList")}</p>
             ) : (
-              <div className="card-list">
-                {filteredGlossary.map((term) => (
-                  <article key={term.id} className="card">
-                    <div className="card-meta">
-                      <span className="badge">{streamLabel(term.stream)}</span>
-                    </div>
-                    <h3>{term.term}</h3>
-                    <p className="muted small">{term.translation}</p>
-                    <p className="muted small">
-                      {[term.translation_en, term.translation_ru, term.translation_nb]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                    <p className="muted small">{term.explanation}</p>
-                  </article>
-                ))}
+              <div className="table-wrap">
+                <table className="simple-table">
+                  <thead>
+                    <tr>
+                      <th>{t("nav.glossary")}</th>
+                      <th>EN</th>
+                      <th>RU</th>
+                      <th>NB</th>
+                      <th>{t("examples")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredGlossary.map((term) => {
+                      const isOpen = openGlossaryExamples.has(term.id);
+                      return (
+                        <tr key={term.id}>
+                          <td>
+                            <div className="badge">{streamLabel(term.stream)}</div>
+                            <strong>{term.term}</strong>
+                          </td>
+                          <td className="muted small">{term.translation_en || term.translation}</td>
+                          <td className="muted small">{term.translation_ru || term.translation}</td>
+                          <td className="muted small">{term.translation_nb || term.translation}</td>
+                          <td>
+                            {isOpen ? (
+                              <p className="muted small">{term.explanation || "-"}</p>
+                            ) : (
+                              <button
+                                className="ghost"
+                                onClick={() =>
+                                  setOpenGlossaryExamples((prev) => {
+                                    const next = new Set(prev);
+                                    next.add(term.id);
+                                    return next;
+                                  })
+                                }
+                              >
+                                {t("showExample")}
+                              </button>
+                            )}
+                            {isOpen && (
+                              <button
+                                className="ghost small"
+                                onClick={() =>
+                                  setOpenGlossaryExamples((prev) => {
+                                    const next = new Set(prev);
+                                    next.delete(term.id);
+                                    return next;
+                                  })
+                                }
+                              >
+                                {t("hideTranslation")}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </>
