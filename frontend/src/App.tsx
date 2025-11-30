@@ -90,7 +90,10 @@ const App = () => {
   const [glossaryLetter, setGlossaryLetter] = useState<string>("all");
   const [glossaryTag, setGlossaryTag] = useState<string>("all");
 
-  const glossaryLetters = useMemo(() => ["all", ..."abcdefghijklmnopqrstuvwxyz"], []);
+  const glossaryLetters = useMemo(
+    () => ["all", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "æ", "ø", "å"],
+    [],
+  );
   const glossaryTags = useMemo(() => {
     const tagsSet = new Set<string>();
     glossary.forEach((item) => (item.tags || []).forEach((t) => tagsSet.add(t)));
