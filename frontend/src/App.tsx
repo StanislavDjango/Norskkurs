@@ -388,12 +388,15 @@ const App = () => {
                     ) : (
                       readingLookupResults.slice(0, 5).map((row) => (
                         <div key={row.id} className="readings-search-result">
-                          <strong>{row.term}</strong>
                           <span className="muted small">
-                            {row.bokmaal && <span> · NB: {row.bokmaal}</span>}
-                            {row.nynorsk && <span> · NN: {row.nynorsk}</span>}
-                            {row.english && <span> · EN: {row.english}</span>}
-                            {row.russian && <span> · RU: {row.russian}</span>}
+                            {[
+                              row.bokmaal && `NB: ${row.bokmaal}`,
+                              row.nynorsk && `NN: ${row.nynorsk}`,
+                              row.english && `EN: ${row.english}`,
+                              row.russian && `RU: ${row.russian}`,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
                           </span>
                         </div>
                       ))
