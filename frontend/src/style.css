@@ -173,7 +173,45 @@ h2 {
 
 .readings-search {
   margin-top: 8px;
-  max-width: 600px;
+  width: 100%;
+}
+
+.readings-search-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.reading-translation {
+  margin-top: 10px;
+}
+
+.reading-translation-tabs {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.reading-translation-tabs button {
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.reading-translation-tabs button.active {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #fff;
+}
+
+.reading-translation-tabs button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .readings-search input {

@@ -89,6 +89,7 @@ const App = () => {
   const [readingLookup, setReadingLookup] = useState("");
   const [readingLookupResults, setReadingLookupResults] = useState<ReadingLookupRow[]>([]);
   const [readingLookupLoading, setReadingLookupLoading] = useState(false);
+  const [readingLocales, setReadingLocales] = useState<Record<number, "nb" | "en" | "ru">>({});
 
   useEffect(() => {
     localStorage.setItem("norskkurs_stream", stream);
@@ -368,12 +369,17 @@ const App = () => {
             <div className="readings-toolbar">
               <h2>{t("nav.readings")}</h2>
               <div className="readings-search">
-                <input
-                  type="search"
-                  placeholder={t("glossarySearchPlaceholder")}
-                  value={readingLookup}
-                  onChange={(e) => setReadingLookup(e.target.value)}
-                />
+                <label className="readings-search-label">
+                  <span className="muted small">
+                    {t("readings.lookupLabel")}
+                  </span>
+                  <input
+                    type="search"
+                    placeholder={t("glossarySearchPlaceholder")}
+                    value={readingLookup}
+                    onChange={(e) => setReadingLookup(e.target.value)}
+                  />
+                </label>
                 {readingLookup.trim() && (
                   <div className="readings-search-results">
                     {readingLookupLoading ? (
@@ -401,6 +407,17 @@ const App = () => {
               <div className="card-list">
                 {readings.map((item) => {
                   const isOpen = openTranslations.has(item.id);
+                  const baseLocale = item.stream === "english" ? "ru" : "en";
+                  const activeLocale = readingLocales[item.id] || baseLocale;
+                  const enText = item.stream === "english" ? "" : item.translation;
+                  const nbText = item.stream === "english" ? "" : "";
+                  const ruText = item.stream === "english" ? item.translation : "";
+                  const currentText =
+                    activeLocale === "ru"
+                      ? ruText
+                      : activeLocale === "nb"
+                      ? nbText
+                      : enText;
                   return (
                     <article key={item.id} className="card">
                       <div className="card-meta">
@@ -433,10 +450,73 @@ const App = () => {
                         {isOpen ? t("readings.hideTranslation") : t("readings.showTranslation")}
                       </button>
                       {isOpen && (
-                        <div className="muted small">
-                          {item.translation.split(/\\n+/).map((para, idx) => (
-                            <p key={idx}>{para}</p>
-                          ))}
+                        <div className="reading-translation">
+                          <div className="reading-translation-tabs">
+                            {item.stream === "english" ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className={activeLocale === "nb" ? "active" : ""}
+                                  onClick={() =>
+                                    setReadingLocales((prev) => ({
+                                      ...prev,
+                                      [item.id]: "nb",
+                                    }))
+                                  }
+                                  disabled={!nbText}
+                                >
+                                  NB
+                                </button>
+                                <button
+                                  type="button"
+                                  className={activeLocale === "ru" ? "active" : ""}
+                                  onClick={() =>
+                                    setReadingLocales((prev) => ({
+                                      ...prev,
+                                      [item.id]: "ru",
+                                    }))
+                                  }
+                                  disabled={!ruText}
+                                >
+                                  RU
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  className={activeLocale === "en" ? "active" : ""}
+                                  onClick={() =>
+                                    setReadingLocales((prev) => ({
+                                      ...prev,
+                                      [item.id]: "en",
+                                    }))
+                                  }
+                                  disabled={!enText}
+                                >
+                                  EN
+                                </button>
+                                <button
+                                  type="button"
+                                  className={activeLocale === "ru" ? "active" : ""}
+                                  onClick={() =>
+                                    setReadingLocales((prev) => ({
+                                      ...prev,
+                                      [item.id]: "ru",
+                                    }))
+                                  }
+                                  disabled={!ruText}
+                                >
+                                  RU
+                                </button>
+                              </>
+                            )}
+                          </div>
+                          <div className="muted small">
+                            {currentText
+                              ? currentText.split(/\\n+/).map((para, idx) => <p key={idx}>{para}</p>)
+                              : t("readings.translationNotAvailable")}
+                          </div>
                         </div>
                       )}
                     </article>
