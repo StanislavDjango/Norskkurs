@@ -6,6 +6,7 @@ import Footer from "./components/Footer";
 import {
   fetchExercises,
   fetchExpressions,
+  fetchGlossary,
   fetchHomework,
   fetchMaterials,
   fetchReadings,
@@ -20,6 +21,7 @@ import type {
   AnswerPayload,
   Exercise,
   Expression,
+  GlossaryTerm,
   Homework,
   Material,
   Reading,
@@ -83,8 +85,10 @@ const App = () => {
   const [expressions, setExpressions] = useState<Expression[]>([]);
   const [readings, setReadings] = useState<Reading[]>([]);
   const [openTranslations, setOpenTranslations] = useState<Set<number>>(new Set());
-  const [openGlossaryExamples, setOpenGlossaryExamples] = useState<Set<number>>(new Set());
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [readingLookup, setReadingLookup] = useState("");
+  const [readingLookupResults, setReadingLookupResults] = useState<GlossaryTerm[]>([]);
+  const [readingLookupLoading, setReadingLookupLoading] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("norskkurs_stream", stream);
@@ -148,6 +152,33 @@ const App = () => {
         setOpenTranslations(new Set());
       });
   }, [stream, currentLevel, studentEmail]);
+
+  useEffect(() => {
+    const query = readingLookup.trim();
+    if (!query) {
+      setReadingLookupResults([]);
+      setReadingLookupLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setReadingLookupLoading(true);
+    fetchGlossary({ stream, q: query })
+      .then((data) => {
+        if (cancelled) return;
+        setReadingLookupResults(data);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setReadingLookupResults([]);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setReadingLookupLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [readingLookup, stream]);
 
   const selectTest = async (slug: string) => {
     setLoading(true);
@@ -334,7 +365,50 @@ const App = () => {
       case "readings":
         return (
           <>
-            <h2>{t("nav.readings")}</h2>
+            <div className="readings-toolbar">
+              <h2>{t("nav.readings")}</h2>
+              <div className="readings-search">
+                <input
+                  type="search"
+                  placeholder={t("glossarySearchPlaceholder")}
+                  value={readingLookup}
+                  onChange={(e) => setReadingLookup(e.target.value)}
+                />
+                {readingLookup.trim() && (
+                  <div className="readings-search-results">
+                    {readingLookupLoading ? (
+                      <p className="muted small">{t("loading")}</p>
+                    ) : (
+                      readingLookupResults.slice(0, 5).map((term) => (
+                        <div key={term.id} className="readings-search-result">
+                          <strong>{term.term}</strong>
+                          <span className="muted small">
+                            {term.translation_nb && (
+                              <span>
+                                {" "}
+                                · NB: {term.translation_nb}
+                              </span>
+                            )}
+                            {term.translation_en && (
+                              <span>
+                                {" "}
+                                · EN: {term.translation_en}
+                              </span>
+                            )}
+                            {term.translation_ru && (
+                              <span>
+                                {" "}
+                                · RU: {term.translation_ru}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
             {readings.length === 0 ? (
               <p className="muted">{t("readings.empty")}</p>
             ) : (
