@@ -173,6 +173,7 @@ h2 {
 
 .readings-search {
   margin-top: 8px;
+  max-width: 600px;
 }
 
 .readings-search input {
@@ -182,6 +183,7 @@ h2 {
   font-size: 0.95rem;
   min-width: 220px;
   background: #fff;
+  width: 100%;
 }
 
 .readings-search-results {
@@ -189,14 +191,33 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+  max-height: 260px;
+  overflow-y: auto;
 }
 
 .readings-search-result {
   font-size: 0.9rem;
+  animation: fade-in 0.15s ease-out;
 }
 
 .readings-search-result strong {
   margin-right: 6px;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .pill-row {

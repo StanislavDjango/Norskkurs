@@ -87,7 +87,7 @@ const App = () => {
   const [openTranslations, setOpenTranslations] = useState<Set<number>>(new Set());
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [readingLookup, setReadingLookup] = useState("");
-  const [readingLookupResults, setReadingLookupResults] = useState<GlossaryTerm[]>([]);
+  const [readingLookupResults, setReadingLookupResults] = useState<ReadingLookupRow[]>([]);
   const [readingLookupLoading, setReadingLookupLoading] = useState(false);
 
   useEffect(() => {
@@ -162,10 +162,10 @@ const App = () => {
     }
     let cancelled = false;
     setReadingLookupLoading(true);
-    fetchGlossary({ stream, q: query })
+    fetchGlossary({ q: query })
       .then((data) => {
         if (cancelled) return;
-        setReadingLookupResults(data);
+        setReadingLookupResults(buildReadingLookupRows(data));
       })
       .catch(() => {
         if (cancelled) return;
@@ -379,28 +379,14 @@ const App = () => {
                     {readingLookupLoading ? (
                       <p className="muted small">{t("loading")}</p>
                     ) : (
-                      readingLookupResults.slice(0, 5).map((term) => (
-                        <div key={term.id} className="readings-search-result">
-                          <strong>{term.term}</strong>
+                      readingLookupResults.slice(0, 5).map((row) => (
+                        <div key={row.id} className="readings-search-result">
+                          <strong>{row.term}</strong>
                           <span className="muted small">
-                            {term.translation_nb && (
-                              <span>
-                                {" "}
-                                · NB: {term.translation_nb}
-                              </span>
-                            )}
-                            {term.translation_en && (
-                              <span>
-                                {" "}
-                                · EN: {term.translation_en}
-                              </span>
-                            )}
-                            {term.translation_ru && (
-                              <span>
-                                {" "}
-                                · RU: {term.translation_ru}
-                              </span>
-                            )}
+                            {row.bokmaal && <span> · NB: {row.bokmaal}</span>}
+                            {row.nynorsk && <span> · NN: {row.nynorsk}</span>}
+                            {row.english && <span> · EN: {row.english}</span>}
+                            {row.russian && <span> · RU: {row.russian}</span>}
                           </span>
                         </div>
                       ))
@@ -919,5 +905,79 @@ const QuestionBlock = React.forwardRef<HTMLDivElement, QuestionBlockProps>(
 );
 
 QuestionBlock.displayName = "QuestionBlock";
+
+type ReadingLookupRow = {
+  id: string;
+  term: string;
+  bokmaal: string;
+  nynorsk: string;
+  english: string;
+  russian: string;
+};
+
+function buildReadingLookupRows(terms: GlossaryTerm[]): ReadingLookupRow[] {
+  const map = new Map<string, ReadingLookupRow>();
+  terms.forEach((term) => {
+    const conceptEn =
+      term.translation_en || (term.stream === "english" ? term.term : "");
+    const conceptNb =
+      term.translation_nb || (term.stream === "bokmaal" ? term.term : "");
+    const conceptRu = term.translation_ru || "";
+    const key = `${(conceptEn || "").toLowerCase()}|${(conceptNb || "")
+      .toLowerCase()
+      .trim()}|${(conceptRu || "").toLowerCase()}`;
+
+    if (!key.replace(/\|/g, "").trim()) {
+      return;
+    }
+
+    let row = map.get(key);
+    if (!row) {
+      row = {
+        id: key,
+        term:
+          conceptNb ||
+          term.term ||
+          conceptEn ||
+          conceptRu ||
+          term.term,
+        bokmaal: "",
+        nynorsk: "",
+        english: conceptEn || "",
+        russian: conceptRu || "",
+      };
+      map.set(key, row);
+    }
+
+    if (term.stream === "bokmaal" && term.term) {
+      row.bokmaal = appendVariant(row.bokmaal, term.term);
+    }
+    if (term.stream === "nynorsk" && term.term) {
+      row.nynorsk = appendVariant(row.nynorsk, term.term);
+    }
+    if (term.stream === "english") {
+      if (!row.english && (conceptEn || term.term)) {
+        row.english = conceptEn || term.term;
+      }
+    }
+    if (!row.russian && conceptRu) {
+      row.russian = conceptRu;
+    }
+  });
+
+  const result = Array.from(map.values());
+  result.sort((a, b) => a.term.localeCompare(b.term));
+  return result;
+}
+
+function appendVariant(current: string, value: string): string {
+  if (!value) return current;
+  if (!current) return value;
+  const parts = current.split(" / ");
+  if (parts.includes(value)) {
+    return current;
+  }
+  return `${current} / ${value}`;
+}
 
 export default App;
