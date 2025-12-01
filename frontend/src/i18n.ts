@@ -84,6 +84,10 @@ const resources = {
         quickStart: "Quick start",
         quickHint: "Jump to daily practice or continue your test.",
       },
+      alphabetAll: "All",
+      tagAll: "All topics",
+      glossaryEnglishColumn: "English",
+      glossaryRussianColumn: "Russian",
       streamLabels: {
         bokmaal: "Bokmål",
         nynorsk: "Nynorsk",

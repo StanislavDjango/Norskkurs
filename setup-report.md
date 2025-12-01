@@ -23,3 +23,18 @@
 - Глоссарий: добавлен поиск по `q`, уровень больше не фильтрует выдачу; добавлены сиды 0010–0012. Проблема «пустой словарь» решена обновлением WSL-копии до `origin/main` (где есть миграция 0012_seed_glossary_extras) и применением миграций в контейнере (`docker compose exec backend python manage.py migrate`).
 
 Применить настройки профиля: открыть новую сессию PowerShell. Для Unix-утилит можно использовать новую сессию PowerShell (после обновления профиля) или Git Bash/WSL.
+
+## 2025-12-01
+
+- В Windows-копии проекта выполнен `docker compose down` из `E:\Norskkurs` — фронтенд/бэкенд/БД, поднятые оттуда, полностью остановлены. Рабочей считается только копия в WSL по пути `~/Norskkurs` (`\\wsl$\Ubuntu\home\strengerst\Norskkurs`).
+- В WSL запущен dev-фронтенд: `cd ~/Norskkurs/frontend && npm run dev` (через `nohup`, командой `wsl -d Ubuntu bash -lc 'cd ~/Norskkurs/frontend && nohup npm run dev > ../frontend-dev.log 2>&1 &'`). Теперь интерфейс доступен на `http://localhost:5173` именно из WSL-копии.
+- Для дальнейшей разработки фронтенда и бэкенда использовать только репозиторий в `\\wsl$\Ubuntu\home\strengerst\Norskkurs`; копию `E:\Norskkurs` не трогать, чтобы избежать рассинхронизации.
+- Причина, по которой раньше не были видны изменения во фронтенде: браузер открывал `http://localhost:5173` из контейнера/сборки, запущенной из Windows-копии `E:\Norskkurs`, тогда как правки вносились в WSL-копию `~/Norskkurs`. После переключения на WSL-копию и пересборки контейнера фронтенд подхватывает актуальный код.
+- Типичные симптомы ошибки: изменения в коде (особенно React/TS) видны в `\\wsl$\Ubuntu\home\strengerst\Norskkurs`, но UI в браузере не меняется, либо меняется только после docker build в Windows-каталоге. В этом случае нужно проверить, откуда запущен фронтенд.
+- Проверка правильного окружения:
+  - В PowerShell выполнить `wsl -d Ubuntu bash -lc 'cd ~/Norskkurs && docker ps'` и убедиться, что контейнер `norskkurs-frontend-1` слушает `0.0.0.0:5173`.
+  - Убедиться, что в каталоге `E:\Norskkurs` **не** запущен `docker compose up` или локальный `npm run dev`.
+- Если снова «не видно изменений»:
+  1. Остановить всё в Windows-копии: `cd E:\Norskkurs && docker compose down`.
+  2. В WSL пересобрать и поднять стек: `cd ~/Norskkurs && docker compose up --build -d`.
+  3. Открывать сайт только по адресу `http://localhost:5173`, зная, что он отдаётся из WSL-проекта.

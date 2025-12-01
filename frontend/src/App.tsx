@@ -6,7 +6,6 @@ import Footer from "./components/Footer";
 import {
   fetchExercises,
   fetchExpressions,
-  fetchGlossary,
   fetchHomework,
   fetchMaterials,
   fetchReadings,
@@ -21,7 +20,6 @@ import type {
   AnswerPayload,
   Exercise,
   Expression,
-  GlossaryTerm,
   Homework,
   Material,
   Reading,
@@ -35,6 +33,7 @@ import type {
   Level,
 } from "./types";
 import VerbsPage from "./pages/VerbsPage";
+import GlossaryPage from "./pages/GlossaryPage";
 
 const levelOrder: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4 };
 
@@ -82,37 +81,10 @@ const App = () => {
   const [homework, setHomework] = useState<Homework[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [expressions, setExpressions] = useState<Expression[]>([]);
-  const [glossary, setGlossary] = useState<GlossaryTerm[]>([]);
-  const [glossarySearch, setGlossarySearch] = useState("");
   const [readings, setReadings] = useState<Reading[]>([]);
   const [openTranslations, setOpenTranslations] = useState<Set<number>>(new Set());
   const [openGlossaryExamples, setOpenGlossaryExamples] = useState<Set<number>>(new Set());
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const [glossaryLetter, setGlossaryLetter] = useState<string>("all");
-  const [glossaryTag, setGlossaryTag] = useState<string>("all");
-
-  const glossaryLetters = useMemo(
-    () => ["all", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "æ", "ø", "å"],
-    [],
-  );
-  const glossaryTags = useMemo(() => {
-    const tagsSet = new Set<string>();
-    glossary.forEach((item) => (item.tags || []).forEach((t) => tagsSet.add(t)));
-    return ["all", ...Array.from(tagsSet).sort()];
-  }, [glossary]);
-
-  const filteredGlossary = useMemo(() => {
-    return glossary.filter((item) => {
-      if (glossaryLetter !== "all") {
-        const first = (item.term || "").charAt(0).toLowerCase();
-        if (first !== glossaryLetter) return false;
-      }
-      if (glossaryTag !== "all") {
-        if (!item.tags || !item.tags.includes(glossaryTag)) return false;
-      }
-      return true;
-    });
-  }, [glossary, glossaryLetter, glossaryTag]);
 
   useEffect(() => {
     localStorage.setItem("norskkurs_stream", stream);
@@ -166,7 +138,6 @@ const App = () => {
     fetchHomework(params).then(setHomework).catch(() => setHomework([]));
     fetchExercises(params).then(setExercises).catch(() => setExercises([]));
     fetchExpressions(params).then(setExpressions).catch(() => setExpressions([]));
-    fetchGlossary({ stream, q: glossarySearch || undefined }).then(setGlossary).catch(() => setGlossary([]));
     fetchReadings(params)
       .then((data) => {
         setReadings(data);
@@ -176,7 +147,7 @@ const App = () => {
         setReadings([]);
         setOpenTranslations(new Set());
       });
-  }, [stream, currentLevel, studentEmail, glossarySearch]);
+  }, [stream, currentLevel, studentEmail]);
 
   const selectTest = async (slug: string) => {
     setLoading(true);
@@ -548,110 +519,7 @@ const App = () => {
           </>
         );
       case "glossary":
-        return (
-          <>
-            <h2>{t("nav.glossary")}</h2>
-            <div className="filter-row level-row">
-              {glossaryLetters.map((letter) => (
-                <button
-                  key={letter}
-                  className={`pill ${glossaryLetter === letter ? "pill--active" : ""}`}
-                  onClick={() => setGlossaryLetter(letter)}
-                >
-                  {letter === "all" ? t("alphabetAll") : letter.toUpperCase()}
-                </button>
-              ))}
-            </div>
-            <div className="filter-row">
-              {glossaryTags.length === 0 ? (
-                <span className="muted small">{t("tagAll")}</span>
-              ) : (
-                glossaryTags.map((tag) => (
-                  <button
-                    key={tag}
-                    className={`pill ${glossaryTag === tag ? "pill--active" : ""}`}
-                    onClick={() => setGlossaryTag(tag)}
-                  >
-                    {tag === "all" ? t("tagAll") : tag}
-                  </button>
-                ))
-              )}
-            </div>
-            <div className="search-row">
-              <input
-                type="search"
-                placeholder={t("glossarySearchPlaceholder")}
-                value={glossarySearch}
-                onChange={(e) => setGlossarySearch(e.target.value)}
-              />
-            </div>
-            {glossary.length === 0 ? (
-              <p className="muted">{t("emptyList")}</p>
-            ) : (
-              <div className="table-wrap">
-                <table className="simple-table">
-                  <thead>
-                    <tr>
-                      <th>{t("nav.glossary")}</th>
-                      <th>EN</th>
-                      <th>RU</th>
-                      <th>NB</th>
-                      <th>{t("examples")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredGlossary.map((term) => {
-                      const isOpen = openGlossaryExamples.has(term.id);
-                      return (
-                        <tr key={term.id}>
-                          <td>
-                            <div className="badge">{streamLabel(term.stream)}</div>
-                            <strong>{term.term}</strong>
-                          </td>
-                          <td className="muted small">{term.translation_en || term.translation}</td>
-                          <td className="muted small">{term.translation_ru || term.translation}</td>
-                          <td className="muted small">{term.translation_nb || term.translation}</td>
-                          <td>
-                            {isOpen ? (
-                              <p className="muted small">{term.explanation || "-"}</p>
-                            ) : (
-                              <button
-                                className="ghost"
-                                onClick={() =>
-                                  setOpenGlossaryExamples((prev) => {
-                                    const next = new Set(prev);
-                                    next.add(term.id);
-                                    return next;
-                                  })
-                                }
-                              >
-                                {t("showExample")}
-                              </button>
-                            )}
-                            {isOpen && (
-                              <button
-                                className="ghost small"
-                                onClick={() =>
-                                  setOpenGlossaryExamples((prev) => {
-                                    const next = new Set(prev);
-                                    next.delete(term.id);
-                                    return next;
-                                  })
-                                }
-                              >
-                                {t("hideTranslation")}
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </>
-        );
+        return <GlossaryPage stream={stream} currentLevel={currentLevel} />;
       case "contact":
         return (
           <div className="card">

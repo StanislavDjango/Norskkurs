@@ -25,6 +25,7 @@ from .models import (
     Test,
     VerbEntry,
 )
+from .utils.glossary_csv import export_glossary_to_file, import_glossary_from_reader
 from .utils.verb_csv import export_verbs_to_file, import_verbs_from_reader
 
 

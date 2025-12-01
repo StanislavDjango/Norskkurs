@@ -19,9 +19,7 @@ def export_glossary_to_file(file_obj: TextIO, queryset: Iterable[GlossaryTerm]) 
         "translation_en",
         "translation_ru",
         "translation_nb",
-        "explanation",
         "stream",
-        "level",
         "tags",
     ]
     writer = csv.DictWriter(file_obj, fieldnames=fieldnames)
@@ -34,9 +32,7 @@ def export_glossary_to_file(file_obj: TextIO, queryset: Iterable[GlossaryTerm]) 
                 "translation_en": item.translation_en,
                 "translation_ru": item.translation_ru,
                 "translation_nb": item.translation_nb,
-                "explanation": item.explanation,
                 "stream": item.stream,
-                "level": item.level,
                 "tags": ";".join(item.tags or []),
             }
         )
@@ -50,7 +46,9 @@ def import_glossary_from_reader(
         term = (row.get("term") or "").strip()
         stream = (row.get("stream") or "").strip().lower()
         level = (row.get("level") or "").strip().upper()
-        if not term or not stream or not level:
+        if not level:
+            level = GlossaryTerm._meta.get_field("level").default
+        if not term or not stream:
             skipped += 1
             continue
         defaults = {

@@ -259,6 +259,17 @@ h2 {
   overflow: hidden;
 }
 
+.glossary-board {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.06);
+  overflow: visible;
+}
+
 .verbs-alphabet {
   display: flex;
   flex-wrap: wrap;
@@ -416,7 +427,32 @@ h2 {
   text-align: center;
 }
 
+.glossary-board__header {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 0;
+  padding: 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  font-size: 0.85rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  position: sticky;
+  top: 120px;
+  z-index: 5;
+  background: #fff;
+}
+
 .verbs-table {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.glossary-table {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -434,7 +470,21 @@ h2 {
   min-width: 0;
 }
 
+.glossary-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 0;
+  padding: 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  width: 100%;
+  min-width: 0;
+}
+
 .verbs-row:last-child {
+  border-bottom: none;
+}
+
+.glossary-row:last-child {
   border-bottom: none;
 }
 
@@ -453,9 +503,37 @@ h2 {
   border-right: none;
 }
 
+.glossary-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 18px 12px;
+  border-right: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.glossary-cell:last-child {
+  border-right: none;
+}
+
 .verbs-cell strong {
   font-size: 1rem;
   color: #0f172a;
+}
+
+.glossary-cell strong {
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.glossary-label {
+  display: none;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
 }
 
 .verbs-cell button {
@@ -1601,8 +1679,11 @@ button.ghost {
   }
 
   .verbs-board,
+  .glossary-board,
   .verbs-table,
-  .verbs-row {
+  .glossary-table,
+  .verbs-row,
+  .glossary-row {
     width: 100%;
     box-sizing: border-box;
   }
@@ -1624,12 +1705,25 @@ button.ghost {
     display: none;
   }
 
-  .verbs-table {
+  .glossary-board__header {
+    display: none;
+  }
+
+  .verbs-table,
+  .glossary-table {
     padding: 0 8px 12px;
     gap: 10px;
   }
 
   .verbs-row {
+    grid-template-columns: 1fr;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .glossary-row {
     grid-template-columns: 1fr;
     border: 1px solid rgba(148, 163, 184, 0.2);
     border-radius: 14px;
@@ -1680,6 +1774,22 @@ button.ghost {
 
   .verbs-cell:last-child {
     border-bottom: none;
+  }
+
+  .glossary-cell {
+    align-items: flex-start;
+    text-align: left;
+    border-right: none;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    padding: 14px 12px;
+  }
+
+  .glossary-cell:last-child {
+    border-bottom: none;
+  }
+
+  .glossary-label {
+    display: block;
   }
 
   .verbs-cta {
