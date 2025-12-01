@@ -228,6 +228,8 @@ class ReadingSerializer(serializers.ModelSerializer):
             "level",
             "body",
             "translation",
+            "translation_nb",
+            "translation_nn",
             "tags",
             "is_published",
             "created_at",

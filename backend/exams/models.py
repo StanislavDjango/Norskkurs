@@ -229,6 +229,8 @@ class Reading(models.Model):
     )
     body = models.TextField()
     translation = models.TextField(blank=True)
+    translation_nb = models.TextField(blank=True, default="")
+    translation_nn = models.TextField(blank=True, default="")
     tags = models.JSONField(default=list, blank=True)
     is_published = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

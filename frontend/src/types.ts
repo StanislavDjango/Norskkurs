@@ -175,5 +175,7 @@ export interface Reading {
   level: Level;
   body: string;
   translation: string;
+  translation_nb: string;
+  translation_nn: string;
   tags: string[];
 }

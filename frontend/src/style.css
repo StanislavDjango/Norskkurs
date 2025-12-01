@@ -143,6 +143,17 @@ h2 {
   gap: 14px;
 }
 
+.readings-list {
+  grid-template-columns: 1fr;
+}
+
+.reading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .card {
   background: #ffffff;
   border-radius: 16px;
@@ -212,6 +223,28 @@ h2 {
 .reading-translation-tabs button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+.reading-modal-card {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.reading-modal__body {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reading-modal-card header h3 {
+  font-size: 1.3rem;
+}
+
+.reading-modal__text {
+  margin-bottom: 4px;
 }
 
 .readings-search input {

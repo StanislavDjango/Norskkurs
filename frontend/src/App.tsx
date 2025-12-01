@@ -90,6 +90,7 @@ const App = () => {
   const [readingLookupResults, setReadingLookupResults] = useState<ReadingLookupRow[]>([]);
   const [readingLookupLoading, setReadingLookupLoading] = useState(false);
   const [readingLocales, setReadingLocales] = useState<Record<number, "nb" | "en" | "ru">>({});
+  const [activeReading, setActiveReading] = useState<Reading | null>(null);
 
   useEffect(() => {
     localStorage.setItem("norskkurs_stream", stream);
@@ -404,13 +405,13 @@ const App = () => {
             {readings.length === 0 ? (
               <p className="muted">{t("readings.empty")}</p>
             ) : (
-              <div className="card-list">
+              <div className="card-list readings-list">
                 {readings.map((item) => {
                   const isOpen = openTranslations.has(item.id);
                   const baseLocale = item.stream === "english" ? "ru" : "en";
                   const activeLocale = readingLocales[item.id] || baseLocale;
                   const enText = item.stream === "english" ? "" : item.translation;
-                  const nbText = item.stream === "english" ? "" : "";
+                  const nbText = item.stream === "english" ? item.translation_nb : "";
                   const ruText = item.stream === "english" ? item.translation : "";
                   const currentText =
                     activeLocale === "ru"
@@ -433,22 +434,32 @@ const App = () => {
                           <p key={idx}>{para}</p>
                         ))}
                       </div>
-                      <button
-                        className="ghost"
-                        onClick={() => {
-                          setOpenTranslations((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(item.id)) {
-                              next.delete(item.id);
-                            } else {
-                              next.add(item.id);
-                            }
-                            return next;
-                          });
-                        }}
-                      >
-                        {isOpen ? t("readings.hideTranslation") : t("readings.showTranslation")}
-                      </button>
+                      <div className="reading-actions">
+                        <button
+                          type="button"
+                          className="pill"
+                          onClick={() => setActiveReading(item)}
+                        >
+                          {t("readings.readButton")}
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost"
+                          onClick={() => {
+                            setOpenTranslations((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(item.id)) {
+                                next.delete(item.id);
+                              } else {
+                                next.add(item.id);
+                              }
+                              return next;
+                            });
+                          }}
+                        >
+                          {isOpen ? t("readings.hideTranslation") : t("readings.showTranslation")}
+                        </button>
+                      </div>
                       {isOpen && (
                         <div className="reading-translation">
                           <div className="reading-translation-tabs">
@@ -903,6 +914,145 @@ const App = () => {
       ) : (
         <div className={`layout ${activeSection === "verbs" ? "full-width-panel" : "single-panel"}`}>
           <main className="panel">{renderSectionContent()}</main>
+        </div>
+      )}
+      {activeReading && (
+        <div className="verb-modal" role="dialog" aria-modal="true">
+          <div
+            className="verb-modal__backdrop"
+            onClick={() => setActiveReading(null)}
+          />
+          <div className="verb-modal__card reading-modal-card">
+            <header>
+              <div>
+                <p className="muted small">
+                  {streamLabel(activeReading.stream)} ·{" "}
+                  {activeReading.level}
+                </p>
+                <h3>{activeReading.title}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveReading(null)}
+                aria-label={t("close")}
+              >
+                ✕
+              </button>
+            </header>
+              <div className="reading-modal__body">
+              <div className="reading-modal__text">
+                {activeReading.body.split(/\n+/).map((para, idx) => (
+                  <p key={idx}>{para}</p>
+                ))}
+              </div>
+              <div className="reading-modal__translation reading-translation">
+                {(() => {
+                  const baseLocale =
+                    activeReading.stream === "english" ? "ru" : "en";
+                  const activeLocale =
+                    readingLocales[activeReading.id] || baseLocale;
+                  const enText =
+                    activeReading.stream === "english"
+                      ? ""
+                      : activeReading.translation;
+                  const nbText =
+                    activeReading.stream === "english"
+                      ? activeReading.translation_nb
+                      : "";
+                  const ruText =
+                    activeReading.stream === "english"
+                      ? activeReading.translation
+                      : "";
+                  const currentText =
+                    activeLocale === "ru"
+                      ? ruText
+                      : activeLocale === "nb"
+                      ? nbText
+                      : enText;
+                  return (
+                    <>
+                      <div className="reading-translation-tabs">
+                        {activeReading.stream === "english" ? (
+                          <>
+                            <button
+                              type="button"
+                              className={
+                                activeLocale === "nb" ? "active" : ""
+                              }
+                              onClick={() =>
+                                setReadingLocales((prev) => ({
+                                  ...prev,
+                                  [activeReading.id]: "nb",
+                                }))
+                              }
+                              disabled={!nbText}
+                            >
+                              NB
+                            </button>
+                            <button
+                              type="button"
+                              className={
+                                activeLocale === "ru" ? "active" : ""
+                              }
+                              onClick={() =>
+                                setReadingLocales((prev) => ({
+                                  ...prev,
+                                  [activeReading.id]: "ru",
+                                }))
+                              }
+                              disabled={!ruText}
+                            >
+                              RU
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              className={
+                                activeLocale === "en" ? "active" : ""
+                              }
+                              onClick={() =>
+                                setReadingLocales((prev) => ({
+                                  ...prev,
+                                  [activeReading.id]: "en",
+                                }))
+                              }
+                              disabled={!enText}
+                            >
+                              EN
+                            </button>
+                            <button
+                              type="button"
+                              className={
+                                activeLocale === "ru" ? "active" : ""
+                              }
+                              onClick={() =>
+                                setReadingLocales((prev) => ({
+                                  ...prev,
+                                  [activeReading.id]: "ru",
+                                }))
+                              }
+                              disabled={!ruText}
+                            >
+                              RU
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      <div className="muted small reading-modal__translation-body">
+                        {currentText
+                          ? currentText
+                              .split(/\n+/)
+                              .map((para, idx) => <p key={idx}>{para}</p>)
+                          : t("readings.translationNotAvailable")}
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
         </div>
       )}
       <Footer />
