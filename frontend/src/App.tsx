@@ -386,20 +386,27 @@ const App = () => {
                     {readingLookupLoading ? (
                       <p className="muted small">{t("loading")}</p>
                     ) : (
-                      readingLookupResults.slice(0, 5).map((row) => (
-                        <div key={row.id} className="readings-search-result">
-                          <span className="muted small">
-                            {[
-                              row.bokmaal && `NB: ${row.bokmaal}`,
-                              row.nynorsk && `NN: ${row.nynorsk}`,
-                              row.english && `EN: ${row.english}`,
-                              row.russian && `RU: ${row.russian}`,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </span>
-                        </div>
-                      ))
+                      readingLookupResults.slice(0, 5).map((row) => {
+                        const query = readingLookup.trim();
+                        const entries: { key: string; label: string; value: string }[] = [];
+                        if (row.bokmaal) entries.push({ key: "nb", label: "NB", value: row.bokmaal });
+                        if (row.nynorsk) entries.push({ key: "nn", label: "NN", value: row.nynorsk });
+                        if (row.english) entries.push({ key: "en", label: "EN", value: row.english });
+                        if (row.russian) entries.push({ key: "ru", label: "RU", value: row.russian });
+                        return (
+                          <div key={row.id} className="readings-search-result">
+                            <span className="muted small">
+                              {entries.map((entry, index) => (
+                                <React.Fragment key={entry.key}>
+                                  {index > 0 && " · "}
+                                  <strong>{entry.label}:</strong>{" "}
+                                  {highlightMatch(entry.value, query)}
+                                </React.Fragment>
+                              ))}
+                            </span>
+                          </div>
+                        );
+                      })
                     )}
                   </div>
                 )}
@@ -1147,6 +1154,39 @@ type ReadingLookupRow = {
   english: string;
   russian: string;
 };
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function highlightMatch(text: string, query: string): React.ReactNode {
+  const trimmed = query.trim();
+  if (!trimmed) return text;
+  const safe = escapeRegExp(trimmed);
+  if (!safe) return text;
+  const regex = new RegExp(safe, "gi");
+  const matches = text.match(regex);
+  if (!matches) return text;
+
+  const parts = text.split(regex);
+  const result: React.ReactNode[] = [];
+
+  parts.forEach((part, index) => {
+    if (part) {
+      result.push(part);
+    }
+    const match = matches[index];
+    if (match) {
+      result.push(
+        <mark key={`${match}-${index}`} className="readings-search-highlight">
+          {match}
+        </mark>,
+      );
+    }
+  });
+
+  return result;
+}
 
 function buildReadingLookupRows(terms: GlossaryTerm[]): ReadingLookupRow[] {
   const map = new Map<string, ReadingLookupRow>();

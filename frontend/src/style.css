@@ -226,13 +226,16 @@ h2 {
 }
 
 .reading-modal-card {
+  background: #fefdfb;
   max-height: 80vh;
   overflow-y: auto;
 }
 
 .reading-modal__body {
-  font-size: 1.05rem;
-  line-height: 1.7;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #374151;
   margin-top: 8px;
   display: flex;
   flex-direction: column;
@@ -241,10 +244,12 @@ h2 {
 
 .reading-modal-card header h3 {
   font-size: 1.3rem;
+  font-weight: 600;
 }
 
 .reading-modal__text {
-  margin-bottom: 4px;
+  max-width: 70ch;
+  margin: 0 auto 12px;
 }
 
 .readings-search input {
@@ -278,6 +283,12 @@ h2 {
 
 .readings-search-result strong {
   margin-right: 6px;
+}
+
+.readings-search-highlight {
+  background: #fef3c7;
+  border-radius: 4px;
+  padding: 0 2px;
 }
 
 @keyframes fade-in {
