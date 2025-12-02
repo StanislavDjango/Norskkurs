@@ -228,9 +228,10 @@ class Reading(models.Model):
         max_length=2, choices=Test.Level.choices, default=Test.Level.A1
     )
     body = models.TextField()
-    translation = models.TextField(blank=True)
+    translation_en = models.TextField(blank=True, default="")
     translation_nb = models.TextField(blank=True, default="")
     translation_nn = models.TextField(blank=True, default="")
+    translation_ru = models.TextField(blank=True)
     tags = models.JSONField(default=list, blank=True)
     is_published = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

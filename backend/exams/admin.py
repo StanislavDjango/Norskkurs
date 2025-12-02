@@ -140,8 +140,23 @@ class MaterialAdmin(admin.ModelAdmin):
     list_filter = ("stream", "level", "material_type", "is_published")
 
 
+class ReadingAdminForm(forms.ModelForm):
+    class Meta:
+        model = Reading
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Explicit multilingual labels for clarity in the admin.
+        self.fields["translation_en"].label = _("Translation en")
+        self.fields["translation_nb"].label = _("Translation nb")
+        self.fields["translation_nn"].label = _("Translation nn")
+        self.fields["translation_ru"].label = _("Translation ru")
+
+
 @admin.register(Reading)
 class ReadingAdmin(admin.ModelAdmin):
+    form = ReadingAdminForm
     list_display = ("title", "stream", "level", "is_published", "updated_at")
     search_fields = ("title", "tags", "body")
     list_filter = ("stream", "level", "is_published")

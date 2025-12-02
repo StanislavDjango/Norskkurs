@@ -420,9 +420,9 @@ const App = () => {
                   const isOpen = openTranslations.has(item.id);
                   const baseLocale = item.stream === "english" ? "ru" : "en";
                   const activeLocale = readingLocales[item.id] || baseLocale;
-                  const enText = item.stream === "english" ? "" : item.translation;
+                  const enText = item.stream === "english" ? "" : item.translation_en;
                   const nbText = item.stream === "english" ? item.translation_nb : "";
-                  const ruText = item.stream === "english" ? item.translation : "";
+                  const ruText = item.translation_ru;
                   const currentText =
                     activeLocale === "ru"
                       ? ruText
@@ -964,15 +964,12 @@ const App = () => {
                   const enText =
                     activeReading.stream === "english"
                       ? ""
-                      : activeReading.translation;
+                      : activeReading.translation_en;
                   const nbText =
                     activeReading.stream === "english"
                       ? activeReading.translation_nb
                       : "";
-                  const ruText =
-                    activeReading.stream === "english"
-                      ? activeReading.translation
-                      : "";
+                  const ruText = activeReading.translation_ru;
                   const currentText =
                     activeLocale === "ru"
                       ? ruText

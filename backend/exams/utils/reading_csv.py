@@ -22,9 +22,10 @@ def export_readings_to_file(file_obj: TextIO, queryset: Iterable[Reading]) -> No
         "level",
         "tags",
         "body",
-        "translation",
+        "translation_en",
         "translation_nb",
         "translation_nn",
+        "translation_ru",
         "is_published",
     ]
     writer = csv.DictWriter(file_obj, fieldnames=fieldnames)
@@ -38,9 +39,10 @@ def export_readings_to_file(file_obj: TextIO, queryset: Iterable[Reading]) -> No
                 "level": item.level,
                 "tags": ";".join(item.tags or []),
                 "body": item.body,
-                "translation": item.translation,
+                "translation_en": item.translation_en,
                 "translation_nb": item.translation_nb,
                 "translation_nn": item.translation_nn,
+                "translation_ru": item.translation_ru,
                 "is_published": "1" if item.is_published else "0",
             }
         )
@@ -65,12 +67,29 @@ def import_readings_from_reader(
         if not stream:
             stream = Reading._meta.get_field("stream").default
 
+        legacy_translation = (row.get("translation") or "").strip()
+        translation_en = (row.get("translation_en") or "").strip()
+        translation_nb = (row.get("translation_nb") or "").strip()
+        translation_nn = (row.get("translation_nn") or "").strip()
+        translation_ru = (row.get("translation_ru") or "").strip()
+
+        # Backwards compatibility: older templates used a single "translation"
+        # column whose meaning depended on the stream.
+        if legacy_translation and not (translation_en or translation_ru):
+            if stream == "english":
+                translation_ru = legacy_translation
+            else:
+                translation_en = legacy_translation
+
         defaults = {
             "title": title or slug,
             "stream": stream,
             "level": level,
             "body": (row.get("body") or "").strip(),
-            "translation": (row.get("translation") or "").strip(),
+            "translation_en": translation_en,
+            "translation_nb": translation_nb,
+            "translation_nn": translation_nn,
+            "translation_ru": translation_ru,
             "tags": [
                 t.strip() for t in (row.get("tags") or "").split(";") if t.strip()
             ],

@@ -174,8 +174,9 @@ export interface Reading {
   stream: Stream;
   level: Level;
   body: string;
-  translation: string;
+  translation_en: string;
   translation_nb: string;
   translation_nn: string;
+  translation_ru: string;
   tags: string[];
 }

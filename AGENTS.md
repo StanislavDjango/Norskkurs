@@ -12,6 +12,13 @@
 - Frontend local: `cd frontend && npm install && npm run dev` (set `VITE_API_BASE_URL=http://localhost:8001/api/` when using the compose backend).
 - Production check: `cd frontend && npm run build` (`tsc` + Vite bundle).
 
+### Windows + WSL notes
+- Основная рабочая копия проекта в WSL: `~/Norskkurs`. Для Docker, Git и npm ориентироваться на неё, а не на Windows-копию `E:\Norskkurs`.
+- При запуске команд из PowerShell (в том числе ассистентами) использовать обёртку WSL, например:
+  `wsl -d Ubuntu bash -lc 'cd ~/Norskkurs && docker compose up --build -d'`.
+- Не использовать UNC-пути вида `\\wsl$\Ubuntu\home\strengerst\Norskkurs` как build context для Docker и Git-команд.
+- В PowerShell избегать связок через `&&` — вместо этого вызывать отдельные команды или запускать цепочку уже внутри `bash -lc '...'`.
+
 ## Coding Style & Naming Conventions
 - Python/Django: 4 spaces; keep business logic in model methods or `exams/utils`; management commands go in `backend/exams/management/commands`; REST views follow DRF patterns already in `exams`.
 - TypeScript/React: Functional components; PascalCase component files, camelCase props/state; keep shared styles in `frontend/src/style.css`; add UI strings to `frontend/src/i18n.ts`; mirror API shapes in `frontend/src/types.ts`.
