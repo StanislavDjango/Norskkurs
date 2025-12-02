@@ -92,6 +92,16 @@ const App = () => {
   const [readingLocales, setReadingLocales] =
     useState<Record<number, "en" | "nb" | "nn" | "ru">>({});
   const [activeReading, setActiveReading] = useState<Reading | null>(null);
+  const [vocabFavorites, setVocabFavorites] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem("norskkurs_vocab_favs");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [glossaryInitialView, setGlossaryInitialView] =
+    useState<"all" | "favorites">("all");
 
   useEffect(() => {
     localStorage.setItem("norskkurs_stream", stream);
@@ -102,6 +112,13 @@ const App = () => {
     setFilterLevel(currentLevel);
   }, [currentLevel]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem("norskkurs_vocab_favs", JSON.stringify(vocabFavorites));
+    } catch {
+      // ignore storage errors
+    }
+  }, [vocabFavorites]);
 
   useEffect(() => {
     const params = {
@@ -366,6 +383,77 @@ const App = () => {
     }
   };
 
+  const toggleVocabFavorite = (id: string) => {
+    setVocabFavorites((prev) =>
+      prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id],
+    );
+  };
+
+  const renderReadingLookup = (variant: "toolbar" | "modal") => (
+    <div
+      className={
+        variant === "modal"
+          ? "readings-search readings-search--modal"
+          : "readings-search"
+      }
+    >
+      <label className="readings-search-label">
+        <span className="muted small">
+          {t("readings.lookupLabel")}
+        </span>
+        <input
+          type="search"
+          placeholder={t("glossarySearchPlaceholder")}
+          value={readingLookup}
+          onChange={(e) => setReadingLookup(e.target.value)}
+        />
+      </label>
+      {readingLookup.trim() && (
+        <div className="readings-search-results">
+          {readingLookupLoading ? (
+            <p className="muted small">{t("loading")}</p>
+          ) : (
+            readingLookupResults.slice(0, 5).map((row) => {
+              const query = readingLookup.trim();
+              const entries: { key: string; label: string; value: string }[] = [];
+              if (row.bokmaal) entries.push({ key: "nb", label: "NB", value: row.bokmaal });
+              if (row.nynorsk) entries.push({ key: "nn", label: "NN", value: row.nynorsk });
+              if (row.english) entries.push({ key: "en", label: "EN", value: row.english });
+              if (row.russian) entries.push({ key: "ru", label: "RU", value: row.russian });
+              return (
+                <div key={row.id} className="readings-search-result">
+                  <button
+                    type="button"
+                    className={`vocab-bookmark ${
+                      vocabFavorites.includes(row.id) ? "active" : ""
+                    }`}
+                    onClick={() => toggleVocabFavorite(row.id)}
+                    aria-label={
+                      vocabFavorites.includes(row.id)
+                        ? t("removeFavorite")
+                        : t("addFavorite")
+                    }
+                  >
+                    ★
+                  </button>
+                  <span className="muted small">
+                    {entries.map((entry, index) => (
+                      <React.Fragment key={entry.key}>
+                        {index > 0 && " · "}
+                        <strong>{entry.label}:</strong>{" "}
+                        {highlightMatch(entry.value, query)}
+                      </React.Fragment>
+                    ))}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+
 
   const renderSectionContent = () => {
     switch (activeSection) {
@@ -373,49 +461,20 @@ const App = () => {
         return (
           <>
             <div className="readings-toolbar">
-              <h2>{t("nav.readings")}</h2>
-              <div className="readings-search">
-                <label className="readings-search-label">
-                  <span className="muted small">
-                    {t("readings.lookupLabel")}
-                  </span>
-                  <input
-                    type="search"
-                    placeholder={t("glossarySearchPlaceholder")}
-                    value={readingLookup}
-                    onChange={(e) => setReadingLookup(e.target.value)}
-                  />
-                </label>
-                {readingLookup.trim() && (
-                  <div className="readings-search-results">
-                    {readingLookupLoading ? (
-                      <p className="muted small">{t("loading")}</p>
-                    ) : (
-                      readingLookupResults.slice(0, 5).map((row) => {
-                        const query = readingLookup.trim();
-                        const entries: { key: string; label: string; value: string }[] = [];
-                        if (row.bokmaal) entries.push({ key: "nb", label: "NB", value: row.bokmaal });
-                        if (row.nynorsk) entries.push({ key: "nn", label: "NN", value: row.nynorsk });
-                        if (row.english) entries.push({ key: "en", label: "EN", value: row.english });
-                        if (row.russian) entries.push({ key: "ru", label: "RU", value: row.russian });
-                        return (
-                          <div key={row.id} className="readings-search-result">
-                            <span className="muted small">
-                              {entries.map((entry, index) => (
-                                <React.Fragment key={entry.key}>
-                                  {index > 0 && " · "}
-                                  <strong>{entry.label}:</strong>{" "}
-                                  {highlightMatch(entry.value, query)}
-                                </React.Fragment>
-                              ))}
-                            </span>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                )}
+              <div className="readings-toolbar-header">
+                <h2>{t("nav.readings")}</h2>
+                <button
+                  type="button"
+                  className="ghost small"
+                  onClick={() => {
+                    setGlossaryInitialView("favorites");
+                    setActiveSection("glossary");
+                  }}
+                >
+                  {t("readings.myWordsButton")}
+                </button>
               </div>
+              {renderReadingLookup("toolbar")}
             </div>
             {readings.length === 0 ? (
               <p className="muted">{t("readings.empty")}</p>
@@ -713,7 +772,15 @@ const App = () => {
           </>
         );
       case "glossary":
-        return <GlossaryPage stream={stream} currentLevel={currentLevel} />;
+        return (
+          <GlossaryPage
+            stream={stream}
+            currentLevel={currentLevel}
+            vocabFavorites={vocabFavorites}
+            onToggleFavorite={toggleVocabFavorite}
+            initialView={glossaryInitialView}
+          />
+        );
       case "contact":
         return (
           <div className="card">
@@ -761,6 +828,9 @@ const App = () => {
             key={item.key}
             className={`pill ${activeSection === item.key ? "pill--active" : ""}`}
             onClick={() => {
+              if (item.key === "glossary") {
+                setGlossaryInitialView("all");
+              }
               setActiveSection(item.key);
               setIsNavOpen(false);
             }}
@@ -981,10 +1051,11 @@ const App = () => {
               >
                 ✕
               </button>
-            </header>
-              <div className="reading-modal__body">
-              <div className="reading-modal__text">
-                {(() => {
+	            </header>
+	            <div className="reading-modal__body">
+	              {renderReadingLookup("modal")}
+	              <div className="reading-modal__text">
+	                {(() => {
                   const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
                     bokmaal: "nb",
                     nynorsk: "nn",

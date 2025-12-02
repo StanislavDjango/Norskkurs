@@ -182,6 +182,14 @@ h2 {
   padding-bottom: 10px;
 }
 
+.readings-toolbar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
 .readings-search {
   margin-top: 8px;
   width: 100%;
@@ -250,6 +258,11 @@ h2 {
 .reading-modal__text {
   max-width: 70ch;
   margin: 0 auto 12px;
+}
+
+.readings-search.readings-search--modal {
+  margin-top: 0;
+  margin-bottom: 8px;
 }
 
 .readings-search input {
@@ -530,6 +543,20 @@ h2 {
 }
 
 .verb-bookmark.active {
+  color: #fbbf24;
+}
+
+.vocab-bookmark {
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-right: 8px;
+  color: #94a3b8;
+  transition: color 0.2s ease;
+}
+
+.vocab-bookmark.active {
   color: #fbbf24;
 }
 

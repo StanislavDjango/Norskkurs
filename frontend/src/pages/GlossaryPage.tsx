@@ -39,6 +39,9 @@ const alphabet = [
 type Props = {
   stream: Stream;
   currentLevel: Level;
+  vocabFavorites: string[];
+  onToggleFavorite: (id: string) => void;
+  initialView?: "all" | "favorites";
 };
 
 type GlossaryRow = {
@@ -50,7 +53,13 @@ type GlossaryRow = {
   tags: string[];
 };
 
-const GlossaryPage: React.FC<Props> = ({ stream, currentLevel }) => {
+const GlossaryPage: React.FC<Props> = ({
+  stream,
+  currentLevel,
+  vocabFavorites,
+  onToggleFavorite,
+  initialView = "all",
+}) => {
   const { t } = useTranslation();
 
   const [terms, setTerms] = useState<GlossaryTerm[]>([]);
@@ -58,6 +67,7 @@ const GlossaryPage: React.FC<Props> = ({ stream, currentLevel }) => {
   const [tag, setTag] = useState<string>("all");
   const [search, setSearch] = useState<string>("");
   const [visibleCount, setVisibleCount] = useState<number>(15);
+  const [view, setView] = useState<"all" | "favorites">(() => initialView);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -68,7 +78,7 @@ const GlossaryPage: React.FC<Props> = ({ stream, currentLevel }) => {
 
   useEffect(() => {
     setVisibleCount(15);
-  }, [letter, tag, search, terms]);
+  }, [letter, tag, search, terms, view, vocabFavorites]);
 
   const rows = useMemo<GlossaryRow[]>(() => {
     const map = new Map<string, GlossaryRow>();
@@ -149,14 +159,16 @@ const GlossaryPage: React.FC<Props> = ({ stream, currentLevel }) => {
       const letterMatch =
         letter === "all" ? true : getRowLetter(row) === letter;
       const tagMatch = tag === "all" ? true : row.tags.includes(tag);
+      const viewMatch =
+        view === "all" ? true : vocabFavorites.includes(row.id);
       const searchMatch =
         !q ||
         [row.bokmaal, row.nynorsk, row.english, row.russian]
           .filter(Boolean)
           .some((value) => value.toLowerCase().includes(q));
-      return letterMatch && tagMatch && searchMatch;
+      return letterMatch && tagMatch && viewMatch && searchMatch;
     });
-  }, [rows, letter, tag, search]);
+  }, [rows, letter, tag, search, view, vocabFavorites]);
 
   useEffect(() => {
     const sentinel = loadMoreRef.current;
@@ -246,6 +258,23 @@ const GlossaryPage: React.FC<Props> = ({ stream, currentLevel }) => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <div className="verbs-view-toggle">
+            <button
+              type="button"
+              className={view === "all" ? "active" : ""}
+              onClick={() => setView("all")}
+            >
+              {t("vocabTabs.all")}
+            </button>
+            <button
+              type="button"
+              className={view === "favorites" ? "active" : ""}
+              onClick={() => setView("favorites")}
+              disabled={vocabFavorites.length === 0}
+            >
+              {t("vocabTabs.favorites")} ({vocabFavorites.length})
+            </button>
+          </div>
         </div>
 
         <div className="glossary-board__header">
@@ -259,6 +288,20 @@ const GlossaryPage: React.FC<Props> = ({ stream, currentLevel }) => {
           {filteredRows.slice(0, visibleCount).map((row) => (
             <div key={row.id} className="glossary-row">
               <div className="glossary-cell">
+                <button
+                  type="button"
+                  className={`vocab-bookmark ${
+                    vocabFavorites.includes(row.id) ? "active" : ""
+                  }`}
+                  onClick={() => onToggleFavorite(row.id)}
+                  aria-label={
+                    vocabFavorites.includes(row.id)
+                      ? t("removeFavorite")
+                      : t("addFavorite")
+                  }
+                >
+                  ★
+                </button>
                 <span className="glossary-label">{t("streamLabels.bokmaal")}</span>
                 <strong>{row.bokmaal || "—"}</strong>
               </div>
