@@ -170,6 +170,10 @@ export interface GlossarySearchParams {
 export interface Reading {
   id: number;
   title: string;
+  title_en: string;
+  title_nb: string;
+  title_nn: string;
+  title_ru: string;
   slug: string;
   stream: Stream;
   level: Level;

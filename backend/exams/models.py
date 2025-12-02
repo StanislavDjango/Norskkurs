@@ -220,6 +220,10 @@ class Material(models.Model):
 
 class Reading(models.Model):
     title = models.CharField(max_length=255)
+    title_en = models.CharField(max_length=255, blank=True, default="")
+    title_nb = models.CharField(max_length=255, blank=True, default="")
+    title_nn = models.CharField(max_length=255, blank=True, default="")
+    title_ru = models.CharField(max_length=255, blank=True, default="")
     slug = models.SlugField(max_length=255, unique=True)
     stream = models.CharField(
         max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL

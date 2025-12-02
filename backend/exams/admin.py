@@ -148,6 +148,10 @@ class ReadingAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Explicit multilingual labels for clarity in the admin.
+        self.fields["title_en"].label = _("Title en")
+        self.fields["title_nb"].label = _("Title nb")
+        self.fields["title_nn"].label = _("Title nn")
+        self.fields["title_ru"].label = _("Title ru")
         self.fields["translation_en"].label = _("Translation en")
         self.fields["translation_nb"].label = _("Translation nb")
         self.fields["translation_nn"].label = _("Translation nn")

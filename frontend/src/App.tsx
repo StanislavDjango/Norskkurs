@@ -89,7 +89,8 @@ const App = () => {
   const [readingLookup, setReadingLookup] = useState("");
   const [readingLookupResults, setReadingLookupResults] = useState<ReadingLookupRow[]>([]);
   const [readingLookupLoading, setReadingLookupLoading] = useState(false);
-  const [readingLocales, setReadingLocales] = useState<Record<number, "nb" | "en" | "ru">>({});
+  const [readingLocales, setReadingLocales] =
+    useState<Record<number, "en" | "nb" | "nn" | "ru">>({});
   const [activeReading, setActiveReading] = useState<Reading | null>(null);
 
   useEffect(() => {
@@ -140,11 +141,15 @@ const App = () => {
       stream,
       level: currentLevel,
     };
+    const readingParams = {
+      student_email: studentEmail || undefined,
+      level: currentLevel,
+    };
     fetchMaterials(params).then(setMaterials).catch(() => setMaterials([]));
     fetchHomework(params).then(setHomework).catch(() => setHomework([]));
     fetchExercises(params).then(setExercises).catch(() => setExercises([]));
     fetchExpressions(params).then(setExpressions).catch(() => setExpressions([]));
-    fetchReadings(params)
+    fetchReadings(readingParams)
       .then((data) => {
         setReadings(data);
         setOpenTranslations(new Set());
@@ -418,29 +423,100 @@ const App = () => {
               <div className="card-list readings-list">
                 {readings.map((item) => {
                   const isOpen = openTranslations.has(item.id);
-                  const baseLocale = item.stream === "english" ? "ru" : "en";
-                  const activeLocale = readingLocales[item.id] || baseLocale;
-                  const enText = item.stream === "english" ? "" : item.translation_en;
-                  const nbText = item.stream === "english" ? item.translation_nb : "";
-                  const ruText = item.translation_ru;
-                  const currentText =
-                    activeLocale === "ru"
-                      ? ruText
-                      : activeLocale === "nb"
-                      ? nbText
-                      : enText;
+
+                  const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
+                    bokmaal: "nb",
+                    nynorsk: "nn",
+                    english: "en",
+                  };
+
+                  const versions: Record<"en" | "nb" | "nn" | "ru", string> = {
+                    en:
+                      item.stream === "english"
+                        ? item.body
+                        : item.translation_en,
+                    nb:
+                      item.stream === "bokmaal"
+                        ? item.body
+                        : item.translation_nb,
+                    nn:
+                      item.stream === "nynorsk"
+                        ? item.body
+                        : item.translation_nn,
+                    ru: item.translation_ru,
+                  };
+
+                  const titleVersions: Record<"en" | "nb" | "nn" | "ru", string> = {
+                    en:
+                      item.title_en ||
+                      (item.stream === "english" ? item.title : ""),
+                    nb:
+                      item.title_nb ||
+                      (item.stream === "bokmaal" ? item.title : ""),
+                    nn:
+                      item.title_nn ||
+                      (item.stream === "nynorsk" ? item.title : ""),
+                    ru: item.title_ru || "",
+                  };
+
+                  const primaryLang = primaryLangByStream[stream];
+                  const primaryBody = (versions[primaryLang] || "").trim() || item.body;
+                  const primaryTitle =
+                    (titleVersions[primaryLang] || "").trim() || item.title;
+
+                  if (!primaryBody) {
+                    return null;
+                  }
+
+                  const translations: {
+                    code: "en" | "nb" | "nn" | "ru";
+                    label: string;
+                    text: string;
+                  }[] = [];
+
+                  const langMeta: { code: "en" | "nb" | "nn" | "ru"; label: string }[] = [
+                    { code: "en", label: "EN" },
+                    { code: "nb", label: "NB" },
+                    { code: "nn", label: "NN" },
+                    { code: "ru", label: "RU" },
+                  ];
+
+                  langMeta.forEach(({ code, label }) => {
+                    if (code === primaryLang) {
+                      return;
+                    }
+                    translations.push({
+                      code,
+                      label,
+                      text: versions[code],
+                    });
+                  });
+
+                  const availableTranslations = translations.filter(
+                    (t) => t.text && t.text.trim().length > 0,
+                  );
+                  const storedLocale = readingLocales[item.id];
+                  const activeLocale =
+                    (storedLocale &&
+                      availableTranslations.find((t) => t.code === storedLocale)?.code) ||
+                    availableTranslations[0]?.code ||
+                    translations[0]?.code ||
+                    "en";
+
+                  const currentEntry = availableTranslations.find(
+                    (t) => t.code === activeLocale,
+                  );
+                  const currentText = currentEntry?.text || "";
+
                   return (
                     <article key={item.id} className="card">
                       <div className="card-meta">
-                        <span className="badge">{streamLabel(item.stream)}</span>
-                        <span className="badge">{item.level}</span>
-                        {item.tags && item.tags.length > 0 && (
-                          <span className="badge ghost">{item.tags.join(", ")}</span>
-                        )}
+                        <span className="badge">{streamLabel(stream)}</span>
+                        <span className="badge">{currentLevel}</span>
                       </div>
-                      <h3>{item.title}</h3>
+                      <h3>{primaryTitle}</h3>
                       <div className="muted small">
-                        {item.body.split(/\\n+/).map((para, idx) => (
+                        {primaryBody.split(/\n+/).map((para: string, idx: number) => (
                           <p key={idx}>{para}</p>
                         ))}
                       </div>
@@ -473,69 +549,26 @@ const App = () => {
                       {isOpen && (
                         <div className="reading-translation">
                           <div className="reading-translation-tabs">
-                            {item.stream === "english" ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className={activeLocale === "nb" ? "active" : ""}
-                                  onClick={() =>
-                                    setReadingLocales((prev) => ({
-                                      ...prev,
-                                      [item.id]: "nb",
-                                    }))
-                                  }
-                                  disabled={!nbText}
-                                >
-                                  NB
-                                </button>
-                                <button
-                                  type="button"
-                                  className={activeLocale === "ru" ? "active" : ""}
-                                  onClick={() =>
-                                    setReadingLocales((prev) => ({
-                                      ...prev,
-                                      [item.id]: "ru",
-                                    }))
-                                  }
-                                  disabled={!ruText}
-                                >
-                                  RU
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <button
-                                  type="button"
-                                  className={activeLocale === "en" ? "active" : ""}
-                                  onClick={() =>
-                                    setReadingLocales((prev) => ({
-                                      ...prev,
-                                      [item.id]: "en",
-                                    }))
-                                  }
-                                  disabled={!enText}
-                                >
-                                  EN
-                                </button>
-                                <button
-                                  type="button"
-                                  className={activeLocale === "ru" ? "active" : ""}
-                                  onClick={() =>
-                                    setReadingLocales((prev) => ({
-                                      ...prev,
-                                      [item.id]: "ru",
-                                    }))
-                                  }
-                                  disabled={!ruText}
-                                >
-                                  RU
-                                </button>
-                              </>
-                            )}
+                            {translations.map((entry) => (
+                              <button
+                                key={entry.code}
+                                type="button"
+                                className={activeLocale === entry.code ? "active" : ""}
+                                onClick={() =>
+                                  setReadingLocales((prev) => ({
+                                    ...prev,
+                                    [item.id]: entry.code,
+                                  }))
+                                }
+                                disabled={!entry.text}
+                              >
+                                {entry.label}
+                              </button>
+                            ))}
                           </div>
                           <div className="muted small">
                             {currentText
-                              ? currentText.split(/\\n+/).map((para, idx) => <p key={idx}>{para}</p>)
+                              ? currentText.split(/\n+/).map((para, idx) => <p key={idx}>{para}</p>)
                               : t("readings.translationNotAvailable")}
                           </div>
                         </div>
@@ -951,101 +984,118 @@ const App = () => {
             </header>
               <div className="reading-modal__body">
               <div className="reading-modal__text">
-                {activeReading.body.split(/\n+/).map((para, idx) => (
-                  <p key={idx}>{para}</p>
-                ))}
+                {(() => {
+                  const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
+                    bokmaal: "nb",
+                    nynorsk: "nn",
+                    english: "en",
+                  };
+                  const versions: Record<"en" | "nb" | "nn" | "ru", string> = {
+                    en:
+                      activeReading.stream === "english"
+                        ? activeReading.body
+                        : activeReading.translation_en,
+                    nb:
+                      activeReading.stream === "bokmaal"
+                        ? activeReading.body
+                        : activeReading.translation_nb,
+                    nn:
+                      activeReading.stream === "nynorsk"
+                        ? activeReading.body
+                        : activeReading.translation_nn,
+                    ru: activeReading.translation_ru,
+                  };
+                  const primaryLang = primaryLangByStream[stream];
+                  const primaryBodyText = (versions[primaryLang] || "").trim() || activeReading.body;
+                  return primaryBodyText.split(/\n+/).map((para: string, idx: number) => (
+                    <p key={idx}>{para}</p>
+                  ));
+                })()}
               </div>
               <div className="reading-modal__translation reading-translation">
                 {(() => {
-                  const baseLocale =
-                    activeReading.stream === "english" ? "ru" : "en";
+                  const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
+                    bokmaal: "nb",
+                    nynorsk: "nn",
+                    english: "en",
+                  };
+
+                  const versions: Record<"en" | "nb" | "nn" | "ru", string> = {
+                    en:
+                      activeReading.stream === "english"
+                        ? activeReading.body
+                        : activeReading.translation_en,
+                    nb:
+                      activeReading.stream === "bokmaal"
+                        ? activeReading.body
+                        : activeReading.translation_nb,
+                    nn:
+                      activeReading.stream === "nynorsk"
+                        ? activeReading.body
+                        : activeReading.translation_nn,
+                    ru: activeReading.translation_ru,
+                  };
+
+                  const primaryLang = primaryLangByStream[stream];
+
+                  const translations: {
+                    code: "en" | "nb" | "nn" | "ru";
+                    label: string;
+                    text: string;
+                  }[] = [];
+
+                  const langMeta: { code: "en" | "nb" | "nn" | "ru"; label: string }[] = [
+                    { code: "en", label: "EN" },
+                    { code: "nb", label: "NB" },
+                    { code: "nn", label: "NN" },
+                    { code: "ru", label: "RU" },
+                  ];
+
+                  langMeta.forEach(({ code, label }) => {
+                    if (code === primaryLang) {
+                      return;
+                    }
+                    translations.push({
+                      code,
+                      label,
+                      text: versions[code],
+                    });
+                  });
+
+                  const availableTranslations = translations.filter(
+                    (t) => t.text && t.text.trim().length > 0,
+                  );
+                  const storedLocale = readingLocales[activeReading.id];
                   const activeLocale =
-                    readingLocales[activeReading.id] || baseLocale;
-                  const enText =
-                    activeReading.stream === "english"
-                      ? ""
-                      : activeReading.translation_en;
-                  const nbText =
-                    activeReading.stream === "english"
-                      ? activeReading.translation_nb
-                      : "";
-                  const ruText = activeReading.translation_ru;
-                  const currentText =
-                    activeLocale === "ru"
-                      ? ruText
-                      : activeLocale === "nb"
-                      ? nbText
-                      : enText;
+                    (storedLocale &&
+                      availableTranslations.find((t) => t.code === storedLocale)?.code) ||
+                    availableTranslations[0]?.code ||
+                    translations[0]?.code ||
+                    "en";
+
+                  const currentEntry = availableTranslations.find(
+                    (t) => t.code === activeLocale,
+                  );
+                  const currentText = currentEntry?.text || "";
                   return (
                     <>
                       <div className="reading-translation-tabs">
-                        {activeReading.stream === "english" ? (
-                          <>
-                            <button
-                              type="button"
-                              className={
-                                activeLocale === "nb" ? "active" : ""
-                              }
-                              onClick={() =>
-                                setReadingLocales((prev) => ({
-                                  ...prev,
-                                  [activeReading.id]: "nb",
-                                }))
-                              }
-                              disabled={!nbText}
-                            >
-                              NB
-                            </button>
-                            <button
-                              type="button"
-                              className={
-                                activeLocale === "ru" ? "active" : ""
-                              }
-                              onClick={() =>
-                                setReadingLocales((prev) => ({
-                                  ...prev,
-                                  [activeReading.id]: "ru",
-                                }))
-                              }
-                              disabled={!ruText}
-                            >
-                              RU
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              type="button"
-                              className={
-                                activeLocale === "en" ? "active" : ""
-                              }
-                              onClick={() =>
-                                setReadingLocales((prev) => ({
-                                  ...prev,
-                                  [activeReading.id]: "en",
-                                }))
-                              }
-                              disabled={!enText}
-                            >
-                              EN
-                            </button>
-                            <button
-                              type="button"
-                              className={
-                                activeLocale === "ru" ? "active" : ""
-                              }
-                              onClick={() =>
-                                setReadingLocales((prev) => ({
-                                  ...prev,
-                                  [activeReading.id]: "ru",
-                                }))
-                              }
-                              disabled={!ruText}
-                            >
-                              RU
-                            </button>
-                          </>
-                        )}
+                        {translations.map((entry) => (
+                          <button
+                            key={entry.code}
+                            type="button"
+                            className={activeLocale === entry.code ? "active" : ""}
+                            onClick={() =>
+                              setReadingLocales((prev) => ({
+                                ...prev,
+                                [activeReading.id]: entry.code,
+                              }))
+                            }
+                            disabled={!entry.text}
+                          >
+                            {entry.label}
+                          </button>
+                        ))}
                       </div>
                       <div className="muted small reading-modal__translation-body">
                         {currentText

@@ -223,6 +223,10 @@ class ReadingSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "title",
+            "title_en",
+            "title_nb",
+            "title_nn",
+            "title_ru",
             "slug",
             "stream",
             "level",
