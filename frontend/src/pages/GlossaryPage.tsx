@@ -88,10 +88,14 @@ const GlossaryPage: React.FC<Props> = ({
         term.translation_en || (term.stream === "english" ? term.term : "");
       const conceptNb =
         term.translation_nb || (term.stream === "bokmaal" ? term.term : "");
+      const conceptNn =
+        term.translation_nn || (term.stream === "nynorsk" ? term.term : "");
       const conceptRu = term.translation_ru || "";
       const key = `${(conceptEn || "").toLowerCase()}|${(conceptNb || "")
         .toLowerCase()
-        .trim()}|${(conceptRu || "").toLowerCase()}`;
+        .trim()}|${(conceptNn || "").toLowerCase()}|${(conceptRu || "")
+        .toLowerCase()
+        .trim()}`;
 
       if (!key.replace(/\|/g, "").trim()) {
         return;
@@ -114,8 +118,8 @@ const GlossaryPage: React.FC<Props> = ({
         row.bokmaal = appendVariant(row.bokmaal, conceptNb);
       }
 
-      if (term.stream === "nynorsk" && term.term) {
-        row.nynorsk = appendVariant(row.nynorsk, term.term);
+      if (conceptNn) {
+        row.nynorsk = appendVariant(row.nynorsk, conceptNn);
       }
 
       if (term.stream === "english" && term.term) {
@@ -152,6 +156,11 @@ const GlossaryPage: React.FC<Props> = ({
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [rows]);
+
+  const favoritesCount = useMemo(
+    () => rows.filter((row) => vocabFavorites.includes(row.id)).length,
+    [rows, vocabFavorites],
+  );
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -227,28 +236,6 @@ const GlossaryPage: React.FC<Props> = ({
           })}
         </div>
 
-        {allTags.length > 0 && (
-          <div className="verbs-tags">
-            <button
-              type="button"
-              className={tag === "all" ? "active" : ""}
-              onClick={() => setTag("all")}
-            >
-              {t("tagAll")}
-            </button>
-            {allTags.map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={tag === value ? "active" : ""}
-                onClick={() => setTag(value)}
-              >
-                {value}
-              </button>
-            ))}
-          </div>
-        )}
-
         <div className="verbs-controls">
           <div className="verb-search">
             <input
@@ -270,10 +257,24 @@ const GlossaryPage: React.FC<Props> = ({
               type="button"
               className={view === "favorites" ? "active" : ""}
               onClick={() => setView("favorites")}
-              disabled={vocabFavorites.length === 0}
+              disabled={favoritesCount === 0}
             >
-              {t("vocabTabs.favorites")} ({vocabFavorites.length})
+              {t("vocabTabs.favorites")} ({favoritesCount})
             </button>
+            {allTags.length > 0 && (
+              <select
+                className="glossary-tag-select"
+                value={tag}
+                onChange={(e) => setTag(e.target.value)}
+              >
+                <option value="all">{t("tagAll")}</option>
+                {allTags.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
 
@@ -290,9 +291,8 @@ const GlossaryPage: React.FC<Props> = ({
               <div className="glossary-cell">
                 <button
                   type="button"
-                  className={`vocab-bookmark ${
-                    vocabFavorites.includes(row.id) ? "active" : ""
-                  }`}
+                  className={`vocab-bookmark ${vocabFavorites.includes(row.id) ? "active" : ""
+                    }`}
                   onClick={() => onToggleFavorite(row.id)}
                   aria-label={
                     vocabFavorites.includes(row.id)

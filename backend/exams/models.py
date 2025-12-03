@@ -368,6 +368,7 @@ class GlossaryTerm(models.Model):
     translation = models.CharField(max_length=255, blank=True)
     translation_en = models.CharField(max_length=255, blank=True, default="")
     translation_ru = models.CharField(max_length=255, blank=True, default="")
+    translation_nn = models.CharField(max_length=255, blank=True, default="")
     translation_nb = models.CharField(max_length=255, blank=True, default="")
     explanation = models.TextField(blank=True)
     stream = models.CharField(

@@ -375,6 +375,10 @@ class GlossaryTermViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             qs = qs.filter(
                 models.Q(term__icontains=search_term)
                 | models.Q(translation__icontains=search_term)
+                | models.Q(translation_en__icontains=search_term)
+                | models.Q(translation_ru__icontains=search_term)
+                | models.Q(translation_nb__icontains=search_term)
+                | models.Q(translation_nn__icontains=search_term)
                 | models.Q(explanation__icontains=search_term)
             )
         return qs.order_by("term")

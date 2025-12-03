@@ -154,6 +154,7 @@ export interface GlossaryTerm {
   translation: string;
   translation_en: string;
   translation_ru: string;
+  translation_nn: string;
   translation_nb: string;
   explanation: string;
   stream: Stream;

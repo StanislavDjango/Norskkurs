@@ -209,6 +209,7 @@ class GlossaryTermSerializer(serializers.ModelSerializer):
             "translation",
             "translation_en",
             "translation_ru",
+            "translation_nn",
             "translation_nb",
             "explanation",
             "stream",

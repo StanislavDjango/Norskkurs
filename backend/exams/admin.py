@@ -352,15 +352,16 @@ class GlossaryTermAdmin(admin.ModelAdmin):
         "term",
         "translation_en",
         "translation_ru",
+        "translation_nn",
         "translation_nb",
-        "stream",
-        "level",
+        "display_tags",
     )
     search_fields = (
         "term",
         "translation",
         "translation_en",
         "translation_ru",
+        "translation_nn",
         "translation_nb",
         "explanation",
         "tags",
@@ -432,3 +433,7 @@ class GlossaryTermAdmin(admin.ModelAdmin):
         return TemplateResponse(
             request, "admin/exams/verbentry/import_csv.html", context
         )
+
+    @admin.display(description=_("Tags"))
+    def display_tags(self, obj):
+        return ", ".join(obj.tags or [])

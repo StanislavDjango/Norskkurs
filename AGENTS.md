@@ -19,6 +19,18 @@
 - Не использовать UNC-пути вида `\\wsl$\Ubuntu\home\strengerst\Norskkurs` как build context для Docker и Git-команд.
 - В PowerShell избегать связок через `&&` — вместо этого вызывать отдельные команды или запускать цепочку уже внутри `bash -lc '...'`.
 
+### Notes for assistants (tests & sandbox)
+- Codex работает в песочнице и не всегда видит реальное Python/Django-окружение (venv, direnv, Docker). Если `python backend/manage.py ...` или команды Django падают из-за отсутствия Python/БД, **не меняйте настройки проекта только ради песочницы**.
+- В такой ситуации:
+  - явно объясняйте пользователю причину (нет Python, нет соединения с `db`, Docker не поднят и т.п.);
+  - логически проверяйте изменения (типы, импорты, маршруты);
+  - подсказывайте, какие команды запустить локально у себя.
+- Для реальной среды пользователя (WSL + Docker, каталог `~/Norskkurs`) используйте команды:
+  - миграции: `cd ~/Norskkurs && docker compose exec backend python manage.py migrate`;
+  - тесты: `cd ~/Norskkurs && docker compose exec backend python manage.py test exams`;
+  - локально без Docker (при необходимости): `cd ~/Norskkurs && source .venv/bin/activate && python backend/manage.py test exams`.
+- Рабочая копия одна: `~/Norskkurs` в WSL; не предлагайте запускать `docker compose` или `npm run dev` из `E:\Norskkurs` или через UNC-путь `\\wsl$...`.
+
 ## Coding Style & Naming Conventions
 - Python/Django: 4 spaces; keep business logic in model methods or `exams/utils`; management commands go in `backend/exams/management/commands`; REST views follow DRF patterns already in `exams`.
 - TypeScript/React: Functional components; PascalCase component files, camelCase props/state; keep shared styles in `frontend/src/style.css`; add UI strings to `frontend/src/i18n.ts`; mirror API shapes in `frontend/src/types.ts`.

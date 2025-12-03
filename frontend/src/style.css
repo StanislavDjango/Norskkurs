@@ -477,6 +477,25 @@ h2 {
   color: #fff;
 }
 
+.glossary-tags {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+}
+
+.glossary-tag-select {
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: #0f172a;
+}
+
+.glossary-topics-summary {
+  margin-left: 12px;
+}
+
 .verbs-controls {
   display: flex;
   flex-wrap: wrap;
@@ -530,6 +549,27 @@ h2 {
 .verbs-view-toggle button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+.glossary-board .verbs-controls {
+  padding: 0 10px 12px;
+}
+
+.glossary-board .verbs-view-toggle {
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+}
+
+.glossary-board .verbs-view-toggle button {
+  white-space: nowrap;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
+
+.glossary-board .verbs-view-toggle .glossary-tag-select {
+  max-width: 120px;
+  font-size: 0.8rem;
+  margin-left: 6px;
 }
 
 .verb-bookmark {

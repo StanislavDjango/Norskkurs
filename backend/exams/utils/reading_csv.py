@@ -18,6 +18,10 @@ def export_readings_to_file(file_obj: TextIO, queryset: Iterable[Reading]) -> No
     fieldnames = [
         "slug",
         "title",
+        "title_en",
+        "title_nb",
+        "title_nn",
+        "title_ru",
         "stream",
         "level",
         "tags",
@@ -35,6 +39,10 @@ def export_readings_to_file(file_obj: TextIO, queryset: Iterable[Reading]) -> No
             {
                 "slug": item.slug,
                 "title": item.title,
+                "title_en": item.title_en,
+                "title_nb": item.title_nb,
+                "title_nn": item.title_nn,
+                "title_ru": item.title_ru,
                 "stream": item.stream,
                 "level": item.level,
                 "tags": ";".join(item.tags or []),
@@ -55,6 +63,10 @@ def import_readings_from_reader(
     for row in reader:
         title = (row.get("title") or "").strip()
         slug = (row.get("slug") or "").strip()
+        title_en = (row.get("title_en") or "").strip()
+        title_nb = (row.get("title_nb") or "").strip()
+        title_nn = (row.get("title_nn") or "").strip()
+        title_ru = (row.get("title_ru") or "").strip()
         stream = (row.get("stream") or "").strip().lower()
         level = (row.get("level") or "").strip().upper()
         if not title and not slug:
@@ -66,6 +78,17 @@ def import_readings_from_reader(
             level = Reading._meta.get_field("level").default
         if not stream:
             stream = Reading._meta.get_field("stream").default
+
+        # Backwards compatibility for multilingual titles:
+        # older CSVs only had a single "title" column whose meaning
+        # depended on the stream.
+        if title and not (title_en or title_nb or title_nn or title_ru):
+            if stream == "english":
+                title_en = title
+            elif stream == "bokmaal":
+                title_nb = title
+            elif stream == "nynorsk":
+                title_nn = title
 
         legacy_translation = (row.get("translation") or "").strip()
         translation_en = (row.get("translation_en") or "").strip()
@@ -84,6 +107,10 @@ def import_readings_from_reader(
         defaults = {
             "title": title or slug,
             "stream": stream,
+            "title_en": title_en,
+            "title_nb": title_nb,
+            "title_nn": title_nn,
+            "title_ru": title_ru,
             "level": level,
             "body": (row.get("body") or "").strip(),
             "translation_en": translation_en,

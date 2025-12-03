@@ -39,6 +39,15 @@ import GlossaryPage from "./pages/GlossaryPage";
 
 const levelOrder: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4 };
 
+const normalizeVocabId = (id: string): string => {
+  const parts = id.split("|");
+  if (parts.length === 3) {
+    const [en, nb, ru] = parts;
+    return `${en}|${nb}||${ru}`;
+  }
+  return id;
+};
+
 type Section =
   | "readings"
   | "materials"
@@ -95,7 +104,10 @@ const App = () => {
   const [vocabFavorites, setVocabFavorites] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem("norskkurs_vocab_favs");
-      return raw ? JSON.parse(raw) : [];
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map((value) => normalizeVocabId(String(value)));
     } catch {
       return [];
     }
@@ -384,8 +396,11 @@ const App = () => {
   };
 
   const toggleVocabFavorite = (id: string) => {
+    const normalized = normalizeVocabId(id);
     setVocabFavorites((prev) =>
-      prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id],
+      prev.includes(normalized)
+        ? prev.filter((value) => value !== normalized)
+        : [...prev, normalized],
     );
   };
 
@@ -1313,10 +1328,14 @@ function buildReadingLookupRows(terms: GlossaryTerm[]): ReadingLookupRow[] {
       term.translation_en || (term.stream === "english" ? term.term : "");
     const conceptNb =
       term.translation_nb || (term.stream === "bokmaal" ? term.term : "");
+    const conceptNn =
+      term.translation_nn || (term.stream === "nynorsk" ? term.term : "");
     const conceptRu = term.translation_ru || "";
     const key = `${(conceptEn || "").toLowerCase()}|${(conceptNb || "")
       .toLowerCase()
-      .trim()}|${(conceptRu || "").toLowerCase()}`;
+      .trim()}|${(conceptNn || "").toLowerCase()}|${(conceptRu || "")
+      .toLowerCase()
+      .trim()}`;
 
     if (!key.replace(/\|/g, "").trim()) {
       return;
@@ -1340,11 +1359,11 @@ function buildReadingLookupRows(terms: GlossaryTerm[]): ReadingLookupRow[] {
       map.set(key, row);
     }
 
-    if (term.stream === "bokmaal" && term.term) {
-      row.bokmaal = appendVariant(row.bokmaal, term.term);
+    if (conceptNb) {
+      row.bokmaal = appendVariant(row.bokmaal, conceptNb);
     }
-    if (term.stream === "nynorsk" && term.term) {
-      row.nynorsk = appendVariant(row.nynorsk, term.term);
+    if (conceptNn) {
+      row.nynorsk = appendVariant(row.nynorsk, conceptNn);
     }
     if (term.stream === "english") {
       if (!row.english && (conceptEn || term.term)) {
