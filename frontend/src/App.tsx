@@ -822,8 +822,13 @@ const App = () => {
                           ? "nb"
                           : "en";
                         if (lang === "ru") return expr.meaning_ru;
-                        if (lang === "nb") return expr.meaning_nb;
-                        return expr.meaning_en;
+                        if (lang === "nb") {
+                          if (expr.stream === "nynorsk") {
+                            return expr.meaning_nn || expr.meaning_nb || expr.meaning_en;
+                          }
+                          return expr.meaning_nb || expr.meaning_en;
+                        }
+                        return expr.meaning_en || expr.meaning_nb || expr.meaning_ru;
                       })()}
                     </p>
                     <p className="muted small">{expr.example}</p>

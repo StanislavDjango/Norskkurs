@@ -144,6 +144,7 @@ export interface Expression {
   phrase: string;
   meaning_en: string;
   meaning_nb: string;
+  meaning_nn: string;
   meaning_ru: string;
   example: string;
   stream: Stream;

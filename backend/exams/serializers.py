@@ -202,6 +202,7 @@ class ExpressionSerializer(serializers.ModelSerializer):
             "phrase",
             "meaning_en",
             "meaning_nb",
+            "meaning_nn",
             "meaning_ru",
             "example",
             "stream",

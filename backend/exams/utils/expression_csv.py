@@ -20,6 +20,7 @@ def export_expressions_to_file(
         "phrase",
         "meaning_en",
         "meaning_nb",
+        "meaning_nn",
         "meaning_ru",
         "example",
         "stream",
@@ -33,6 +34,7 @@ def export_expressions_to_file(
                 "phrase": item.phrase,
                 "meaning_en": item.meaning_en,
                 "meaning_nb": item.meaning_nb,
+                "meaning_nn": item.meaning_nn,
                 "meaning_ru": item.meaning_ru,
                 "example": item.example,
                 "stream": item.stream,
@@ -58,11 +60,13 @@ def import_expressions_from_reader(
 
         meaning_en = (row.get("meaning_en") or "").strip()
         meaning_nb = (row.get("meaning_nb") or "").strip()
+        meaning_nn = (row.get("meaning_nn") or "").strip()
         meaning_ru = (row.get("meaning_ru") or "").strip()
 
         defaults = {
             "meaning_en": meaning_en,
             "meaning_nb": meaning_nb,
+            "meaning_nn": meaning_nn,
             "meaning_ru": meaning_ru,
             "example": (row.get("example") or "").strip(),
             "tags": [
