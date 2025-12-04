@@ -92,6 +92,17 @@ const App = () => {
   const [homework, setHomework] = useState<Homework[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [expressions, setExpressions] = useState<Expression[]>([]);
+  const [expressionFavorites, setExpressionFavorites] = useState<number[]>(() => {
+    try {
+      const raw = localStorage.getItem("norskkurs_expression_favs");
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map((value) => Number(value)).filter((value) => !Number.isNaN(value));
+    } catch {
+      return [];
+    }
+  });
+  const [expressionView, setExpressionView] = useState<"all" | "favorites">("all");
   const [readings, setReadings] = useState<Reading[]>([]);
   const [openTranslations, setOpenTranslations] = useState<Set<number>>(new Set());
   const [isNavOpen, setIsNavOpen] = useState(false);
@@ -132,6 +143,17 @@ const App = () => {
       // ignore storage errors
     }
   }, [vocabFavorites]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "norskkurs_expression_favs",
+        JSON.stringify(expressionFavorites),
+      );
+    } catch {
+      // ignore storage errors
+    }
+  }, [expressionFavorites]);
 
   useEffect(() => {
     const params = {
@@ -405,6 +427,13 @@ const App = () => {
     return readings.filter((item) => (item.tags || []).includes(readingTag));
   }, [readings, readingTag]);
 
+  const filteredExpressions = useMemo(() => {
+    if (expressionView === "all") return expressions;
+    if (expressionFavorites.length === 0) return [];
+    const favoriteSet = new Set(expressionFavorites);
+    return expressions.filter((expr) => favoriteSet.has(expr.id));
+  }, [expressions, expressionFavorites, expressionView]);
+
   const handleLogout = async () => {
     try {
       await logoutProfile();
@@ -421,6 +450,12 @@ const App = () => {
       prev.includes(normalized)
         ? prev.filter((value) => value !== normalized)
         : [...prev, normalized],
+    );
+  };
+
+  const toggleExpressionFavorite = (id: number) => {
+    setExpressionFavorites((prev) =>
+      prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id],
     );
   };
 
@@ -804,14 +839,47 @@ const App = () => {
         return (
           <>
             <h2>{t("nav.expressions")}</h2>
-            {expressions.length === 0 ? (
+            {expressions.length > 0 && (
+              <div className="verbs-view-toggle expressions-view-toggle">
+                <button
+                  type="button"
+                  className={expressionView === "all" ? "active" : ""}
+                  onClick={() => setExpressionView("all")}
+                >
+                  {t("expressionTabs.all")}
+                </button>
+                <button
+                  type="button"
+                  className={expressionView === "favorites" ? "active" : ""}
+                  onClick={() => setExpressionView("favorites")}
+                  disabled={expressionFavorites.length === 0}
+                >
+                  {t("expressionTabs.favorites")} ({expressionFavorites.length})
+                </button>
+              </div>
+            )}
+            {filteredExpressions.length === 0 ? (
               <p className="muted">{t("emptyList")}</p>
             ) : (
               <div className="card-list">
-                {expressions.map((expr) => (
+                {filteredExpressions.map((expr) => (
                   <article key={expr.id} className="card">
-                    <div className="card-meta">
+                    <div className="card-meta expression-meta">
                       <span className="badge">{streamLabel(expr.stream)}</span>
+                      <button
+                        type="button"
+                        className={`vocab-bookmark ${
+                          expressionFavorites.includes(expr.id) ? "active" : ""
+                        }`}
+                        onClick={() => toggleExpressionFavorite(expr.id)}
+                        aria-label={
+                          expressionFavorites.includes(expr.id)
+                            ? t("removeFavorite")
+                            : t("addFavorite")
+                        }
+                      >
+                        ★
+                      </button>
                     </div>
                     <h3>{expr.phrase}</h3>
                     <p className="muted small">

@@ -66,6 +66,10 @@ const resources = {
         all: "All verbs",
         favorites: "Bookmarks",
       },
+      expressionTabs: {
+        all: "All expressions",
+        favorites: "My list",
+      },
       vocabTabs: {
         all: "All words",
         favorites: "My words",
@@ -192,6 +196,10 @@ nb: {
         all: "Alle verb",
         favorites: "Mine favoritter",
       },
+      expressionTabs: {
+        all: "Alle uttrykk",
+        favorites: "Min liste",
+      },
       vocabTabs: {
         all: "Alle ord",
         favorites: "Mine ord",
@@ -312,6 +320,10 @@ ru: {
       },
       verbTabs: {
         all: "Все глаголы",
+        favorites: "Мой список",
+      },
+      expressionTabs: {
+        all: "Все выражения",
         favorites: "Мой список",
       },
       vocabTabs: {

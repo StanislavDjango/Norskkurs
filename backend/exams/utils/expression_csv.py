@@ -2,7 +2,7 @@ import csv
 from dataclasses import dataclass
 from typing import Iterable, TextIO
 
-from ..models import Expression
+from ..models import Expression, Test
 
 
 @dataclass
@@ -53,10 +53,16 @@ def import_expressions_from_reader(
         if not phrase:
             skipped += 1
             continue
-
-        stream = (row.get("stream") or "").strip().lower()
-        if not stream:
+        stream_raw = (row.get("stream") or "").strip().lower()
+        if not stream_raw:
             stream = Expression._meta.get_field("stream").default
+        else:
+            if stream_raw not in Test.Stream.values:
+                raise ValueError(
+                    f"Invalid stream '{stream_raw}' for phrase '{phrase}'. "
+                    f"Use one of: {', '.join(Test.Stream.values)}."
+                )
+            stream = stream_raw
 
         meaning_en = (row.get("meaning_en") or "").strip()
         meaning_nb = (row.get("meaning_nb") or "").strip()
