@@ -283,25 +283,13 @@ const GlossaryPage: React.FC<Props> = ({
           <span>{t("streamLabels.nynorsk")}</span>
           <span>{t("glossaryEnglishColumn")}</span>
           <span>{t("glossaryRussianColumn")}</span>
+          <span aria-hidden="true">★</span>
         </div>
 
         <div className="glossary-table">
           {filteredRows.slice(0, visibleCount).map((row) => (
             <div key={row.id} className="glossary-row">
               <div className="glossary-cell">
-                <button
-                  type="button"
-                  className={`vocab-bookmark ${vocabFavorites.includes(row.id) ? "active" : ""
-                    }`}
-                  onClick={() => onToggleFavorite(row.id)}
-                  aria-label={
-                    vocabFavorites.includes(row.id)
-                      ? t("removeFavorite")
-                      : t("addFavorite")
-                  }
-                >
-                  ★
-                </button>
                 <span className="glossary-label">{t("streamLabels.bokmaal")}</span>
                 <strong>{row.bokmaal || "—"}</strong>
               </div>
@@ -316,6 +304,22 @@ const GlossaryPage: React.FC<Props> = ({
               <div className="glossary-cell">
                 <span className="glossary-label">{t("glossaryRussianColumn")}</span>
                 <strong>{row.russian || "—"}</strong>
+              </div>
+              <div className="glossary-cell">
+                <button
+                  type="button"
+                  className={`vocab-bookmark ${
+                    vocabFavorites.includes(row.id) ? "active" : ""
+                  }`}
+                  onClick={() => onToggleFavorite(row.id)}
+                  aria-label={
+                    vocabFavorites.includes(row.id)
+                      ? t("removeFavorite")
+                      : t("addFavorite")
+                  }
+                >
+                  ★
+                </button>
               </div>
             </div>
           ))}

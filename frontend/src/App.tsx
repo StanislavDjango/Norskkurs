@@ -101,6 +101,7 @@ const App = () => {
   const [readingLocales, setReadingLocales] =
     useState<Record<number, "en" | "nb" | "nn" | "ru">>({});
   const [activeReading, setActiveReading] = useState<Reading | null>(null);
+  const [readingTag, setReadingTag] = useState<string>("all");
   const [vocabFavorites, setVocabFavorites] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem("norskkurs_vocab_favs");
@@ -385,6 +386,19 @@ const App = () => {
 
   const visibleTests = useMemo(() => filteredTests.slice(0, visibleCount), [filteredTests, visibleCount]);
 
+  const readingTags = useMemo(() => {
+    const set = new Set<string>();
+    readings.forEach((item) => {
+      (item.tags || []).forEach((tag) => set.add(tag));
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [readings]);
+
+  const filteredReadings = useMemo(() => {
+    if (readingTag === "all") return readings;
+    return readings.filter((item) => (item.tags || []).includes(readingTag));
+  }, [readings, readingTag]);
+
   const handleLogout = async () => {
     try {
       await logoutProfile();
@@ -478,24 +492,40 @@ const App = () => {
             <div className="readings-toolbar">
               <div className="readings-toolbar-header">
                 <h2>{t("nav.readings")}</h2>
-                <button
-                  type="button"
-                  className="ghost small"
-                  onClick={() => {
-                    setGlossaryInitialView("favorites");
-                    setActiveSection("glossary");
-                  }}
-                >
-                  {t("readings.myWordsButton")}
-                </button>
+                <div className="readings-toolbar-actions">
+                  {readingTags.length > 0 && (
+                    <select
+                      className="glossary-tag-select"
+                      value={readingTag}
+                      onChange={(e) => setReadingTag(e.target.value)}
+                    >
+                      <option value="all">{t("tagAll")}</option>
+                      {readingTags.map((tag) => (
+                        <option key={tag} value={tag}>
+                          {tag}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <button
+                    type="button"
+                    className="ghost small"
+                    onClick={() => {
+                      setGlossaryInitialView("favorites");
+                      setActiveSection("glossary");
+                    }}
+                  >
+                    {t("readings.myWordsButton")}
+                  </button>
+                </div>
               </div>
               {renderReadingLookup("toolbar")}
             </div>
-            {readings.length === 0 ? (
+            {filteredReadings.length === 0 ? (
               <p className="muted">{t("readings.empty")}</p>
             ) : (
               <div className="card-list readings-list">
-                {readings.map((item) => {
+                {filteredReadings.map((item) => {
                   const isOpen = openTranslations.has(item.id);
 
                   const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
