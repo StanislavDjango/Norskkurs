@@ -814,7 +814,18 @@ const App = () => {
                       <span className="badge">{streamLabel(expr.stream)}</span>
                     </div>
                     <h3>{expr.phrase}</h3>
-                    <p className="muted small">{expr.meaning}</p>
+                    <p className="muted small">
+                      {(() => {
+                        const lang = i18n.language.startsWith("ru")
+                          ? "ru"
+                          : i18n.language.startsWith("nb") || i18n.language.startsWith("no")
+                          ? "nb"
+                          : "en";
+                        if (lang === "ru") return expr.meaning_ru;
+                        if (lang === "nb") return expr.meaning_nb;
+                        return expr.meaning_en;
+                      })()}
+                    </p>
                     <p className="muted small">{expr.example}</p>
                   </article>
                 ))}

@@ -347,7 +347,9 @@ class VerbEntry(models.Model):
 
 class Expression(models.Model):
     phrase = models.CharField(max_length=255)
-    meaning = models.TextField()
+    meaning_en = models.TextField(blank=True, default="")
+    meaning_nb = models.TextField(blank=True, default="")
+    meaning_ru = models.TextField(blank=True, default="")
     example = models.TextField(blank=True)
     stream = models.CharField(
         max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL

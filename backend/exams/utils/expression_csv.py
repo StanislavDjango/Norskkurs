@@ -16,14 +16,24 @@ def export_expressions_to_file(
     file_obj: TextIO,
     queryset: Iterable[Expression],
 ) -> None:
-    fieldnames = ["phrase", "meaning", "example", "stream", "tags"]
+    fieldnames = [
+        "phrase",
+        "meaning_en",
+        "meaning_nb",
+        "meaning_ru",
+        "example",
+        "stream",
+        "tags",
+    ]
     writer = csv.DictWriter(file_obj, fieldnames=fieldnames)
     writer.writeheader()
     for item in queryset:
         writer.writerow(
             {
                 "phrase": item.phrase,
-                "meaning": item.meaning,
+                "meaning_en": item.meaning_en,
+                "meaning_nb": item.meaning_nb,
+                "meaning_ru": item.meaning_ru,
                 "example": item.example,
                 "stream": item.stream,
                 "tags": ";".join(item.tags or []),
@@ -46,8 +56,14 @@ def import_expressions_from_reader(
         if not stream:
             stream = Expression._meta.get_field("stream").default
 
+        meaning_en = (row.get("meaning_en") or "").strip()
+        meaning_nb = (row.get("meaning_nb") or "").strip()
+        meaning_ru = (row.get("meaning_ru") or "").strip()
+
         defaults = {
-            "meaning": (row.get("meaning") or "").strip(),
+            "meaning_en": meaning_en,
+            "meaning_nb": meaning_nb,
+            "meaning_ru": meaning_ru,
             "example": (row.get("example") or "").strip(),
             "tags": [
                 t.strip() for t in (row.get("tags") or "").split(";") if t.strip()

@@ -142,7 +142,9 @@ export interface VerbTagOption {
 export interface Expression {
   id: number;
   phrase: string;
-  meaning: string;
+  meaning_en: string;
+  meaning_nb: string;
+  meaning_ru: string;
   example: string;
   stream: Stream;
   tags: string[];

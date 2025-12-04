@@ -197,7 +197,16 @@ class VerbEntrySerializer(serializers.ModelSerializer):
 class ExpressionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Expression
-        fields = ("id", "phrase", "meaning", "example", "stream", "tags")
+        fields = (
+            "id",
+            "phrase",
+            "meaning_en",
+            "meaning_nb",
+            "meaning_ru",
+            "example",
+            "stream",
+            "tags",
+        )
 
 
 class GlossaryTermSerializer(serializers.ModelSerializer):
