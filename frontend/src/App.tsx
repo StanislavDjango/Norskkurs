@@ -197,23 +197,29 @@ const App = () => {
       setReadingLookupLoading(false);
       return;
     }
+
     let cancelled = false;
-    setReadingLookupLoading(true);
-    fetchGlossary({ q: query })
-      .then((data) => {
-        if (cancelled) return;
-        setReadingLookupResults(buildReadingLookupRows(data));
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setReadingLookupResults([]);
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setReadingLookupLoading(false);
-      });
+    const handle = setTimeout(() => {
+      if (cancelled) return;
+      setReadingLookupLoading(true);
+      fetchGlossary({ q: query })
+        .then((data) => {
+          if (cancelled) return;
+          setReadingLookupResults(buildReadingLookupRows(data));
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setReadingLookupResults([]);
+        })
+        .finally(() => {
+          if (cancelled) return;
+          setReadingLookupLoading(false);
+        });
+    }, 300);
+
     return () => {
       cancelled = true;
+      clearTimeout(handle);
     };
   }, [readingLookup, stream]);
 

@@ -25,6 +25,10 @@ from .models import (
     Test,
     VerbEntry,
 )
+from .utils.expression_csv import (
+    export_expressions_to_file,
+    import_expressions_from_reader,
+)
 from .utils.glossary_csv import export_glossary_to_file, import_glossary_from_reader
 from .utils.reading_csv import export_readings_to_file, import_readings_from_reader
 from .utils.verb_csv import export_verbs_to_file, import_verbs_from_reader
@@ -344,6 +348,74 @@ class ExpressionAdmin(admin.ModelAdmin):
     list_display = ("phrase", "stream")
     search_fields = ("phrase", "meaning", "tags")
     list_filter = ("stream",)
+    change_list_template = "admin/exams/expression/change_list.html"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "export-csv/",
+                self.admin_site.admin_view(self.export_csv_view),
+                name="exams_expression_export_csv",
+            ),
+            path(
+                "import-csv/",
+                self.admin_site.admin_view(self.import_csv_view),
+                name="exams_expression_import_csv",
+            ),
+        ]
+        return custom_urls + urls
+
+    def export_csv_view(self, request):
+        queryset = self.get_queryset(request)
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = (
+            'attachment; filename="expressions-template.csv"'
+        )
+        export_expressions_to_file(response, queryset)
+        return response
+
+    def import_csv_view(self, request):
+        if request.method == "POST":
+            form = VerbImportForm(request.POST, request.FILES)
+            if form.is_valid():
+                upload = form.cleaned_data["csv_file"]
+                try:
+                    decoded = upload.read().decode("utf-8")
+                except UnicodeDecodeError:
+                    form.add_error("csv_file", _("File must be UTF-8 encoded."))
+                else:
+                    reader = csv.DictReader(io.StringIO(decoded))
+                    try:
+                        stats = import_expressions_from_reader(
+                            reader, update=form.cleaned_data["update_existing"]
+                        )
+                    except ValueError as exc:
+                        form.add_error("csv_file", str(exc))
+                    else:
+                        messages.success(
+                            request,
+                            _(
+                                "Import finished. Created: %(created)d Updated: %(updated)d Skipped: %(skipped)d"
+                            )
+                            % {
+                                "created": stats.created,
+                                "updated": stats.updated,
+                                "skipped": stats.skipped,
+                            },
+                        )
+                        return redirect("admin:exams_expression_changelist")
+        else:
+            form = VerbImportForm()
+        context = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "form": form,
+            "title": _("Import expressions from CSV"),
+        }
+        return TemplateResponse(
+            request, "admin/exams/verbentry/import_csv.html", context
+        )
 
 
 @admin.register(GlossaryTerm)
