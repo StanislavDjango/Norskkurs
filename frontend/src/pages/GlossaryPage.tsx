@@ -69,6 +69,9 @@ const GlossaryPage: React.FC<Props> = ({
   const [visibleCount, setVisibleCount] = useState<number>(15);
   const [view, setView] = useState<"all" | "favorites">(() => initialView);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [isTraining, setIsTraining] = useState(false);
+  const [trainingIndex, setTrainingIndex] = useState(0);
+  const [trainingShowAnswer, setTrainingShowAnswer] = useState(false);
 
   useEffect(() => {
     fetchGlossary()
@@ -79,6 +82,18 @@ const GlossaryPage: React.FC<Props> = ({
   useEffect(() => {
     setVisibleCount(15);
   }, [letter, tag, search, terms, view, vocabFavorites]);
+
+  useEffect(() => {
+    if (!isTraining) {
+      return;
+    }
+    if (vocabFavorites.length === 0) {
+      setIsTraining(false);
+      return;
+    }
+    setTrainingIndex(0);
+    setTrainingShowAnswer(false);
+  }, [isTraining, vocabFavorites]);
 
   const rows = useMemo<GlossaryRow[]>(() => {
     const map = new Map<string, GlossaryRow>();
@@ -162,6 +177,11 @@ const GlossaryPage: React.FC<Props> = ({
     [rows, vocabFavorites],
   );
 
+  const favoriteRows = useMemo(
+    () => rows.filter((row) => vocabFavorites.includes(row.id)),
+    [rows, vocabFavorites],
+  );
+
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((row) => {
@@ -206,6 +226,20 @@ const GlossaryPage: React.FC<Props> = ({
     return <p className="muted">{t("emptyList")}</p>;
   }
 
+  const hasTraining = favoriteRows.length > 0;
+  const currentTrainingRow =
+    hasTraining && trainingIndex < favoriteRows.length
+      ? favoriteRows[trainingIndex]
+      : favoriteRows[0];
+
+  const goToNextTraining = () => {
+    if (!hasTraining) return;
+    setTrainingShowAnswer(false);
+    setTrainingIndex((index) =>
+      index + 1 >= favoriteRows.length ? 0 : index + 1,
+    );
+  };
+
   return (
     <>
       <h2 className="sr-only">{t("nav.glossary")}</h2>
@@ -249,17 +283,37 @@ const GlossaryPage: React.FC<Props> = ({
             <button
               type="button"
               className={view === "all" ? "active" : ""}
-              onClick={() => setView("all")}
+              onClick={() => {
+                setView("all");
+                setIsTraining(false);
+              }}
             >
               {t("vocabTabs.all")}
             </button>
             <button
               type="button"
               className={view === "favorites" ? "active" : ""}
-              onClick={() => setView("favorites")}
+              onClick={() => {
+                setView("favorites");
+                setIsTraining(false);
+              }}
               disabled={favoritesCount === 0}
             >
               {t("vocabTabs.favorites")} ({favoritesCount})
+            </button>
+            <button
+              type="button"
+              className={`vocab-training-toggle ${
+                isTraining ? "active" : ""
+              }`}
+              onClick={() => {
+                if (!hasTraining) return;
+                setView("favorites");
+                setIsTraining((prev) => !prev);
+              }}
+              disabled={!hasTraining}
+            >
+              {t("vocabTabs.training")}
             </button>
             {allTags.length > 0 && (
               <select
@@ -278,54 +332,131 @@ const GlossaryPage: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="glossary-board__header">
-          <span>{t("streamLabels.bokmaal")}</span>
-          <span>{t("streamLabels.nynorsk")}</span>
-          <span>{t("glossaryEnglishColumn")}</span>
-          <span>{t("glossaryRussianColumn")}</span>
-          <span aria-hidden="true">★</span>
-        </div>
+        {isTraining && hasTraining ? (
+          <div className="card vocab-training-card">
+            <div className="vocab-training-header">
+              <h3>{t("vocabTraining.title")}</h3>
+              <p className="muted small">
+                {t("vocabTraining.counter", {
+                  current: favoriteRows.indexOf(currentTrainingRow) + 1,
+                  total: favoriteRows.length,
+                })}
+              </p>
+            </div>
+            <div className="vocab-training-body">
+              <div className="vocab-training-word">
+                <span className="label">
+                  {t("streamLabels.bokmaal")}
+                </span>
+                <strong>{currentTrainingRow.bokmaal || "—"}</strong>
+              </div>
+              {currentTrainingRow.nynorsk && (
+                <div className="vocab-training-word secondary">
+                  <span className="label">
+                    {t("streamLabels.nynorsk")}
+                  </span>
+                  <span>{currentTrainingRow.nynorsk}</span>
+                </div>
+              )}
 
-        <div className="glossary-table">
-          {filteredRows.slice(0, visibleCount).map((row) => (
-            <div key={row.id} className="glossary-row">
-              <div className="glossary-cell">
-                <span className="glossary-label">{t("streamLabels.bokmaal")}</span>
-                <strong>{row.bokmaal || "—"}</strong>
-              </div>
-              <div className="glossary-cell">
-                <span className="glossary-label">{t("streamLabels.nynorsk")}</span>
-                <strong>{row.nynorsk || "—"}</strong>
-              </div>
-              <div className="glossary-cell">
-                <span className="glossary-label">{t("glossaryEnglishColumn")}</span>
-                <strong>{row.english || "—"}</strong>
-              </div>
-              <div className="glossary-cell">
-                <span className="glossary-label">{t("glossaryRussianColumn")}</span>
-                <strong>{row.russian || "—"}</strong>
-              </div>
-              <div className="glossary-cell">
+              {!trainingShowAnswer ? (
                 <button
                   type="button"
-                  className={`vocab-bookmark ${
-                    vocabFavorites.includes(row.id) ? "active" : ""
-                  }`}
-                  onClick={() => onToggleFavorite(row.id)}
-                  aria-label={
-                    vocabFavorites.includes(row.id)
-                      ? t("removeFavorite")
-                      : t("addFavorite")
-                  }
+                  className="ghost"
+                  onClick={() => setTrainingShowAnswer(true)}
                 >
-                  ★
+                  {t("vocabTraining.showAnswer")}
                 </button>
-              </div>
+              ) : (
+                <div className="vocab-training-answer">
+                  <div>
+                    <span className="label">
+                      {t("glossaryEnglishColumn")}
+                    </span>
+                    <span>{currentTrainingRow.english || "—"}</span>
+                  </div>
+                  <div>
+                    <span className="label">
+                      {t("glossaryRussianColumn")}
+                    </span>
+                    <span>{currentTrainingRow.russian || "—"}</span>
+                  </div>
+                </div>
+              )}
             </div>
-          ))}
-        </div>
+            <div className="actions inline-actions">
+              <button type="button" className="ghost" onClick={goToNextTraining}>
+                {t("vocabTraining.next")}
+              </button>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setIsTraining(false)}
+              >
+                {t("vocabTraining.backToList")}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="glossary-board__header">
+              <span>{t("streamLabels.bokmaal")}</span>
+              <span>{t("streamLabels.nynorsk")}</span>
+              <span>{t("glossaryEnglishColumn")}</span>
+              <span>{t("glossaryRussianColumn")}</span>
+              <span aria-hidden="true">★</span>
+            </div>
 
-        {filteredRows.length > visibleCount && (
+            <div className="glossary-table">
+              {filteredRows.slice(0, visibleCount).map((row) => (
+                <div key={row.id} className="glossary-row">
+                  <div className="glossary-cell">
+                    <span className="glossary-label">
+                      {t("streamLabels.bokmaal")}
+                    </span>
+                    <strong>{row.bokmaal || "—"}</strong>
+                  </div>
+                  <div className="glossary-cell">
+                    <span className="glossary-label">
+                      {t("streamLabels.nynorsk")}
+                    </span>
+                    <strong>{row.nynorsk || "—"}</strong>
+                  </div>
+                  <div className="glossary-cell">
+                    <span className="glossary-label">
+                      {t("glossaryEnglishColumn")}
+                    </span>
+                    <strong>{row.english || "—"}</strong>
+                  </div>
+                  <div className="glossary-cell">
+                    <span className="glossary-label">
+                      {t("glossaryRussianColumn")}
+                    </span>
+                    <strong>{row.russian || "—"}</strong>
+                  </div>
+                  <div className="glossary-cell">
+                    <button
+                      type="button"
+                      className={`vocab-bookmark ${
+                        vocabFavorites.includes(row.id) ? "active" : ""
+                      }`}
+                      onClick={() => onToggleFavorite(row.id)}
+                      aria-label={
+                        vocabFavorites.includes(row.id)
+                          ? t("removeFavorite")
+                          : t("addFavorite")
+                      }
+                    >
+                      ★
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {!isTraining && filteredRows.length > visibleCount && (
           <>
             <div
               className="verbs-sentinel"

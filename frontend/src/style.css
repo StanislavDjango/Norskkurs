@@ -622,6 +622,87 @@ h2 {
   color: #fbbf24;
 }
 
+.vocab-training-toggle {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  background: rgba(56, 189, 248, 0.08);
+  color: #0284c7;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vocab-training-toggle.active {
+  background: rgba(56, 189, 248, 0.2);
+}
+
+.vocab-training-card {
+  margin-top: 16px;
+}
+
+.vocab-training-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.vocab-training-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.vocab-training-word {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vocab-training-word .label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+.vocab-training-word strong {
+  font-size: 1.4rem;
+  color: #0f172a;
+}
+
+.vocab-training-word.secondary span {
+  font-size: 1rem;
+}
+
+.vocab-training-answer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.vocab-training-answer .label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.inline-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .verb-modal__translations {
   display: flex;
   gap: 8px;

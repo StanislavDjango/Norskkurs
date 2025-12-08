@@ -111,6 +111,14 @@ const resources = {
       vocabTabs: {
         all: "All words",
         favorites: "My words",
+        training: "Training",
+      },
+      vocabTraining: {
+        title: "My words training",
+        showAnswer: "Show translation",
+        next: "Next word",
+        backToList: "Back to list",
+        counter: "{{current}} of {{total}} words",
       },
       verbSearchPlaceholder: "Search verb (without å/to)...",
       addFavorite: "Add to bookmarks",
@@ -280,6 +288,14 @@ nb: {
       vocabTabs: {
         all: "Alle ord",
         favorites: "Mine ord",
+        training: "Trening",
+      },
+      vocabTraining: {
+        title: "Trening av ordlista",
+        showAnswer: "Vis oversettelse",
+        next: "Neste ord",
+        backToList: "Tilbake til liste",
+        counter: "{{current}} av {{total}} ord",
       },
       verbSearchPlaceholder: "Søk etter verb (utan å/to)...",
       addFavorite: "Legg til i favoritter",
@@ -445,6 +461,14 @@ ru: {
       vocabTabs: {
         all: "Все слова",
         favorites: "Мой словарик",
+        training: "Тренировка",
+      },
+      vocabTraining: {
+        title: "Тренировка словарика",
+        showAnswer: "Показать перевод",
+        next: "Следующее слово",
+        backToList: "К списку слов",
+        counter: "{{current}} из {{total}} слов",
       },
       verbSearchPlaceholder: "Найти глагол (без å/to)...",
       addFavorite: "Добавить в закладки",
@@ -502,6 +526,8 @@ ru: {
   },
 },
 };
+
+i18n.use(initReactI18next).init({
 
 i18n.use(initReactI18next).init({
   resources,
