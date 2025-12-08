@@ -67,6 +67,8 @@ export const updateProfile = async (payload: {
   date_of_birth?: string;
   learning_language?: string;
   native_language?: string;
+  vocab_favorites?: string[];
+  expression_favorites?: number[];
 }): Promise<ProfileInfo> => {
   const res = await api.post<ProfileInfo>("profile/update/", payload);
   return res.data;

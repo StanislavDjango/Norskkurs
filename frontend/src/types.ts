@@ -83,6 +83,8 @@ export interface ProfileInfo {
   date_of_birth?: string | null;
   learning_language?: string;
   native_language?: string;
+   vocab_favorites?: string[];
+   expression_favorites?: number[];
 }
 
 export interface ProfileProgressLevelSummary {

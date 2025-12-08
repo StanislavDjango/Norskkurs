@@ -229,6 +229,25 @@ const App = () => {
       .then((data) => {
         setAuth(data);
         setIsTeacher(data.is_teacher);
+        if (Array.isArray(data.vocab_favorites)) {
+          setVocabFavorites((prev) => {
+            const existing = new Set(prev.map((value) => normalizeVocabId(value)));
+            data.vocab_favorites
+              .map((value) => normalizeVocabId(String(value)))
+              .forEach((value) => existing.add(value));
+            return Array.from(existing);
+          });
+        }
+        if (Array.isArray(data.expression_favorites)) {
+          setExpressionFavorites((prev) => {
+            const existing = new Set(prev);
+            data.expression_favorites
+              .map((value) => Number(value))
+              .filter((value) => !Number.isNaN(value))
+              .forEach((value) => existing.add(value));
+            return Array.from(existing);
+          });
+        }
         setProfile((prev) => ({
           ...prev,
           name: prev.name || data.display_name || prev.name,
@@ -583,6 +602,25 @@ const App = () => {
   const handleAuthSuccess = (profileInfo: ProfileInfo, email: string) => {
     setAuth(profileInfo);
     setIsTeacher(profileInfo.is_teacher);
+    if (Array.isArray(profileInfo.vocab_favorites)) {
+      setVocabFavorites((prev) => {
+        const existing = new Set(prev.map((value) => normalizeVocabId(value)));
+        profileInfo.vocab_favorites
+          .map((value) => normalizeVocabId(String(value)))
+          .forEach((value) => existing.add(value));
+        return Array.from(existing);
+      });
+    }
+    if (Array.isArray(profileInfo.expression_favorites)) {
+      setExpressionFavorites((prev) => {
+        const existing = new Set(prev);
+        profileInfo.expression_favorites
+          .map((value) => Number(value))
+          .filter((value) => !Number.isNaN(value))
+          .forEach((value) => existing.add(value));
+        return Array.from(existing);
+      });
+    }
     setProfile((prev) => ({
       ...prev,
       name: prev.name || profileInfo.display_name || prev.name,
@@ -606,6 +644,30 @@ const App = () => {
       setStudentEmail(email);
     }
   };
+
+  const syncFavorites = async (
+    currentVocab: string[],
+    currentExpressions: number[],
+  ) => {
+    if (!auth?.is_authenticated) {
+      return;
+    }
+    try {
+      const updated = await updateProfile({
+        vocab_favorites: currentVocab,
+        expression_favorites: currentExpressions,
+      });
+      setAuth(updated);
+    } catch {
+      // If sync fails, we still keep favorites locally.
+    }
+  };
+
+  useEffect(() => {
+    if (!auth?.is_authenticated) return;
+    void syncFavorites(vocabFavorites, expressionFavorites);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth?.is_authenticated, vocabFavorites, expressionFavorites]);
 
   const handleProfileSave = async () => {
     const newName = profile.name.trim();
@@ -781,17 +843,21 @@ const App = () => {
 
   const toggleVocabFavorite = (id: string) => {
     const normalized = normalizeVocabId(id);
-    setVocabFavorites((prev) =>
-      prev.includes(normalized)
+    setVocabFavorites((prev) => {
+      const exists = prev.includes(normalized);
+      const next = exists
         ? prev.filter((value) => value !== normalized)
-        : [...prev, normalized],
-    );
+        : [...prev, normalized];
+      return next;
+    });
   };
 
   const toggleExpressionFavorite = (id: number) => {
-    setExpressionFavorites((prev) =>
-      prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id],
-    );
+    setExpressionFavorites((prev) => {
+      const exists = prev.includes(id);
+      const next = exists ? prev.filter((value) => value !== id) : [...prev, id];
+      return next;
+    });
   };
 
   const renderReadingLookup = (variant: "toolbar" | "modal") => (
@@ -1024,6 +1090,50 @@ const App = () => {
               {!profileProgress && !profileProgressLoading && (
                 <p className="muted small">{t("auth.noProgress")}</p>
               )}
+            </div>
+            <div className="card">
+              <h3>{t("authProfile.favoritesTitle")}</h3>
+              <p className="muted small">{t("authProfile.favoritesHint")}</p>
+              <div className="summary-grid profile-summary-grid">
+                <div>
+                  <span className="label">
+                    {t("authProfile.favWordsLabel")}
+                  </span>
+                  <strong>{vocabFavorites.length}</strong>
+                  <div className="actions inline-actions">
+                    <button
+                      type="button"
+                      className="ghost small"
+                      disabled={vocabFavorites.length === 0}
+                      onClick={() => {
+                        setGlossaryInitialView("favorites");
+                        setActiveSection("glossary");
+                      }}
+                    >
+                      {t("authProfile.openVocab")}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <span className="label">
+                    {t("authProfile.favExpressionsLabel")}
+                  </span>
+                  <strong>{expressionFavorites.length}</strong>
+                  <div className="actions inline-actions">
+                    <button
+                      type="button"
+                      className="ghost small"
+                      disabled={expressionFavorites.length === 0}
+                      onClick={() => {
+                        setExpressionView("favorites");
+                        setActiveSection("expressions");
+                      }}
+                    >
+                      {t("authProfile.openExpressions")}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </>
         );

@@ -218,20 +218,20 @@ class ProfileViewSet(viewsets.ViewSet):
             (request.query_params.get("student_email") or "").strip().lower()
         )
         profile_email = student_email or getattr(user, "email", "") or ""
-        profile = None
-        if profile_email:
-            profile, _ = StudentProfile.objects.get_or_create(
+        profile_obj: Optional[StudentProfile] = profile
+        if profile_email and profile_obj is None:
+            profile_obj, _ = StudentProfile.objects.get_or_create(
                 email=profile_email,
                 defaults={"stream": Test.Stream.BOKMAAL, "level": Test.Level.A1},
             )
-            if is_authenticated and not profile.user:
-                profile.user = user
-                profile.save(update_fields=["user"])
+            if is_authenticated and not profile_obj.user:
+                profile_obj.user = user
+                profile_obj.save(update_fields=["user"])
         if is_authenticated:
             username = user.get_username()
             display_name = (user.get_full_name() or username or "").strip()
-            if not profile and user.email:
-                profile, _ = StudentProfile.objects.get_or_create(
+            if profile_obj is None and user.email:
+                profile_obj, _ = StudentProfile.objects.get_or_create(
                     email=user.email,
                     defaults={"stream": Test.Stream.BOKMAAL, "level": Test.Level.A1},
                 )
@@ -240,19 +240,25 @@ class ProfileViewSet(viewsets.ViewSet):
             "is_authenticated": is_authenticated,
             "username": username,
             "display_name": display_name,
-            "stream": profile.stream if profile else Test.Stream.BOKMAAL,
-            "level": profile.level if profile else Test.Level.A1,
-            "allow_stream_change": profile.allow_stream_change if profile else True,
-            "first_name": profile.first_name if profile else "",
-            "last_name": profile.last_name if profile else "",
-            "middle_name": profile.middle_name if profile else "",
+            "stream": profile_obj.stream if profile_obj else Test.Stream.BOKMAAL,
+            "level": profile_obj.level if profile_obj else Test.Level.A1,
+            "allow_stream_change": (
+                profile_obj.allow_stream_change if profile_obj else True
+            ),
+            "first_name": profile_obj.first_name if profile_obj else "",
+            "last_name": profile_obj.last_name if profile_obj else "",
+            "middle_name": profile_obj.middle_name if profile_obj else "",
             "date_of_birth": (
-                profile.date_of_birth.isoformat()
-                if profile and profile.date_of_birth
+                profile_obj.date_of_birth.isoformat()
+                if profile_obj and profile_obj.date_of_birth
                 else None
             ),
-            "learning_language": profile.learning_language if profile else "",
-            "native_language": profile.native_language if profile else "",
+            "learning_language": profile_obj.learning_language if profile_obj else "",
+            "native_language": profile_obj.native_language if profile_obj else "",
+            "vocab_favorites": profile_obj.vocab_favorites if profile_obj else [],
+            "expression_favorites": (
+                profile_obj.expression_favorites if profile_obj else []
+            ),
         }
 
     @action(detail=False, methods=["get"])
@@ -329,6 +335,28 @@ class ProfileViewSet(viewsets.ViewSet):
             ]:
                 if field in request.data:
                     setattr(profile, field, (request.data.get(field) or "").strip())
+            if "vocab_favorites" in request.data:
+                raw_vocab = request.data.get("vocab_favorites") or []
+                if not isinstance(raw_vocab, (list, tuple)):
+                    raw_vocab = []
+                cleaned_vocab = []
+                for raw in raw_vocab:
+                    value = str(raw or "").strip()
+                    if value:
+                        cleaned_vocab.append(value)
+                profile.vocab_favorites = cleaned_vocab
+
+            if "expression_favorites" in request.data:
+                raw_expr = request.data.get("expression_favorites") or []
+                if not isinstance(raw_expr, (list, tuple)):
+                    raw_expr = []
+                cleaned_expr: list[int] = []
+                for raw in raw_expr:
+                    try:
+                        cleaned_expr.append(int(raw))
+                    except (TypeError, ValueError):
+                        continue
+                profile.expression_favorites = cleaned_expr
             if "date_of_birth" in request.data:
                 dob_raw = (request.data.get("date_of_birth") or "").strip()
                 if dob_raw:
