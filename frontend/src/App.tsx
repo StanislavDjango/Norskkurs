@@ -229,19 +229,27 @@ const App = () => {
       .then((data) => {
         setAuth(data);
         setIsTeacher(data.is_teacher);
-        if (Array.isArray(data.vocab_favorites)) {
+        const vocabFromApi = Array.isArray(data.vocab_favorites)
+          ? data.vocab_favorites
+          : [];
+        const exprFromApi = Array.isArray(data.expression_favorites)
+          ? data.expression_favorites
+          : [];
+
+        if (vocabFromApi.length > 0) {
           setVocabFavorites((prev) => {
             const existing = new Set(prev.map((value) => normalizeVocabId(value)));
-            data.vocab_favorites
+            vocabFromApi
               .map((value) => normalizeVocabId(String(value)))
               .forEach((value) => existing.add(value));
             return Array.from(existing);
           });
         }
-        if (Array.isArray(data.expression_favorites)) {
+
+        if (exprFromApi.length > 0) {
           setExpressionFavorites((prev) => {
             const existing = new Set(prev);
-            data.expression_favorites
+            exprFromApi
               .map((value) => Number(value))
               .filter((value) => !Number.isNaN(value))
               .forEach((value) => existing.add(value));
@@ -602,19 +610,27 @@ const App = () => {
   const handleAuthSuccess = (profileInfo: ProfileInfo, email: string) => {
     setAuth(profileInfo);
     setIsTeacher(profileInfo.is_teacher);
-    if (Array.isArray(profileInfo.vocab_favorites)) {
+    const vocabFromApi = Array.isArray(profileInfo.vocab_favorites)
+      ? profileInfo.vocab_favorites
+      : [];
+    const exprFromApi = Array.isArray(profileInfo.expression_favorites)
+      ? profileInfo.expression_favorites
+      : [];
+
+    if (vocabFromApi.length > 0) {
       setVocabFavorites((prev) => {
         const existing = new Set(prev.map((value) => normalizeVocabId(value)));
-        profileInfo.vocab_favorites
+        vocabFromApi
           .map((value) => normalizeVocabId(String(value)))
           .forEach((value) => existing.add(value));
         return Array.from(existing);
       });
     }
-    if (Array.isArray(profileInfo.expression_favorites)) {
+
+    if (exprFromApi.length > 0) {
       setExpressionFavorites((prev) => {
         const existing = new Set(prev);
-        profileInfo.expression_favorites
+        exprFromApi
           .map((value) => Number(value))
           .filter((value) => !Number.isNaN(value))
           .forEach((value) => existing.add(value));
