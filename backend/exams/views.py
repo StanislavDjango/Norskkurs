@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import datetime
 from typing import Any, Dict, Optional
 
-from django.contrib.auth import logout
+from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.db import models, transaction
 from rest_framework import mixins, status, viewsets
 from rest_framework.authentication import SessionAuthentication
@@ -33,8 +34,10 @@ from .serializers import (
     ExpressionSerializer,
     GlossaryTermSerializer,
     HomeworkSerializer,
+    LoginSerializer,
     MaterialSerializer,
     ReadingSerializer,
+    RegistrationSerializer,
     StudentProfileSerializer,
     SubmissionSerializer,
     TestDetailSerializer,
@@ -205,8 +208,7 @@ class TestViewSet(viewsets.ReadOnlyModelViewSet):
 class ProfileViewSet(viewsets.ViewSet):
     authentication_classes = (CsrfExemptSessionAuthentication,)
 
-    @action(detail=False, methods=["get"])
-    def me(self, request):
+    def _build_profile_payload(self, request, profile: Optional[StudentProfile] = None):
         user = request.user
         is_authenticated = bool(user and user.is_authenticated)
         is_teacher = bool(is_authenticated and (user.is_staff or user.is_superuser))
@@ -233,17 +235,30 @@ class ProfileViewSet(viewsets.ViewSet):
                     email=user.email,
                     defaults={"stream": Test.Stream.BOKMAAL, "level": Test.Level.A1},
                 )
-        return Response(
-            {
-                "is_teacher": is_teacher,
-                "is_authenticated": is_authenticated,
-                "username": username,
-                "display_name": display_name,
-                "stream": profile.stream if profile else Test.Stream.BOKMAAL,
-                "level": profile.level if profile else Test.Level.A1,
-                "allow_stream_change": profile.allow_stream_change if profile else True,
-            }
-        )
+        return {
+            "is_teacher": is_teacher,
+            "is_authenticated": is_authenticated,
+            "username": username,
+            "display_name": display_name,
+            "stream": profile.stream if profile else Test.Stream.BOKMAAL,
+            "level": profile.level if profile else Test.Level.A1,
+            "allow_stream_change": profile.allow_stream_change if profile else True,
+            "first_name": profile.first_name if profile else "",
+            "last_name": profile.last_name if profile else "",
+            "middle_name": profile.middle_name if profile else "",
+            "date_of_birth": (
+                profile.date_of_birth.isoformat()
+                if profile and profile.date_of_birth
+                else None
+            ),
+            "learning_language": profile.learning_language if profile else "",
+            "native_language": profile.native_language if profile else "",
+        }
+
+    @action(detail=False, methods=["get"])
+    def me(self, request):
+        payload = self._build_profile_payload(request)
+        return Response(payload)
 
     @action(
         detail=False,
@@ -281,6 +296,235 @@ class ProfileViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+    @action(detail=False, methods=["post"], url_path="update")
+    def update_profile(self, request):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return Response(
+                {"detail": "Authentication required."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        name = (request.data.get("name") or "").strip()
+        if name:
+            first, *rest = name.split(" ", 1)
+            user.first_name = first
+            if rest:
+                user.last_name = rest[0]
+            user.save(update_fields=["first_name", "last_name"])
+
+        profile = None
+        if user.email:
+            profile, _ = StudentProfile.objects.get_or_create(
+                email=user.email,
+                defaults={"stream": Test.Stream.BOKMAAL, "level": Test.Level.A1},
+            )
+            for field in [
+                "last_name",
+                "first_name",
+                "middle_name",
+                "learning_language",
+                "native_language",
+            ]:
+                if field in request.data:
+                    setattr(profile, field, (request.data.get(field) or "").strip())
+            if "date_of_birth" in request.data:
+                dob_raw = (request.data.get("date_of_birth") or "").strip()
+                if dob_raw:
+                    try:
+                        profile.date_of_birth = datetime.date.fromisoformat(dob_raw)
+                    except ValueError:
+                        return Response(
+                            {"detail": "Invalid date_of_birth format. Use YYYY-MM-DD."},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                else:
+                    profile.date_of_birth = None
+            profile.save()
+
+        payload = self._build_profile_payload(request, profile=profile)
+        return Response(payload)
+
+    @action(detail=False, methods=["post"])
+    def register(self, request):
+        serializer = RegistrationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"].strip().lower()
+        password = serializer.validated_data["password"]
+        name = serializer.validated_data.get("name", "").strip()
+
+        if not email or not password:
+            return Response(
+                {"detail": "Email and password are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user_model = get_user_model()
+        existing = user_model.objects.filter(email__iexact=email).first()
+        if existing:
+            return Response(
+                {"detail": "A user with this email already exists."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        username = email
+        user = user_model.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+        )
+        if name:
+            first, *rest = name.split(" ", 1)
+            user.first_name = first
+            if rest:
+                user.last_name = rest[0]
+            user.save(update_fields=["first_name", "last_name"])
+
+        profile, created = StudentProfile.objects.get_or_create(
+            email=email,
+            defaults={"stream": Test.Stream.BOKMAAL, "level": Test.Level.A1},
+        )
+        if not created and not profile.user:
+            profile.user = user
+            profile.save(update_fields=["user"])
+
+        login(request, user)
+
+        display_name = (user.get_full_name() or user.get_username() or "").strip()
+        is_teacher = bool(user.is_staff or user.is_superuser)
+
+        return Response(
+            {
+                "is_teacher": is_teacher,
+                "is_authenticated": True,
+                "username": user.get_username(),
+                "display_name": display_name,
+                "stream": profile.stream,
+                "level": profile.level,
+                "allow_stream_change": profile.allow_stream_change,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=False, methods=["post"])
+    def login(self, request):
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        identifier = serializer.validated_data["identifier"].strip()
+        password = serializer.validated_data["password"]
+
+        user_model = get_user_model()
+        normalized_identifier = identifier.strip()
+        user = authenticate(request, username=normalized_identifier, password=password)
+        if user is None:
+            user_by_email = None
+            if "@" in normalized_identifier:
+                user_by_email = user_model.objects.filter(
+                    email__iexact=normalized_identifier
+                ).first()
+            else:
+                user_by_email = user_model.objects.filter(
+                    username__iexact=normalized_identifier
+                ).first()
+            if user_by_email is not None:
+                user = authenticate(
+                    request,
+                    username=user_by_email.get_username(),
+                    password=password,
+                )
+        if user is None:
+            return Response(
+                {"detail": "Invalid username/email or password."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        login(request, user)
+
+        profile_email = (user.email or "").strip().lower()
+        profile, created = StudentProfile.objects.get_or_create(
+            email=profile_email,
+            defaults={"stream": Test.Stream.BOKMAAL, "level": Test.Level.A1},
+        )
+        if profile.user_id != user.id:
+            profile.user = user
+            profile.save(update_fields=["user"])
+
+        display_name = (user.get_full_name() or user.get_username() or "").strip()
+        is_teacher = bool(user.is_staff or user.is_superuser)
+
+        return Response(
+            {
+                "is_teacher": is_teacher,
+                "is_authenticated": True,
+                "username": user.get_username(),
+                "display_name": display_name,
+                "stream": profile.stream,
+                "level": profile.level,
+                "allow_stream_change": profile.allow_stream_change,
+            }
+        )
+
+    @action(detail=False, methods=["get"])
+    def progress(self, request):
+        raw_email = (request.query_params.get("email") or "") or (
+            request.query_params.get("student_email") or ""
+        )
+        email = (raw_email or "").strip().lower()
+        user = request.user
+        if not email and user and user.is_authenticated:
+            email = (user.email or "").strip().lower()
+
+        if not email:
+            return Response(
+                {"detail": "Email is required to fetch progress."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        submissions = Submission.objects.filter(email=email).select_related("test")
+        submissions = submissions.order_by("-created_at")
+        tests_taken = submissions.count()
+
+        by_level_map: Dict[str, Dict[str, Any]] = {}
+        for sub in submissions:
+            level = sub.test.level
+            entry = by_level_map.setdefault(
+                level, {"level": level, "tests": 0, "total_percent": 0.0}
+            )
+            entry["tests"] += 1
+            entry["total_percent"] += sub.percent
+
+        by_level = []
+        for level, entry in by_level_map.items():
+            tests_count = entry["tests"]
+            avg_percent = (
+                round(entry["total_percent"] / tests_count, 2) if tests_count else 0.0
+            )
+            by_level.append(
+                {"level": level, "tests": tests_count, "avg_percent": avg_percent}
+            )
+
+        by_level.sort(key=lambda item: item["level"])
+
+        last_submission = submissions.first()
+        last_payload: Optional[Dict[str, Any]] = None
+        if last_submission is not None:
+            last_payload = {
+                "test_title": last_submission.test.title,
+                "level": last_submission.test.level,
+                "stream": last_submission.test.stream,
+                "percent": last_submission.percent,
+                "created_at": last_submission.created_at,
+            }
+
+        return Response(
+            {
+                "email": email,
+                "tests_taken": tests_taken,
+                "last_submission": last_payload,
+                "by_level": by_level,
+            }
+        )
 
 
 class FilteredStreamLevelMixin:

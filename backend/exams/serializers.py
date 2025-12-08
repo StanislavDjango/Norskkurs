@@ -100,6 +100,17 @@ class AssignmentSerializer(serializers.ModelSerializer):
         fields = ("id", "test", "student_email", "expires_at", "created_at")
 
 
+class RegistrationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, min_length=6)
+    name = serializers.CharField(required=False, allow_blank=True)
+
+
+class LoginSerializer(serializers.Serializer):
+    identifier = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+
 class StudentProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentProfile

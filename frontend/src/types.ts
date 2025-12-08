@@ -77,6 +77,31 @@ export interface ProfileInfo {
   stream?: Stream;
   level?: Level;
   allow_stream_change?: boolean;
+  first_name?: string;
+  last_name?: string;
+  middle_name?: string;
+  date_of_birth?: string | null;
+  learning_language?: string;
+  native_language?: string;
+}
+
+export interface ProfileProgressLevelSummary {
+  level: Level;
+  tests: number;
+  avg_percent: number;
+}
+
+export interface ProfileProgress {
+  email: string;
+  tests_taken: number;
+  last_submission?: {
+    test_title: string;
+    level: Level;
+    stream: Stream;
+    percent: number;
+    created_at: string;
+  } | null;
+  by_level: ProfileProgressLevelSummary[];
 }
 
 export interface Material {

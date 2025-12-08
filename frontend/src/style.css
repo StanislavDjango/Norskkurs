@@ -199,6 +199,8 @@ h2 {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .readings-search {
@@ -237,6 +239,10 @@ h2 {
   background: #0ea5e9;
   border-color: #0ea5e9;
   color: #fff;
+}
+
+.readings-title-select {
+  max-width: 220px;
 }
 
 .reading-translation-tabs button:disabled {
@@ -930,6 +936,102 @@ h2 {
   gap: 10px;
 }
 
+.student-auth-card {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 50;
+}
+
+.auth-dialog {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 20px;
+  background: radial-gradient(circle at 0 0, rgba(59, 130, 246, 0.12), transparent 55%),
+    radial-gradient(circle at 100% 0, rgba(56, 189, 248, 0.18), transparent 55%),
+    #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.4);
+  padding: 18px 20px 20px;
+}
+
+.auth-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.auth-dialog-header h2 {
+  margin: 0;
+}
+
+.auth-dialog-close {
+  border: none;
+  background: transparent;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #0f172a;
+}
+
+.auth-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.auth-actions .pill {
+  flex: 1 1 0;
+  justify-content: center;
+}
+
+.auth-error {
+  margin-top: 4px;
+}
+
+.auth-forgot {
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #2563eb;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.auth-switch {
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #0f172a;
+  font-size: 0.85rem;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
 .test-card {
   text-align: left;
   background: #fff;
@@ -1097,6 +1199,10 @@ h2 {
   gap: 8px 12px;
 }
 
+.profile-summary-grid {
+  margin-top: 10px;
+}
+
 .label {
   color: #475569;
   font-size: 0.85rem;
@@ -1124,7 +1230,7 @@ input {
   font-size: 1rem;
 }
 
-.questions {
+  .questions {
   display: flex;
   flex-direction: column;
   gap: 12px;

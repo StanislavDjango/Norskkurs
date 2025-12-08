@@ -12,6 +12,7 @@ type Props = {
   level: Level;
   onChangeStream: (stream: Stream) => void;
   onChangeLevel: (level: Level) => void;
+  onOpenAuthModal: () => void;
 };
 
 const streams: Array<{ key: Stream; label: string }> = [
@@ -32,6 +33,7 @@ const Header: React.FC<Props> = ({
   level,
   onChangeStream,
   onChangeLevel,
+  onOpenAuthModal,
 }) => {
   const { t } = useTranslation();
 
@@ -39,7 +41,6 @@ const Header: React.FC<Props> = ({
   const adminBase =
     (import.meta.env.VITE_ADMIN_URL as string | undefined) ||
     (apiBase ? apiBase.replace(/\/api\/?$/, "/admin/") : "https://norskkurs.xyz/admin/");
-  const adminLogin = `${adminBase.replace(/\/*$/, "/")}login/?next=/admin/`;
 
   const renderUserActions = () => {
     if (auth?.is_authenticated) {
@@ -64,14 +65,13 @@ const Header: React.FC<Props> = ({
     }
 
     return (
-      <a
-        href={adminLogin}
+      <button
+        type="button"
         className="login-link"
-        target="_blank"
-        rel="noreferrer noopener"
+        onClick={onOpenAuthModal}
       >
         {t("login")}
-      </a>
+      </button>
     );
   };
 

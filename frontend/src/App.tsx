@@ -11,10 +11,14 @@ import {
   fetchMaterials,
   fetchReadings,
   fetchProfile,
+  fetchProfileProgress,
   fetchTestDetail,
   fetchTests,
+  loginProfile,
   logoutProfile,
+  registerProfile,
   submitTest,
+  updateProfile,
   updateStreamLevel,
 } from "./api";
 import type {
@@ -28,6 +32,7 @@ import type {
   Question,
   QuestionReview,
   ProfileInfo,
+  ProfileProgress,
   Stream,
   SubmissionResponse,
   Test,
@@ -48,7 +53,38 @@ const normalizeVocabId = (id: string): string => {
   return id;
 };
 
+const extractAuthErrorMessage = (
+  error: any,
+  fallback: string,
+): string => {
+  const responseData = error?.response?.data;
+  if (responseData) {
+    if (typeof responseData === "string") {
+      return responseData;
+    }
+    if (typeof responseData.detail === "string") {
+      return responseData.detail;
+    }
+    if (typeof responseData === "object") {
+      const parts: string[] = [];
+      Object.entries(responseData).forEach(([field, value]) => {
+        if (Array.isArray(value)) {
+          parts.push(`${field}: ${value.join(" ")}`);
+        }
+      });
+      if (parts.length > 0) {
+        return parts.join(" ");
+      }
+    }
+  }
+  if (typeof error?.message === "string" && error.message) {
+    return error.message;
+  }
+  return fallback;
+};
+
 type Section =
+  | "profile"
   | "readings"
   | "materials"
   | "exercises"
@@ -69,7 +105,16 @@ const App = () => {
   const [review, setReview] = useState<QuestionReview[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState({ name: "", email: "" });
+  const [profile, setProfile] = useState({
+    name: "",
+    email: "",
+    firstName: "",
+    lastName: "",
+    middleName: "",
+    dateOfBirth: "",
+    learningLanguage: "",
+    nativeLanguage: "",
+  });
   const [auth, setAuth] = useState<ProfileInfo | null>(null);
   const [filterMode, setFilterMode] = useState<"all" | "single" | "fill" | "mixed" | "exam">("all");
   const [filterLevel, setFilterLevel] = useState<"all" | Level>("all");
@@ -113,6 +158,19 @@ const App = () => {
     useState<Record<number, "en" | "nb" | "nn" | "ru">>({});
   const [activeReading, setActiveReading] = useState<Reading | null>(null);
   const [readingTag, setReadingTag] = useState<string>("all");
+  const [readingTitleFilter, setReadingTitleFilter] = useState<string>("all");
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [profileAuthForm, setProfileAuthForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+  const [profileAuthLoading, setProfileAuthLoading] = useState(false);
+  const [profileAuthError, setProfileAuthError] = useState<string | null>(null);
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [profileProgress, setProfileProgress] = useState<ProfileProgress | null>(null);
+  const [profileProgressLoading, setProfileProgressLoading] = useState(false);
   const [vocabFavorites, setVocabFavorites] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem("norskkurs_vocab_favs");
@@ -171,6 +229,16 @@ const App = () => {
       .then((data) => {
         setAuth(data);
         setIsTeacher(data.is_teacher);
+        setProfile((prev) => ({
+          ...prev,
+          name: prev.name || data.display_name || prev.name,
+          firstName: data.first_name || prev.firstName,
+          lastName: data.last_name || prev.lastName,
+          middleName: data.middle_name || prev.middleName,
+          dateOfBirth: data.date_of_birth || prev.dateOfBirth,
+          learningLanguage: data.learning_language || prev.learningLanguage,
+          nativeLanguage: data.native_language || prev.nativeLanguage,
+        }));
         if (data.stream) {
           setStream(data.stream);
           localStorage.setItem("norskkurs_stream", data.stream);
@@ -211,6 +279,29 @@ const App = () => {
         setOpenTranslations(new Set());
       });
   }, [stream, currentLevel, studentEmail]);
+
+  useEffect(() => {
+    const emailForProgress = (studentEmail || auth?.username || "").trim();
+    if (!emailForProgress) {
+      setProfileProgress(null);
+      return;
+    }
+    setProfileProgressLoading(true);
+    fetchProfileProgress({ email: emailForProgress })
+      .then((data) => {
+        setProfileProgress(data);
+      })
+      .catch(() => {
+        setProfileProgress(null);
+      })
+      .finally(() => {
+        setProfileProgressLoading(false);
+      });
+  }, [studentEmail, auth?.username]);
+
+  useEffect(() => {
+    setReadingTitleFilter("all");
+  }, [stream, currentLevel]);
 
   useEffect(() => {
     const query = readingLookup.trim();
@@ -367,8 +458,9 @@ const App = () => {
   };
 
   const navItems = useMemo(
-    () => [
-      { key: "readings" as Section, label: t("nav.readings") },
+      () => [
+        { key: "profile" as Section, label: t("nav.dashboard") },
+        { key: "readings" as Section, label: t("nav.readings") },
       { key: "materials" as Section, label: t("nav.materials") },
       { key: "exercises" as Section, label: t("nav.exercises") },
       { key: "tests" as Section, label: t("nav.tests") },
@@ -422,26 +514,269 @@ const App = () => {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [readings]);
 
+  const readingTitleOptions = useMemo(
+    () =>
+      readings
+        .map((item) => {
+          const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
+            bokmaal: "nb",
+            nynorsk: "nn",
+            english: "en",
+          };
+
+          const titleVersions: Record<"en" | "nb" | "nn" | "ru", string> = {
+            en: item.title_en || (item.stream === "english" ? item.title : ""),
+            nb: item.title_nb || (item.stream === "bokmaal" ? item.title : ""),
+            nn: item.title_nn || (item.stream === "nynorsk" ? item.title : ""),
+            ru: item.title_ru || "",
+          };
+
+          const primaryLang = primaryLangByStream[stream];
+          const primaryTitle =
+            (titleVersions[primaryLang] || "").trim() || item.title;
+
+          return {
+            id: String(item.id),
+            title: primaryTitle,
+          };
+        })
+        .filter((option) => option.title.trim().length > 0)
+        .sort((a, b) => a.title.localeCompare(b.title)),
+    [readings, stream],
+  );
+
   const filteredReadings = useMemo(() => {
-    if (readingTag === "all") return readings;
-    return readings.filter((item) => (item.tags || []).includes(readingTag));
-  }, [readings, readingTag]);
+    let result = readings;
+
+    if (readingTag !== "all") {
+      result = result.filter((item) => (item.tags || []).includes(readingTag));
+    }
+
+    if (readingTitleFilter !== "all") {
+      const selectedId = Number(readingTitleFilter);
+      if (!Number.isNaN(selectedId)) {
+        result = result.filter((item) => item.id === selectedId);
+      }
+    }
+
+    return result;
+  }, [readings, readingTag, readingTitleFilter]);
 
   const filteredExpressions = useMemo(() => {
     if (expressionView === "all") return expressions;
     if (expressionFavorites.length === 0) return [];
     const favoriteSet = new Set(expressionFavorites);
     return expressions.filter((expr) => favoriteSet.has(expr.id));
-  }, [expressions, expressionFavorites, expressionView]);
+    }, [expressions, expressionFavorites, expressionView]);
 
   const handleLogout = async () => {
     try {
       await logoutProfile();
       setAuth(null);
       setIsTeacher(false);
+      setProfileProgress(null);
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const handleAuthSuccess = (profileInfo: ProfileInfo, email: string) => {
+    setAuth(profileInfo);
+    setIsTeacher(profileInfo.is_teacher);
+    setProfile((prev) => ({
+      ...prev,
+      name: prev.name || profileInfo.display_name || prev.name,
+      firstName: profileInfo.first_name || prev.firstName,
+      lastName: profileInfo.last_name || prev.lastName,
+      middleName: profileInfo.middle_name || prev.middleName,
+      dateOfBirth: profileInfo.date_of_birth || prev.dateOfBirth,
+      learningLanguage: profileInfo.learning_language || prev.learningLanguage,
+      nativeLanguage: profileInfo.native_language || prev.nativeLanguage,
+    }));
+    if (profileInfo.stream) {
+      setStream(profileInfo.stream);
+      localStorage.setItem("norskkurs_stream", profileInfo.stream);
+    }
+    if (profileInfo.level) {
+      setCurrentLevel(profileInfo.level);
+      setFilterLevel(profileInfo.level);
+      localStorage.setItem("norskkurs_level", profileInfo.level);
+    }
+    if (email) {
+      setStudentEmail(email);
+    }
+  };
+
+  const handleProfileSave = async () => {
+    const newName = profile.name.trim();
+    setProfileAuthError(null);
+    setProfileSaveSuccess(false);
+    try {
+      const updated = await updateProfile({
+        name: newName || undefined,
+        first_name: profile.firstName.trim() || undefined,
+        last_name: profile.lastName.trim() || undefined,
+        middle_name: profile.middleName.trim() || undefined,
+        date_of_birth: profile.dateOfBirth || undefined,
+        learning_language: profile.learningLanguage.trim() || undefined,
+        native_language: profile.nativeLanguage.trim() || undefined,
+      });
+      setAuth(updated);
+      setProfile((prev) => ({
+        ...prev,
+        name: newName || prev.name || updated.display_name || prev.name,
+        firstName: updated.first_name || prev.firstName,
+        lastName: updated.last_name || prev.lastName,
+        middleName: updated.middle_name || prev.middleName,
+        dateOfBirth: updated.date_of_birth || prev.dateOfBirth,
+        learningLanguage: updated.learning_language || prev.learningLanguage,
+        nativeLanguage: updated.native_language || prev.nativeLanguage,
+      }));
+      setProfileSaveSuccess(true);
+    } catch (e: any) {
+      const message = extractAuthErrorMessage(e, t("auth.genericError"));
+      setProfileAuthError(message);
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!profileAuthForm.email || !profileAuthForm.password) {
+      setProfileAuthError(t("auth.missingFields"));
+      return;
+    }
+    setProfileAuthLoading(true);
+    setProfileAuthError(null);
+    try {
+      const data = await registerProfile({
+        email: profileAuthForm.email.trim(),
+        password: profileAuthForm.password,
+        name: profileAuthForm.name.trim(),
+      });
+      handleAuthSuccess(data, profileAuthForm.email.trim());
+    } catch (e: any) {
+      const message = extractAuthErrorMessage(e, t("auth.genericError"));
+      setProfileAuthError(message);
+    } finally {
+      setProfileAuthLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!profileAuthForm.email || !profileAuthForm.password) {
+      setProfileAuthError(t("auth.missingFields"));
+      return;
+    }
+    setProfileAuthLoading(true);
+    setProfileAuthError(null);
+    try {
+      const data = await loginProfile({
+        identifier: profileAuthForm.email.trim(),
+        password: profileAuthForm.password,
+      });
+      handleAuthSuccess(data, profileAuthForm.email.trim());
+    } catch (e: any) {
+      const message = extractAuthErrorMessage(e, t("auth.genericError"));
+      setProfileAuthError(message);
+    } finally {
+      setProfileAuthLoading(false);
+    }
+  };
+
+  const renderAuthFields = () => {
+    if (auth?.is_authenticated) {
+      return (
+        <p className="muted small">
+          {t("auth.loggedInAs")}{" "}
+          <strong>{auth.display_name || auth.username}</strong>
+        </p>
+      );
+    }
+
+    return (
+      <>
+        <p className="muted small">{t("auth.studentTitle")}</p>
+        <div className="search-row">
+          <input
+            type="text"
+            placeholder={
+              authMode === "login"
+                ? t("auth.identifierPlaceholder")
+                : t("yourEmail")
+            }
+            value={profileAuthForm.email}
+            onChange={(e) =>
+              setProfileAuthForm((prev) => ({
+                ...prev,
+                email: e.target.value,
+              }))
+            }
+          />
+        </div>
+        {authMode === "register" && (
+          <div className="search-row">
+            <input
+              type="text"
+              placeholder={t("yourName")}
+              value={profileAuthForm.name}
+              onChange={(e) =>
+                setProfileAuthForm((prev) => ({
+                  ...prev,
+                  name: e.target.value,
+                }))
+              }
+            />
+          </div>
+        )}
+          <div className="search-row">
+            <input
+              type="password"
+              placeholder={t("auth.passwordPlaceholder")}
+              value={profileAuthForm.password}
+              onChange={(e) =>
+                setProfileAuthForm((prev) => ({
+                  ...prev,
+                  password: e.target.value,
+                }))
+              }
+            />
+          </div>
+          {profileAuthError && (
+            <div className="alert small auth-error">{profileAuthError}</div>
+          )}
+          <div className="auth-actions">
+            <button
+              type="button"
+              className="pill"
+              disabled={profileAuthLoading}
+              onClick={authMode === "login" ? handleLogin : handleRegister}
+            >
+              {authMode === "login" ? t("auth.login") : t("auth.register")}
+            </button>
+          </div>
+          <button
+            type="button"
+            className="auth-switch"
+            onClick={() => {
+              setProfileAuthError(null);
+              setAuthMode((prev) => (prev === "login" ? "register" : "login"));
+            }}
+          >
+            {authMode === "login"
+              ? t("auth.toRegister")
+              : t("auth.toLogin")}
+          </button>
+          <button
+            type="button"
+            className="auth-forgot"
+          onClick={() => {
+            window.location.href =
+              "mailto:support@norskkurs.no?subject=Norskkurs%20password%20reset";
+          }}
+        >
+          {t("auth.forgotPassword")}
+        </button>
+      </>
+    );
   };
 
   const toggleVocabFavorite = (id: string) => {
@@ -527,6 +862,171 @@ const App = () => {
 
   const renderSectionContent = () => {
     switch (activeSection) {
+      case "profile":
+        return (
+          <>
+            <h2>{t("nav.dashboard")}</h2>
+            <div className="card">
+              <h3>{t("authProfile.profileTitle")}</h3>
+              <p className="muted small">{t("authProfile.profileHint")}</p>
+              <section className="profile">
+                <div>
+                  <label>{t("yourName")}</label>
+                  <input
+                    type="text"
+                    value={profile.name || auth?.display_name || ""}
+                    onChange={(e) =>
+                      setProfile((p) => ({ ...p, name: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label>{t("yourEmail")}</label>
+                  <input
+                    type="email"
+                    value={
+                      profileProgress?.email ||
+                      studentEmail ||
+                      profile.email
+                    }
+                    readOnly
+                  />
+                </div>
+              </section>
+              <div className="actions">
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={handleProfileSave}
+                  disabled={!auth?.is_authenticated}
+                >
+                  {t("authProfile.saveProfile")}
+                </button>
+              </div>
+              {profileSaveSuccess && !profileAuthError && auth?.is_authenticated && (
+                <div className="alert small auth-success">
+                  {t("authProfile.saveSuccess")}
+                </div>
+              )}
+              {profileAuthError && (
+                <div className="alert small auth-error">{profileAuthError}</div>
+              )}
+            </div>
+            <div className="card">
+              <h3>{t("authProfile.personalDataTitle")}</h3>
+              <p className="muted small">{t("authProfile.personalDataHint")}</p>
+              <section className="profile">
+                <div>
+                  <label>{t("authProfile.lastName")}</label>
+                  <input
+                    type="text"
+                    value={profile.lastName}
+                    onChange={(e) =>
+                      setProfile((p) => ({ ...p, lastName: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label>{t("authProfile.firstName")}</label>
+                  <input
+                    type="text"
+                    value={profile.firstName}
+                    onChange={(e) =>
+                      setProfile((p) => ({ ...p, firstName: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label>{t("authProfile.middleName")}</label>
+                  <input
+                    type="text"
+                    value={profile.middleName}
+                    onChange={(e) =>
+                      setProfile((p) => ({ ...p, middleName: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label>{t("authProfile.dateOfBirth")}</label>
+                  <input
+                    type="date"
+                    value={profile.dateOfBirth}
+                    onChange={(e) =>
+                      setProfile((p) => ({ ...p, dateOfBirth: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label>{t("authProfile.learningLanguage")}</label>
+                  <input
+                    type="text"
+                    value={profile.learningLanguage}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        learningLanguage: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label>{t("authProfile.nativeLanguage")}</label>
+                  <input
+                    type="text"
+                    value={profile.nativeLanguage}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        nativeLanguage: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+              </section>
+              <div className="actions">
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={handleProfileSave}
+                  disabled={!auth?.is_authenticated}
+                >
+                  {t("authProfile.savePersonal")}
+                </button>
+              </div>
+            </div>
+            <div className="card">
+              <h3>{t("summary.quickStart")}</h3>
+              <p className="muted small">{t("summary.quickHint")}</p>
+              {profileProgressLoading && (
+                <p className="muted small">{t("loading")}</p>
+              )}
+              {profileProgress && (
+                <div className="summary-grid profile-summary-grid">
+                  <div>
+                    <span className="label">{t("auth.testsTakenLabel")}</span>
+                    <strong>{profileProgress.tests_taken}</strong>
+                  </div>
+                  {profileProgress.last_submission && (
+                    <div>
+                      <span className="label">
+                        {t("auth.lastResultLabel")}
+                      </span>
+                      <strong>
+                        {Math.round(
+                          profileProgress.last_submission.percent,
+                        )}
+                        % — {profileProgress.last_submission.test_title}
+                      </strong>
+                    </div>
+                  )}
+                </div>
+              )}
+              {!profileProgress && !profileProgressLoading && (
+                <p className="muted small">{t("auth.noProgress")}</p>
+              )}
+            </div>
+          </>
+        );
       case "readings":
         return (
           <>
@@ -534,6 +1034,22 @@ const App = () => {
               <div className="readings-toolbar-header">
                 <h2>{t("nav.readings")}</h2>
                 <div className="readings-toolbar-actions">
+                  {readingTitleOptions.length > 0 && (
+                    <select
+                      className="glossary-tag-select readings-title-select"
+                      value={readingTitleFilter}
+                      onChange={(e) => setReadingTitleFilter(e.target.value)}
+                    >
+                      <option value="all">
+                        {t("readings.titleFilterAll")}
+                      </option>
+                      {readingTitleOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.title}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   {readingTags.length > 0 && (
                     <select
                       className="glossary-tag-select"
@@ -944,6 +1460,11 @@ const App = () => {
         level={currentLevel}
         onChangeStream={handleStreamChange}
         onChangeLevel={handleLevelChange}
+        onOpenAuthModal={() => {
+          setProfileAuthError(null);
+          setAuthMode("login");
+          setIsAuthModalOpen(true);
+        }}
       />
 
       <div className="mobile-nav-toggle">
@@ -975,12 +1496,39 @@ const App = () => {
         ))}
       </div>
 
+      {isAuthModalOpen && (
+        <div className="auth-modal">
+          <div
+            className="auth-dialog"
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <div className="auth-dialog-header">
+              <h2>{t("auth.modalTitle")}</h2>
+              <button
+                type="button"
+                className="auth-dialog-close"
+                onClick={() => setIsAuthModalOpen(false)}
+                aria-label={t("close")}
+              >
+                ×
+              </button>
+            </div>
+            <div className="auth-dialog-body">{renderAuthFields()}</div>
+          </div>
+        </div>
+      )}
+
       {error && <div className="alert">{error}</div>}
 
       {activeSection === "tests" ? (
         <div className="layout">
           <aside className="panel">
             <h2>{t("selectTest")}</h2>
+            {!isTeacher && (
+              <div className="student-auth-card">{renderAuthFields()}</div>
+            )}
             <div className="search-row">
               <input
                 type="email"
@@ -1071,7 +1619,37 @@ const App = () => {
           </aside>
 
           <main className="panel">
-            {!selectedTest && <div className="placeholder">{t("emptyState")}</div>}
+            {!selectedTest && (
+              <div className="placeholder">
+                <h2>{t("summary.quickStart")}</h2>
+                <p className="muted">{t("summary.quickHint")}</p>
+                {profileProgressLoading && (
+                  <p className="muted small">{t("loading")}</p>
+                )}
+                {profileProgress && (
+                  <div className="summary-grid profile-summary-grid">
+                    <div>
+                      <span className="label">{t("auth.testsTakenLabel")}</span>
+                      <strong>{profileProgress.tests_taken}</strong>
+                    </div>
+                    {profileProgress.last_submission && (
+                      <div>
+                        <span className="label">{t("auth.lastResultLabel")}</span>
+                        <strong>
+                          {Math.round(
+                            profileProgress.last_submission.percent,
+                          )}
+                          % — {profileProgress.last_submission.test_title}
+                        </strong>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!profileProgress && !profileProgressLoading && (
+                  <p className="muted small">{t("auth.noProgress")}</p>
+                )}
+              </div>
+            )}
 
             {selectedTest && (
               <>

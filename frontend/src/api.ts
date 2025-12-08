@@ -7,6 +7,7 @@ import type {
   Homework,
   Material,
   ProfileInfo,
+  ProfileProgress,
   Reading,
   Stream,
   SubmissionResponse,
@@ -58,12 +59,51 @@ export const logoutProfile = async (): Promise<void> => {
   await api.post("profile/logout/");
 };
 
+export const updateProfile = async (payload: {
+  name?: string;
+  first_name?: string;
+  last_name?: string;
+  middle_name?: string;
+  date_of_birth?: string;
+  learning_language?: string;
+  native_language?: string;
+}): Promise<ProfileInfo> => {
+  const res = await api.post<ProfileInfo>("profile/update/", payload);
+  return res.data;
+};
+
+export const registerProfile = async (payload: {
+  email: string;
+  password: string;
+  name?: string;
+}): Promise<ProfileInfo> => {
+  const res = await api.post<ProfileInfo>("profile/register/", payload);
+  return res.data;
+};
+
+export const loginProfile = async (payload: {
+  identifier: string;
+  password: string;
+}): Promise<ProfileInfo> => {
+  const res = await api.post<ProfileInfo>("profile/login/", payload);
+  return res.data;
+};
+
 export const updateStreamLevel = async (payload: {
   email: string;
   stream?: Stream;
   level?: Level;
 }): Promise<ProfileInfo> => {
   const res = await api.post<ProfileInfo>("profile/stream/", payload);
+  return res.data;
+};
+
+export const fetchProfileProgress = async (params: {
+  email: string;
+}): Promise<ProfileProgress> => {
+  const res = await api.get<ProfileProgress>("profile/progress/", {
+    params,
+  });
   return res.data;
 };
 

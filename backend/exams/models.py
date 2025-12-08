@@ -177,6 +177,12 @@ class StudentProfile(models.Model):
         on_delete=models.SET_NULL,
         related_name="students_assigned",
     )
+    last_name = models.CharField(max_length=120, blank=True, default="")
+    first_name = models.CharField(max_length=120, blank=True, default="")
+    middle_name = models.CharField(max_length=120, blank=True, default="")
+    date_of_birth = models.DateField(null=True, blank=True)
+    learning_language = models.CharField(max_length=20, blank=True, default="")
+    native_language = models.CharField(max_length=20, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
