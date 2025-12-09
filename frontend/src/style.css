@@ -709,6 +709,22 @@ h2 {
   gap: 16px;
 }
 
+.games-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.games-tabs .pill {
+  font-size: 0.9rem;
+}
+
+.games-tabs .pill--disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .falling-game {
   margin-top: 12px;
   display: flex;

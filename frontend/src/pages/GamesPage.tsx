@@ -9,6 +9,8 @@ type Props = {
   currentLevel: Level;
 };
 
+type GameId = "fallingWords";
+
 type GameSpeed = "verySlow" | "slow" | "normal" | "fast" | "turbo";
 
 type FallingWord = {
@@ -27,6 +29,7 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [selectedWord, setSelectedWord] = useState<FallingWord | null>(null);
   const [speed, setSpeed] = useState<GameSpeed>("normal");
+  const [activeGame, setActiveGame] = useState<GameId>("fallingWords");
 
   useEffect(() => {
     fetchGlossary({ stream, level: currentLevel })
@@ -139,7 +142,23 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
       <h2>{t("nav.games")}</h2>
       <p className="muted small">{t("games.description")}</p>
 
-      <div className="falling-game">
+      <div className="games-tabs">
+        <button
+          type="button"
+          className={`pill ${
+            activeGame === "fallingWords" ? "pill--active" : ""
+          }`}
+          onClick={() => setActiveGame("fallingWords")}
+        >
+          {t("games.tabFallingWords")}
+        </button>
+        <button type="button" className="pill pill--disabled" disabled>
+          {t("games.tabComingSoon")}
+        </button>
+      </div>
+
+      {activeGame === "fallingWords" && (
+        <div className="falling-game">
         <div className="falling-game-header">
           <h3>{t("games.fallingTitle")}</h3>
           <div className="falling-game-controls">
@@ -200,6 +219,7 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };
