@@ -9,6 +9,8 @@ type Props = {
   currentLevel: Level;
 };
 
+type GameSpeed = "verySlow" | "slow" | "normal" | "fast" | "turbo";
+
 type FallingWord = {
   id: string;
   text: string;
@@ -24,7 +26,7 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
   const [fallingWords, setFallingWords] = useState<FallingWord[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [selectedWord, setSelectedWord] = useState<FallingWord | null>(null);
-  const [speed, setSpeed] = useState<"slow" | "normal" | "fast">("normal");
+  const [speed, setSpeed] = useState<GameSpeed>("normal");
 
   useEffect(() => {
     fetchGlossary({ stream, level: currentLevel })
@@ -50,18 +52,32 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
     let baseDurationMax: number;
     let spawnEveryMs: number;
 
-    if (speed === "slow") {
-      baseDurationMin = 6;
-      baseDurationMax = 8;
-      spawnEveryMs = 2200;
-    } else if (speed === "fast") {
-      baseDurationMin = 2;
-      baseDurationMax = 3.5;
-      spawnEveryMs = 1200;
-    } else {
-      baseDurationMin = 3.5;
-      baseDurationMax = 5.5;
-      spawnEveryMs = 1600;
+    switch (speed) {
+      case "verySlow":
+        baseDurationMin = 7;
+        baseDurationMax = 10;
+        spawnEveryMs = 2600;
+        break;
+      case "slow":
+        baseDurationMin = 5;
+        baseDurationMax = 7;
+        spawnEveryMs = 2200;
+        break;
+      case "fast":
+        baseDurationMin = 2.5;
+        baseDurationMax = 3.5;
+        spawnEveryMs = 1200;
+        break;
+      case "turbo":
+        baseDurationMin = 1.5;
+        baseDurationMax = 2.5;
+        spawnEveryMs = 900;
+        break;
+      default:
+        baseDurationMin = 3.5;
+        baseDurationMax = 5.5;
+        spawnEveryMs = 1600;
+        break;
     }
 
     const spawn = () => {
@@ -132,13 +148,15 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
               <select
                 value={speed}
                 onChange={(e) =>
-                  setSpeed(e.target.value as "slow" | "normal" | "fast")
+                  setSpeed(e.target.value as GameSpeed)
                 }
                 disabled={isRunning}
               >
+                <option value="verySlow">{t("games.speedVerySlow")}</option>
                 <option value="slow">{t("games.speedSlow")}</option>
                 <option value="normal">{t("games.speedNormal")}</option>
                 <option value="fast">{t("games.speedFast")}</option>
+                <option value="turbo">{t("games.speedTurbo")}</option>
               </select>
             </label>
           </div>
@@ -160,9 +178,8 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
         )}
         <div className="falling-game-area">
           {fallingWords.map((word) => (
-            <button
+            <div
               key={word.id}
-              type="button"
               className="falling-word"
               style={{
                 left: `${word.left}%`,
@@ -171,7 +188,7 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
               onClick={() => setSelectedWord(word)}
             >
               {word.text}
-            </button>
+            </div>
           ))}
         </div>
         {selectedWord && activeTranslation && (
