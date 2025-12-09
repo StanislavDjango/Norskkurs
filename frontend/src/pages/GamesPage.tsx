@@ -59,7 +59,7 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
         return;
       }
 
-      const duration = 8 + Math.random() * 5;
+      const duration = 3.5 + Math.random() * 2.5;
       const left = 5 + Math.random() * 80;
       const id = `${term.id}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
@@ -77,10 +77,10 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
       window.setTimeout(() => {
         setFallingWords((prev) => prev.filter((item) => item.id !== id));
         setSelectedWord((prev) => (prev && prev.id === id ? null : prev));
-      }, duration * 1000);
+      }, (duration + 1) * 1000);
     };
 
-    const interval = window.setInterval(spawn, 1200);
+    const interval = window.setInterval(spawn, 1600);
 
     return () => window.clearInterval(interval);
   }, [isRunning, playableTerms, stream]);
