@@ -739,6 +739,36 @@ h2 {
   gap: 8px;
 }
 
+.tower-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tower-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.tower-reward {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  font-weight: 600;
+}
+
+.tower-batch-input {
+  width: 64px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: #ffffff;
+  font-size: 0.85rem;
+}
+
 .tower-area {
   height: 260px;
   border-radius: 16px;
@@ -749,6 +779,7 @@ h2 {
     #f8fafc;
   display: flex;
   align-items: flex-end;
+  align-content: flex-end;
   flex-wrap: wrap;
   gap: 6px;
   overflow: hidden;
@@ -761,7 +792,9 @@ h2 {
   font-size: 0.9rem;
   cursor: pointer;
   white-space: nowrap;
-  animation: tower-drop 0.35s ease-out;
+  animation-name: tower-drop;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
 }
 
 .tower-piece--nor {
@@ -775,7 +808,8 @@ h2 {
 }
 
 .tower-piece--selected {
-  box-shadow: 0 0 0 2px #38bdf8;
+  background: #22c55e;
+  color: #f9fafb;
 }
 
 .tower-piece--penalty {
@@ -783,14 +817,39 @@ h2 {
   color: #b91c1c;
 }
 
+.tower-piece--removing {
+  pointer-events: none;
+  animation-name: tower-disintegrate;
+  animation-duration: 0.35s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
 @keyframes tower-drop {
   from {
-    transform: translateY(-40px);
+    transform: translateY(-260px);
     opacity: 0;
   }
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+@keyframes tower-disintegrate {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    filter: none;
+  }
+  40% {
+    transform: translateY(-8px) scale(1.02) rotate(-2deg);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(20px) scale(0.65) rotate(8deg);
+    opacity: 0;
+    filter: blur(2px);
   }
 }
 
