@@ -41,6 +41,7 @@ import type {
 } from "./types";
 import VerbsPage from "./pages/VerbsPage";
 import GlossaryPage from "./pages/GlossaryPage";
+import GamesPage from "./pages/GamesPage";
 
 const levelOrder: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4 };
 
@@ -93,6 +94,7 @@ type Section =
   | "verbs"
   | "irregularVerbs"
   | "expressions"
+  | "games"
   | "glossary"
   | "contact";
 
@@ -495,6 +497,7 @@ const App = () => {
       { key: "verbs" as Section, label: t("nav.verbs") },
       { key: "irregularVerbs" as Section, label: t("nav.irregularVerbs", { defaultValue: "Irregular verbs" }) },
       { key: "expressions" as Section, label: t("nav.expressions") },
+      { key: "games" as Section, label: t("nav.games") },
       { key: "glossary" as Section, label: t("nav.glossary") },
       { key: "contact" as Section, label: t("nav.contact") },
     ],
@@ -1547,6 +1550,10 @@ const App = () => {
               </div>
             )}
           </>
+        );
+      case "games":
+        return (
+          <GamesPage stream={stream} currentLevel={currentLevel} />
         );
       case "glossary":
         return (
