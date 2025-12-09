@@ -24,6 +24,7 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
   const [fallingWords, setFallingWords] = useState<FallingWord[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [selectedWord, setSelectedWord] = useState<FallingWord | null>(null);
+  const [speed, setSpeed] = useState<"slow" | "normal" | "fast">("normal");
 
   useEffect(() => {
     fetchGlossary({ stream, level: currentLevel })
@@ -45,6 +46,24 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
     if (!isRunning) return;
     if (playableTerms.length === 0) return;
 
+    let baseDurationMin: number;
+    let baseDurationMax: number;
+    let spawnEveryMs: number;
+
+    if (speed === "slow") {
+      baseDurationMin = 6;
+      baseDurationMax = 8;
+      spawnEveryMs = 2200;
+    } else if (speed === "fast") {
+      baseDurationMin = 2;
+      baseDurationMax = 3.5;
+      spawnEveryMs = 1200;
+    } else {
+      baseDurationMin = 3.5;
+      baseDurationMax = 5.5;
+      spawnEveryMs = 1600;
+    }
+
     const spawn = () => {
       const term =
         playableTerms[Math.floor(Math.random() * playableTerms.length)];
@@ -59,7 +78,9 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
         return;
       }
 
-      const duration = 3.5 + Math.random() * 2.5;
+      const duration =
+        baseDurationMin +
+        Math.random() * Math.max(baseDurationMax - baseDurationMin, 0.5);
       const left = 5 + Math.random() * 80;
       const id = `${term.id}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
@@ -77,13 +98,13 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
       window.setTimeout(() => {
         setFallingWords((prev) => prev.filter((item) => item.id !== id));
         setSelectedWord((prev) => (prev && prev.id === id ? null : prev));
-      }, (duration + 1) * 1000);
+      }, (duration + 1.2) * 1000);
     };
 
-    const interval = window.setInterval(spawn, 1600);
+    const interval = window.setInterval(spawn, spawnEveryMs);
 
     return () => window.clearInterval(interval);
-  }, [isRunning, playableTerms, stream]);
+  }, [isRunning, playableTerms, stream, speed]);
 
   const activeTranslation = useMemo(() => {
     if (!selectedWord) return "";
@@ -105,6 +126,22 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
       <div className="falling-game">
         <div className="falling-game-header">
           <h3>{t("games.fallingTitle")}</h3>
+          <div className="falling-game-controls">
+            <label className="falling-speed-label">
+              <span>{t("games.speedLabel")}</span>
+              <select
+                value={speed}
+                onChange={(e) =>
+                  setSpeed(e.target.value as "slow" | "normal" | "fast")
+                }
+                disabled={isRunning}
+              >
+                <option value="slow">{t("games.speedSlow")}</option>
+                <option value="normal">{t("games.speedNormal")}</option>
+                <option value="fast">{t("games.speedFast")}</option>
+              </select>
+            </label>
+          </div>
           <button
             type="button"
             className="ghost"

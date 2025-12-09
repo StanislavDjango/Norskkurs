@@ -720,7 +720,29 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+}
+
+.falling-game-controls {
+  display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.falling-speed-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.falling-speed-label select {
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: #ffffff;
+  font-size: 0.85rem;
 }
 
 .falling-game-area {
@@ -749,6 +771,11 @@ h2 {
   animation-name: falling-word-move;
   animation-timing-function: linear;
   animation-fill-mode: forwards;
+  animation-play-state: running;
+}
+
+.falling-word:hover {
+  animation-play-state: paused;
 }
 
 .falling-translation {
