@@ -771,11 +771,10 @@ h2 {
   animation-name: falling-word-move;
   animation-timing-function: linear;
   animation-fill-mode: forwards;
-  animation-play-state: running;
 }
 
 .falling-word:hover {
-  animation-play-state: paused;
+  background: #0284c7;
 }
 
 .falling-translation {
