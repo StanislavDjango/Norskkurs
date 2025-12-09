@@ -9,7 +9,7 @@ type Props = {
   currentLevel: Level;
 };
 
-type GameId = "fallingWords";
+type GameId = "fallingWords" | "wordTower";
 
 type GameSpeed = "verySlow" | "slow" | "normal" | "fast" | "turbo";
 
@@ -22,6 +22,17 @@ type FallingWord = {
   duration: number;
 };
 
+type TowerPiece = {
+  id: string;
+  termId: number;
+  role: "nor" | "tr";
+  text: string;
+  isSelected?: boolean;
+  isPenalty?: boolean;
+};
+
+const MAX_TOWER_PIECES = 40;
+
 const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
   const { t, i18n } = useTranslation();
   const [terms, setTerms] = useState<GlossaryTerm[]>([]);
@@ -30,6 +41,11 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
   const [selectedWord, setSelectedWord] = useState<FallingWord | null>(null);
   const [speed, setSpeed] = useState<GameSpeed>("normal");
   const [activeGame, setActiveGame] = useState<GameId>("fallingWords");
+  const [towerPieces, setTowerPieces] = useState<TowerPiece[]>([]);
+  const [towerRunning, setTowerRunning] = useState(false);
+  const [towerSelectedId, setTowerSelectedId] = useState<string | null>(null);
+  const [towerMatches, setTowerMatches] = useState(0);
+  const [towerGameOver, setTowerGameOver] = useState(false);
 
   useEffect(() => {
     fetchGlossary({ stream, level: currentLevel })
@@ -48,6 +64,7 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
   }, [terms, stream]);
 
   useEffect(() => {
+    if (activeGame !== "fallingWords") return;
     if (!isRunning) return;
     if (playableTerms.length === 0) return;
 
@@ -123,7 +140,7 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
     const interval = window.setInterval(spawn, spawnEveryMs);
 
     return () => window.clearInterval(interval);
-  }, [isRunning, playableTerms, stream, speed]);
+  }, [isRunning, playableTerms, stream, speed, activeGame]);
 
   const activeTranslation = useMemo(() => {
     if (!selectedWord) return "";
@@ -136,6 +153,129 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
     }
     return selectedWord.translationEn || selectedWord.translationRu;
   }, [selectedWord, i18n.language]);
+
+  const pickTranslationForTower = (term: GlossaryTerm): string => {
+    const lang = i18n.language;
+    if (lang.startsWith("ru")) {
+      return (
+        term.translation_ru ||
+        term.translation_en ||
+        term.translation_nb ||
+        term.translation_nn ||
+        term.term
+      );
+    }
+    return (
+      term.translation_en ||
+      term.translation_ru ||
+      term.translation_nb ||
+      term.translation_nn ||
+      term.term
+    );
+  };
+
+  useEffect(() => {
+    if (activeGame !== "wordTower") return;
+    if (!towerRunning || towerGameOver) return;
+    if (playableTerms.length === 0) return;
+
+    const spawn = () => {
+      const term =
+        playableTerms[Math.floor(Math.random() * playableTerms.length)];
+      const norwegian =
+        stream === "bokmaal"
+          ? term.translation_nb || term.term
+          : stream === "nynorsk"
+          ? term.translation_nn || term.translation_nb || term.term
+          : term.term;
+      const translation = pickTranslationForTower(term);
+      if (!norwegian || !translation) {
+        return;
+      }
+      const termId = term.id;
+      const baseId = `${termId}-${Date.now()}-${Math.random()
+        .toString(16)
+        .slice(2)}`;
+      const norPiece: TowerPiece = {
+        id: `${baseId}-nor`,
+        termId,
+        role: "nor",
+        text: norwegian,
+      };
+      const trPiece: TowerPiece = {
+        id: `${baseId}-tr`,
+        termId,
+        role: "tr",
+        text: translation,
+      };
+      setTowerPieces((prev) => {
+        const next = [...prev, norPiece, trPiece];
+        if (next.length >= MAX_TOWER_PIECES) {
+          setTowerGameOver(true);
+          setTowerRunning(false);
+        }
+        return next;
+      });
+    };
+
+    const interval = window.setInterval(spawn, 2000);
+    return () => window.clearInterval(interval);
+  }, [activeGame, towerRunning, towerGameOver, playableTerms, stream, i18n.language]);
+
+  const handleTowerToggle = () => {
+    if (towerRunning) {
+      setTowerRunning(false);
+      return;
+    }
+    setTowerPieces([]);
+    setTowerSelectedId(null);
+    setTowerMatches(0);
+    setTowerGameOver(false);
+    setTowerRunning(true);
+  };
+
+  const handleTowerPieceClick = (pieceId: string) => {
+    if (towerGameOver) return;
+    setTowerPieces((prev) => {
+      const piece = prev.find((p) => p.id === pieceId);
+      if (!piece) return prev;
+      const currentSelected = towerSelectedId
+        ? prev.find((p) => p.id === towerSelectedId)
+        : undefined;
+
+      if (!towerSelectedId || !currentSelected) {
+        setTowerSelectedId(pieceId);
+        return prev.map((p) => ({
+          ...p,
+          isSelected: p.id === pieceId,
+          isPenalty: p.isPenalty,
+        }));
+      }
+
+      if (towerSelectedId === pieceId) {
+        setTowerSelectedId(null);
+        return prev.map((p) => ({ ...p, isSelected: false }));
+      }
+
+      if (
+        currentSelected.termId === piece.termId &&
+        currentSelected.role !== piece.role
+      ) {
+        const idsToRemove = new Set([currentSelected.id, piece.id]);
+        setTowerSelectedId(null);
+        setTowerMatches((m) => m + 1);
+        return prev.filter((p) => !idsToRemove.has(p.id));
+      }
+
+      setTowerSelectedId(null);
+      return prev.map((p) => {
+        if (p.id === currentSelected.id || p.id === piece.id) {
+          return { ...p, isSelected: false, isPenalty: true };
+        }
+        return { ...p, isSelected: false };
+      });
+    });
+  };
 
   return (
     <div className="card games-layout">
@@ -152,8 +292,14 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
         >
           {t("games.tabFallingWords")}
         </button>
-        <button type="button" className="pill pill--disabled" disabled>
-          {t("games.tabComingSoon")}
+        <button
+          type="button"
+          className={`pill ${
+            activeGame === "wordTower" ? "pill--active" : ""
+          }`}
+          onClick={() => setActiveGame("wordTower")}
+        >
+          {t("games.tabWordTower")}
         </button>
       </div>
 
@@ -218,7 +364,50 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
             <span>{activeTranslation}</span>
           </div>
         )}
-      </div>
+        </div>
+      )}
+
+      {activeGame === "wordTower" && (
+        <div className="tower-game">
+          <div className="tower-header">
+            <h3>{t("games.towerTitle")}</h3>
+            <span className="muted small">
+              {t("games.towerMatchesLabel")} {towerMatches}
+            </span>
+            <button
+              type="button"
+              className="ghost"
+              onClick={handleTowerToggle}
+              disabled={playableTerms.length === 0}
+            >
+              {towerRunning
+                ? t("games.stop")
+                : towerGameOver
+                ? t("restart")
+                : t("games.start")}
+            </button>
+          </div>
+          {towerGameOver && (
+            <p className="alert small">{t("games.towerGameOver")}</p>
+          )}
+          {playableTerms.length === 0 && !towerGameOver && !towerRunning && (
+            <p className="muted small">{t("games.noWords")}</p>
+          )}
+          <div className="tower-area">
+            {towerPieces.map((piece) => (
+              <button
+                key={piece.id}
+                type="button"
+                className={`tower-piece tower-piece--${piece.role} ${
+                  piece.isSelected ? "tower-piece--selected" : ""
+                } ${piece.isPenalty ? "tower-piece--penalty" : ""}`}
+                onClick={() => handleTowerPieceClick(piece.id)}
+              >
+                {piece.text}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

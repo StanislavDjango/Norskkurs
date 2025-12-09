@@ -725,6 +725,75 @@ h2 {
   cursor: default;
 }
 
+.tower-game {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tower-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tower-area {
+  height: 260px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  padding: 10px;
+  background: radial-gradient(circle at 0 0, rgba(59, 130, 246, 0.05), transparent 55%),
+    radial-gradient(circle at 100% 0, rgba(56, 189, 248, 0.08), transparent 55%),
+    #f8fafc;
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.tower-piece {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  animation: tower-drop 0.35s ease-out;
+}
+
+.tower-piece--nor {
+  background: #0ea5e9;
+  color: #f9fafb;
+}
+
+.tower-piece--tr {
+  background: #e0f2fe;
+  color: #0f172a;
+}
+
+.tower-piece--selected {
+  box-shadow: 0 0 0 2px #38bdf8;
+}
+
+.tower-piece--penalty {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+@keyframes tower-drop {
+  from {
+    transform: translateY(-40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 .falling-game {
   margin-top: 12px;
   display: flex;
