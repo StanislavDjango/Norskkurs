@@ -15,6 +15,8 @@ type SpawnSpeed = 1500 | 2500 | 4000 | 6000 | 8000 | 10000 | 12000;
 
 const BLOCK_HEIGHT = 40;
 const GRAVITY = 2;
+const PRIMARY_MUSIC_SRC = "/audio/4f13fc38b4572af.mp3";
+const FALLBACK_MUSIC_SRC = "/audio/wordcollapse.mp3";
 
 type Block = {
   id: string;
@@ -41,6 +43,9 @@ type GameSize = {
 const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
   const { t, i18n } = useTranslation();
   const [status, setStatus] = useState<GameStatus>("pre-game");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pendingStart, setPendingStart] = useState(false);
+  const [isMusicOn, setIsMusicOn] = useState(true);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [score, setScore] = useState(0);
@@ -56,12 +61,20 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
 
   // --- Responsive Sizing ---
   const gameWrapperRef = useRef<HTMLDivElement>(null);
-  const [gameSize, setGameSize] = useState<GameSize>({ width: 0, height: 0, cols: 8, blockWidth: 120 });
+  const [gameSize, setGameSize] = useState<GameSize>({ width: 0, height: BLOCK_HEIGHT * 12, cols: 8, blockWidth: 120 });
+
+  // --- Music ---
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useLayoutEffect(() => {
+    if (!isModalOpen) return;
     const updateSize = () => {
       if (gameWrapperRef.current) {
         const parentWidth = gameWrapperRef.current.offsetWidth;
+        const parentHeight = gameWrapperRef.current.offsetHeight || window.innerHeight;
+        const targetHeight = Math.min(parentHeight, window.innerHeight * 0.9);
+        const minHeight = BLOCK_HEIGHT * 12;
+        const height = Math.max(minHeight, targetHeight);
         const minBlockWidth = 80;
         let cols = Math.floor(parentWidth / minBlockWidth);
         if (cols > 10) cols = 10;
@@ -70,15 +83,46 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
         const blockWidth = parentWidth / cols;
         setGameSize({
           width: parentWidth,
-          height: 12 * BLOCK_HEIGHT,
-          cols: cols,
-          blockWidth: blockWidth,
+          height,
+          cols,
+          blockWidth,
         });
       }
     };
     updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
+  }, [isModalOpen]);
+
+  const ensureAudio = useCallback(() => {
+    if (!audioRef.current) {
+      const audio = new Audio(PRIMARY_MUSIC_SRC);
+      audio.onerror = () => {
+        if (audio.src !== FALLBACK_MUSIC_SRC) {
+          audio.src = FALLBACK_MUSIC_SRC;
+          audio.load();
+        }
+      };
+      audio.loop = true;
+      audio.volume = 0.18;
+      audioRef.current = audio;
+    }
+    return audioRef.current;
+  }, []);
+
+  const startMusic = useCallback(() => {
+    if (!isMusicOn) return;
+    const audio = ensureAudio();
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }, [ensureAudio, isMusicOn]);
+
+  const stopMusic = useCallback(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
   }, []);
 
   const gameBackground = useMemo(() => {
@@ -240,6 +284,10 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
       setSelectedBlockId(blockId);
       return;
     }
+    if (selectedBlock.role === clickedBlock.role) {
+      setSelectedBlockId(blockId);
+      return;
+    }
 
     if (selectedBlock.termId === clickedBlock.termId && selectedBlock.role !== clickedBlock.role) {
       const newCombo = comboCount + 1;
@@ -274,12 +322,35 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
     }
   };
 
-  const handleStart = () => {
-    setScore(0); setIncorrectScore(0); setSelectedBlockId(null); setComboCount(0);
-    const initialBlocks = spawnBlockPairs();
-    setBlocks(initialBlocks || []);
+  const resetGameState = useCallback(() => {
+    setScore(0);
+    setIncorrectScore(0);
+    setSelectedBlockId(null);
+    setComboCount(0);
+    setShowComboAnimation(null);
+    setBlocks([]);
     setIsInitialPhase(true);
+    setIsFrozen(false);
+  }, []);
+
+  const handleStart = () => {
+    resetGameState();
+    setIsModalOpen(true);
+    setPendingStart(true);
     setStatus("running");
+    startMusic();
+  };
+
+  const handleStop = () => {
+    setStatus("pre-game");
+    setPendingStart(false);
+    resetGameState();
+    stopMusic();
+  };
+
+  const handleCloseModal = () => {
+    handleStop();
+    setIsModalOpen(false);
   };
 
   const speedOptions: { value: SpawnSpeed; label: string }[] = [
@@ -292,69 +363,121 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
     { value: 1500, label: t('games.speedHyper', 'Hyper') },
   ];
 
+  const settingsControls = (extraClass?: string) => (
+    <div className={`game-settings ${extraClass || ""}`}>
+      <label> {t('games.pairsLabel', 'Pairs')}:
+        <select value={pairCount} onChange={e => setPairCount(Number(e.target.value))}>
+          {[...Array(9).keys()].map(i => <option key={i+2} value={i+2}>{i+2}</option>)}
+        </select>
+      </label>
+      <label> {t('games.speedLabel', 'Speed')}:
+        <select value={spawnSpeed} onChange={e => setSpawnSpeed(Number(e.target.value) as SpawnSpeed)}>
+          {speedOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+        </select>
+      </label>
+    </div>
+  );
+
+  useEffect(() => {
+    if (!isModalOpen || !pendingStart) return;
+    if (!gameWrapperRef.current || gameSize.width === 0 || gameSize.height === 0) return;
+    const initialBlocks = spawnBlockPairs();
+    setBlocks(initialBlocks || []);
+    setPendingStart(false);
+  }, [gameSize.width, gameSize.height, isModalOpen, pendingStart, spawnBlockPairs]);
+
+  useEffect(() => {
+    if (!isModalOpen || !isMusicOn) {
+      stopMusic();
+      return;
+    }
+    if (status === "running") {
+      startMusic();
+    }
+  }, [isModalOpen, isMusicOn, startMusic, status, stopMusic]);
+
+  useEffect(() => stopMusic, [stopMusic]);
+
   return (
-    <div className="collapse-game" ref={gameWrapperRef}>
-      <div className="collapse-game-header">
-        <h3>WordCollaps</h3>
-        <div className="collapse-game-scores">
-            <span className="score correct">{t("games.correct", "Correct")}: {score}</span>
-            <span className="score incorrect">{t("games.incorrect", "Incorrect")}: {incorrectScore}</span>
-            {comboCount > 1 && <span className="score combo-couter">Combo: x{comboCount}</span>}
+    <div className="collapse-game">
+      <div className="collapse-launcher">
+        <div className="collapse-launcher-text">
+          <h3>WordCollaps</h3>
+          <p className="muted small">{t('games.wordCollapseHint', 'Игра откроется во всплывающем окне — соединяйте норвежские и переводные блоки.')}</p>
         </div>
-        {status !== "running" && (
-            <div className="game-settings">
-                <label> {t('games.pairsLabel', 'Pairs')}:
-                    <select value={pairCount} onChange={e => setPairCount(Number(e.target.value))}>
-                        {[...Array(9).keys()].map(i => <option key={i+2} value={i+2}>{i+2}</option>)}
-                    </select>
-                </label>
-                <label> {t('games.speedLabel', 'Speed')}:
-                    <select value={spawnSpeed} onChange={e => setSpawnSpeed(Number(e.target.value) as SpawnSpeed)}>
-                        {speedOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                    </select>
-                </label>
-            </div>
-        )}
+        {settingsControls("launcher-settings")}
         <div className="game-buttons">
-            {status !== "running" && <button className="start-btn" onClick={handleStart}>{status === 'game-over' ? t('restart') : t("games.start")}</button>}
-            {status === "running" && <button className="stop-btn" onClick={() => setStatus("pre-game")}>{t("games.stop")}</button>}
+            <button className="start-btn" onClick={handleStart} disabled={isModalOpen}>{t("games.start")}</button>
         </div>
       </div>
 
-      {status === 'game-over' && <div className="game-over-message">
-          <h4>{t('games.gameOver', "Game Over")}</h4>
-          <p>{t('games.finalScore', "Final Score")}: {score}</p>
-          <p>{t('games.incorrectCount', "Mistakes")}: {incorrectScore}</p>
-      </div>}
-
-      {gameSize.width > 0 && <div className="collapse-game-area" style={{ width: `${gameSize.width}px`, height: `${gameSize.height}px`, background: gameBackground, transition: 'background 2s linear' }}>
-        {isFrozen && <div className="frozen-overlay" />}
-        {showComboAnimation && (
-            <div className="combo-animation">
-                COMBO x{showComboAnimation}!
+      {isModalOpen && (
+        <div className="collapse-game-modal" role="dialog" aria-modal="true">
+          <div className="collapse-modal-backdrop" onClick={handleCloseModal} />
+          <div className="collapse-modal-window">
+            <div className="collapse-game-header">
+              <div className="collapse-modal-title">
+                <h3>WordCollaps</h3>
+                <div className="collapse-game-scores">
+                    <span className="score correct">{t("games.correct", "Correct")}: {score}</span>
+                    <span className="score incorrect">{t("games.incorrect", "Incorrect")}: {incorrectScore}</span>
+                    {comboCount > 1 && <span className="score combo-couter">Combo: x{comboCount}</span>}
+                </div>
+              </div>
+              <div className="game-buttons">
+                  <button className="ghost-btn" onClick={() => setIsMusicOn((v) => !v)}>
+                    {isMusicOn ? t('games.musicOn', 'Музыка: вкл') : t('games.musicOff', 'Музыка: выкл')}
+                  </button>
+                  {status !== "running" && <button className="start-btn" onClick={handleStart}>{status === 'game-over' ? t('restart') : t("games.start")}</button>}
+                  {status === "running" && <button className="stop-btn" onClick={handleStop}>{t("games.stop")}</button>}
+                  <button className="close-btn" onClick={handleCloseModal} aria-label={t('close', 'Close')}>×</button>
+              </div>
             </div>
-        )}
-        {blocks.map((block) => (
-          <div
-            key={block.id}
-            className={`collapse-block ${selectedBlockId === block.id ? "selected" : ""} ${block.isMatched ? "matched" : ""} ${block.isWrong ? "wrong" : ""} ${block.role} ${block.bonusType || ''}`}
-            style={{ left: `${block.x}px`, top: `${block.y}px`, width: `${gameSize.blockWidth}px`, height: `${BLOCK_HEIGHT}px` }}
-            onClick={() => handleBlockClick(block.id)}
-          >
-            {block.text}
-            <i></i><i></i><i></i><i></i><i></i><i></i>
+
+            {status === 'game-over' && <div className="game-over-message">
+                <h4>{t('games.gameOver', "Game Over")}</h4>
+                <p>{t('games.finalScore', "Final Score")}: {score}</p>
+                <p>{t('games.incorrectCount', "Mistakes")}: {incorrectScore}</p>
+            </div>}
+
+            {status !== "running" && settingsControls("modal-settings")}
+
+            <div className="collapse-game-frame" ref={gameWrapperRef}>
+              <div className="collapse-game-area" style={{ width: gameSize.width ? `${gameSize.width}px` : "100%", height: `${gameSize.height}px`, background: gameBackground, transition: 'background 2s linear' }}>
+                {isFrozen && <div className="frozen-overlay" />}
+                {showComboAnimation && (
+                    <div className="combo-animation">
+                        COMBO x{showComboAnimation}!
+                    </div>
+                )}
+                {blocks.map((block) => (
+                  <div
+                    key={block.id}
+                    className={`collapse-block ${selectedBlockId === block.id ? "selected" : ""} ${block.isMatched ? "matched" : ""} ${block.isWrong ? "wrong" : ""} ${block.role} ${block.bonusType || ''}`}
+                    style={{ left: `${block.x}px`, top: `${block.y}px`, width: `${gameSize.blockWidth}px`, height: `${BLOCK_HEIGHT}px` }}
+                    onClick={() => handleBlockClick(block.id)}
+                  >
+                    {block.text}
+                    <i></i><i></i><i></i><i></i><i></i><i></i>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        ))}
-      </div>}
+        </div>
+      )}
        <style>{`
         :root {
           --game-bg: #f0f4f8; --block-bg-nor: #ffffff; --block-border-nor: #c2d1e0; --block-bg-tr: #e6f7ff; --block-border-tr: #91d5ff; --selected-bg: #e8fff0; --selected-border: #34d399; --selected-color: #065f46; --wrong-bg: #ffe5e5; --wrong-border: #f87171; --correct-color: #52c41a; --incorrect-color: #f5222d; --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
         }
         .collapse-game { font-family: var(--font-family); }
+        .collapse-launcher { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; }
+        .collapse-launcher-text { display: flex; flex-direction: column; gap: 0.25rem; }
         .collapse-game-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
-        .collapse-game-scores { display: flex; gap: 1rem; font-weight: 500; order: 1; width: 100%; }
-        .game-settings { display: flex; gap: 1rem; align-items: center; order: 2; flex-grow: 1; }
-        .game-buttons { order: 3; }
+        .collapse-game-scores { display: flex; gap: 1rem; font-weight: 500; order: 1; width: 100%; flex-wrap: wrap; }
+        .game-settings { display: flex; gap: 1rem; align-items: center; order: 2; flex-grow: 1; flex-wrap: wrap; }
+        .game-settings.modal-settings { padding: 0.5rem 0 1rem; }
+        .game-buttons { order: 3; display: flex; gap: 0.5rem; align-items: center; }
         .score.correct { color: var(--correct-color); }
         .score.incorrect { color: var(--incorrect-color); }
         .score.combo-couter { color: #ff7a45; font-weight: bold; }
@@ -362,6 +485,13 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
         .game-buttons button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .start-btn { background-color: #1890ff; color: white; }
         .stop-btn { background-color: #ff4d4f; color: white; }
+        .ghost-btn { background: #f8fafc; border: 1px solid #e2e8f0; color: #0f172a; }
+        .close-btn { background: #0f172a; color: #fff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 20px; cursor: pointer; position: absolute; top: 10px; right: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; }
+        .collapse-game-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .collapse-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(4px); }
+        .collapse-modal-window { position: relative; background: #ffffff; border-radius: 16px; padding: 1.25rem; max-width: 1100px; width: 96vw; max-height: 95vh; height: 92vh; box-shadow: 0 20px 60px rgba(0,0,0,0.2); z-index: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .collapse-modal-title h3 { margin: 0; }
+        .collapse-game-frame { width: 100%; margin-top: 0.5rem; flex: 1; min-height: 65vh; max-height: calc(95vh - 160px); }
         .game-over-message { text-align: center; padding: 2rem; background-color: #fff1f0; border: 1px solid var(--incorrect-color); border-radius: 8px; margin-top: 1rem; }
         .collapse-game-area {
           position: relative; border: 1px solid #d9d9d9; overflow: hidden; margin-top: 1rem; border-radius: 8px;
@@ -417,6 +547,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
             .game-settings label { display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0; }
             .game-settings select { min-width: 150px; padding: 4px; }
             .game-buttons { order: 3; display: flex; justify-content: center; margin-top: 1rem; }
+            .collapse-modal-window { padding: 1rem; }
             .collapse-block { font-size: 12px; }
         }
 
