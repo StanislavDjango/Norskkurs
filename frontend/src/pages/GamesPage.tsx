@@ -1,30 +1,37 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { fetchGlossary } from "../api";
-import type { GlossaryTerm, Level, Stream } from "../types";
+import { fetchExpressions, fetchGlossary } from "../api";
 import FallingWordsGame from "../components/games/FallingWordsGame";
-import WordTowerGame from "../components/games/WordTowerGame";
-
+import MemoryPairsGame from "../components/games/MemoryPairsGame";
 import WordCollapseGame from "../components/games/WordCollapseGame";
+import WordTowerGame from "../components/games/WordTowerGame";
+import type { Expression, GlossaryTerm, Level, Stream } from "../types";
 
 type Props = {
   stream: Stream;
   currentLevel: Level;
 };
 
-type GameId = "fallingWords" | "wordTower" | "wordCollapse";
+type GameId = "fallingWords" | "wordTower" | "wordCollapse" | "memoryPairs";
 
 const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
   const { t } = useTranslation();
   const [terms, setTerms] = useState<GlossaryTerm[]>([]);
-  const [activeGame, setActiveGame] = useState<GameId>("wordCollapse");
+  const [expressions, setExpressions] = useState<Expression[]>([]);
+  const [activeGame, setActiveGame] = useState<GameId>("memoryPairs");
 
   useEffect(() => {
     fetchGlossary()
       .then(setTerms)
       .catch(() => setTerms([]));
   }, [stream, currentLevel]);
+
+  useEffect(() => {
+    fetchExpressions({ stream })
+      .then(setExpressions)
+      .catch(() => setExpressions([]));
+  }, [stream]);
 
   const playableTerms = useMemo(() => {
     return terms.filter((term) => {
@@ -69,29 +76,47 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
         >
           WordCollaps
         </button>
+        <button
+          type="button"
+          className={`pill ${
+            activeGame === "memoryPairs" ? "pill--active" : ""
+          }`}
+          onClick={() => setActiveGame("memoryPairs")}
+        >
+          {t("games.tabMemory")}
+        </button>
       </div>
 
       {activeGame === "fallingWords" && (
         <FallingWordsGame
-            stream={stream}
-            currentLevel={currentLevel}
-            playableTerms={playableTerms}
+          stream={stream}
+          currentLevel={currentLevel}
+          playableTerms={playableTerms}
         />
       )}
 
       {activeGame === "wordTower" && (
         <WordTowerGame
-            stream={stream}
-            currentLevel={currentLevel}
-            playableTerms={playableTerms}
+          stream={stream}
+          currentLevel={currentLevel}
+          playableTerms={playableTerms}
         />
       )}
 
       {activeGame === "wordCollapse" && (
         <WordCollapseGame
-            stream={stream}
-            currentLevel={currentLevel}
-            playableTerms={playableTerms}
+          stream={stream}
+          currentLevel={currentLevel}
+          playableTerms={playableTerms}
+        />
+      )}
+
+      {activeGame === "memoryPairs" && (
+        <MemoryPairsGame
+          stream={stream}
+          currentLevel={currentLevel}
+          terms={playableTerms}
+          expressions={expressions}
         />
       )}
     </div>
