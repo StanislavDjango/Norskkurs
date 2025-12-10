@@ -34,6 +34,8 @@ type Block = {
   vy: number;
   width: number;
   height: number;
+  waveId: number;
+  landed: boolean;
 };
 
 const MAX_MISTAKES = 12;
@@ -66,6 +68,11 @@ const WordCollapseGame: React.FC<Props> = ({
   const spawnElapsedRef = useRef(0);
   const selectedRef = useRef<string | null>(null);
   const colsRef = useRef(6);
+  const waveIdRef = useRef(0);
+  const totalInWaveRef = useRef(0);
+  const landedRef = useRef(0);
+  const matchedRef = useRef(0);
+  const acceptingRef = useRef(false);
   const [pairCount, setPairCount] = useState(8);
   const [speed, setSpeed] = useState<SpeedId>("normal");
   const [running, setRunning] = useState(false);
@@ -111,6 +118,10 @@ const WordCollapseGame: React.FC<Props> = ({
     });
     blocksRef.current.clear();
     selectedRef.current = null;
+    landedRef.current = 0;
+    matchedRef.current = 0;
+    totalInWaveRef.current = 0;
+    acceptingRef.current = false;
   };
 
   const stopGame = () => {
@@ -157,29 +168,26 @@ const WordCollapseGame: React.FC<Props> = ({
 
       if (
         spawnElapsedRef.current >= spawnMs &&
-        pairQueueRef.current.length > 0
+        pairQueueRef.current.length > 0 &&
+        totalInWaveRef.current === 0
       ) {
         spawnElapsedRef.current = 0;
-        spawnPair();
+        startWave();
       }
 
       const height = app.renderer.height;
 
       blocksRef.current.forEach((block) => {
+        if (block.landed) return;
         block.node.y += block.vy * dt;
-        if (block.node.y >= height - block.height - 4) {
-          removeBlock(block.id, false);
-          setMistakes((prev) => {
-            const next = prev + 1;
-            if (next >= MAX_MISTAKES) {
-              setGameOver(true);
-              gameOverRef.current = true;
-              setRunning(false);
-              runningRef.current = false;
-            }
-            return next;
-          });
-          setStreak(0);
+        if (block.node.y >= height - block.height - 6) {
+          block.node.y = height - block.height - 6;
+          block.vy = 0;
+          block.landed = true;
+          landedRef.current += 1;
+          if (landedRef.current >= totalInWaveRef.current) {
+            acceptingRef.current = true;
+          }
         }
       });
     });
@@ -216,68 +224,81 @@ const WordCollapseGame: React.FC<Props> = ({
     return label;
   };
 
-  const spawnPair = () => {
+  const spawnWave = (wavePairs: Pair[], waveId: number) => {
     if (!stageRef.current || !appRef.current) return;
-    if (pairQueueRef.current.length === 0) return;
     const { fall } = SPEEDS[speed];
-    const cols = colsRef.current;
     const width = appRef.current.renderer.width;
     const padding = 16;
-    const columnWidth = (width - padding * 2) / cols;
-    const blockWidth = Math.max(90, columnWidth - 10);
+    const half = (width - padding * 3) / 2;
+    const colsPerSide = colsRef.current / 2;
+    const columnWidth = half / colsPerSide;
+    const blockWidth = Math.max(100, columnWidth - 10);
     const blockHeight = 64;
+    const leftCols: number[] = [];
+    const rightCols: number[] = [];
 
-    const pair =
-      pairQueueRef.current[
-        Math.floor(Math.random() * pairQueueRef.current.length)
-      ];
-    const columns = new Set<number>();
-    while (columns.size < 2 && columns.size < cols) {
-      columns.add(Math.floor(Math.random() * cols));
+    for (let i = 0; i < colsPerSide; i += 1) {
+      leftCols.push(i);
+      rightCols.push(i);
     }
-    const chosenColumns = Array.from(columns);
-    const roles: ("nor" | "tr")[] = ["nor", "tr"];
 
-    roles.forEach((role, idx) => {
-      const col = chosenColumns[idx % chosenColumns.length];
-      const x = padding + col * columnWidth;
-      const y = -blockHeight - Math.random() * 80;
-      const block = new Container();
-      block.x = x;
-      block.y = y;
-      block.eventMode = "static";
-      block.cursor = "pointer";
+    const popCol = (arr: number[]) => {
+      if (arr.length === 0) return Math.floor(Math.random() * colsPerSide);
+      const idx = Math.floor(Math.random() * arr.length);
+      const col = arr[idx];
+      arr.splice(idx, 1);
+      return col;
+    };
 
-      const text =
-        role === "nor"
-          ? truncate(pair.nor, MAX_TEXT_WIDTH)
-          : truncate(pair.tr, MAX_TEXT_WIDTH);
-      const label = decorateBlock(
-        block,
-        text,
-        role === "nor" ? 0x2d7ff9 : 0x0fb999,
-        blockWidth,
-        blockHeight,
-      );
-      label.y = 14;
+    wavePairs.forEach((pair) => {
+      const chosenLeft = popCol(leftCols);
+      const chosenRight = popCol(rightCols);
+      const roles: ("nor" | "tr")[] = ["nor", "tr"];
+      roles.forEach((role) => {
+        const col = role === "nor" ? chosenLeft : chosenRight;
+        const offsetX = role === "nor" ? 0 : half + padding;
+        const x = padding + offsetX + col * columnWidth;
+        const y = -blockHeight - Math.random() * 60;
+        const block = new Container();
+        block.x = x;
+        block.y = y;
+        block.eventMode = "static";
+        block.cursor = "pointer";
 
-      const id = `${pair.id}-${role}-${Date.now()}-${Math.random()
-        .toString(16)
-        .slice(2)}`;
-      const item: Block = {
-        id,
-        pairId: pair.id,
-        role,
-        termId: pair.termId,
-        node: block,
-        vy: fall,
-        width: blockWidth,
-        height: blockHeight,
-      };
-      blocksRef.current.set(id, item);
-      block.on("pointertap", () => handleSelect(id));
-      stageRef.current?.addChild(block);
+        const text =
+          role === "nor"
+            ? truncate(pair.nor, MAX_TEXT_WIDTH)
+            : truncate(pair.tr, MAX_TEXT_WIDTH);
+        const label = decorateBlock(
+          block,
+          text,
+          role === "nor" ? 0x2d7ff9 : 0x0fb999,
+          blockWidth,
+          blockHeight,
+        );
+        label.y = 14;
+
+        const id = `${pair.id}-${role}-${waveId}-${Math.random()
+          .toString(16)
+          .slice(2)}`;
+        const item: Block = {
+          id,
+          pairId: pair.id,
+          role,
+          termId: pair.termId,
+          node: block,
+          vy: fall,
+          width: blockWidth,
+          height: blockHeight,
+          waveId,
+          landed: false,
+        };
+        blocksRef.current.set(id, item);
+        block.on("pointertap", () => handleSelect(id));
+        stageRef.current?.addChild(block);
+      });
     });
+    totalInWaveRef.current = wavePairs.length * 2;
   };
 
   const removeBlock = (id: string, matched: boolean) => {
@@ -295,6 +316,7 @@ const WordCollapseGame: React.FC<Props> = ({
 
   const handleSelect = (id: string) => {
     if (gameOver || !running) return;
+    if (!acceptingRef.current) return;
     const current = blocksRef.current.get(id);
     if (!current) return;
 
@@ -323,11 +345,20 @@ const WordCollapseGame: React.FC<Props> = ({
       removeBlock(previous.id, true);
       removeBlock(current.id, true);
       setScore((prev) => prev + 1);
+      matchedRef.current += 2;
       setStreak((prev) => {
         const next = prev + 1;
         setBestStreak((best) => Math.max(best, next));
         return next;
       });
+      if (matchedRef.current >= totalInWaveRef.current) {
+        acceptingRef.current = false;
+        setTimeout(() => {
+          if (!runningRef.current || gameOverRef.current) return;
+          clearBlocks();
+          startWave();
+        }, 350);
+      }
     } else {
       setMistakes((prev) => {
         const next = prev + 1;
@@ -342,6 +373,12 @@ const WordCollapseGame: React.FC<Props> = ({
       setStreak(0);
       flashBlock(current.id);
       flashBlock(previous.id);
+      acceptingRef.current = false;
+      setTimeout(() => {
+        if (!runningRef.current || gameOverRef.current) return;
+        clearBlocks();
+        startWave();
+      }, 500);
     }
   };
 
@@ -367,6 +404,7 @@ const WordCollapseGame: React.FC<Props> = ({
   const handleStart = () => {
     if (availablePairs.length < 3) return;
     resetGame();
+    spawnElapsedRef.current = 0;
     pairQueueRef.current = availablePairs
       .sort(() => Math.random() - 0.5)
       .slice(0, Math.max(3, pairCount));
@@ -374,9 +412,23 @@ const WordCollapseGame: React.FC<Props> = ({
     runningRef.current = true;
     setGameOver(false);
     gameOverRef.current = false;
-    for (let i = 0; i < Math.min(4, pairQueueRef.current.length); i += 1) {
-      spawnPair();
-    }
+    startWave();
+  };
+
+  const startWave = () => {
+    if (pairQueueRef.current.length === 0 || !runningRef.current) return;
+    waveIdRef.current += 1;
+    landedRef.current = 0;
+    matchedRef.current = 0;
+    totalInWaveRef.current = 0;
+    acceptingRef.current = false;
+    spawnElapsedRef.current = 0;
+    clearBlocks();
+    const shuffled = [...pairQueueRef.current].sort(
+      () => Math.random() - 0.5,
+    );
+    const wavePairs = shuffled.slice(0, Math.max(3, pairCount));
+    spawnWave(wavePairs, waveIdRef.current);
   };
 
   useEffect(() => {

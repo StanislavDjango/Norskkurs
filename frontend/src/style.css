@@ -948,7 +948,8 @@ h2 {
   min-height: 520px;
   border-radius: 16px;
   border: 1px solid #e4e9f2;
-  background: radial-gradient(circle at 20% 20%, #f4faff, #f7fbff 38%, #eef5ff);
+  background: linear-gradient(90deg, rgba(226, 238, 255, 0.7) 0%, rgba(226, 238, 255, 0.7) 50%, rgba(232, 252, 245, 0.8) 50%, rgba(232, 252, 245, 0.8) 100%),
+    radial-gradient(circle at 20% 20%, #f4faff, #f7fbff 38%, #eef5ff);
   overflow: hidden;
 }
 
