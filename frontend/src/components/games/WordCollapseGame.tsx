@@ -1,572 +1,445 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState, useLayoutEffect, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Application,
-  Container,
-  Graphics,
-  Text,
-} from "pixi.js";
-
 import type { GlossaryTerm, Level, Stream } from "../../types";
 import { getNorwegianForTerm, pickTranslationForTower } from "../../utils/terms";
 
+// --- Types ---
 type Props = {
   stream: Stream;
   currentLevel: Level;
   playableTerms: GlossaryTerm[];
 };
 
-type SpeedId = "slow" | "normal" | "fast";
+type GameStatus = "pre-game" | "running" | "game-over";
+type SpawnSpeed = 1500 | 2500 | 4000 | 6000 | 8000 | 10000 | 12000;
 
-type Pair = {
-  id: string;
-  termId: number;
-  nor: string;
-  tr: string;
-};
+const BLOCK_HEIGHT = 40;
+const GRAVITY = 2;
 
 type Block = {
   id: string;
-  pairId: string;
-  role: "nor" | "tr";
-  termId: number;
-  node: Container;
+  termId: number; // Using -1 for bonus blocks
+  role: "nor" | "tr" | "bonus";
+  bonusType?: "freeze" | "bomb";
+  text: string;
+  x: number;
+  y: number;
   vy: number;
-  width: number;
-  height: number;
-  waveId: number;
-  landed: boolean;
+  isFalling: boolean;
+  isMatched?: boolean;
+  isWrong?: boolean;
 };
 
-const MAX_MISTAKES = 12;
-
-const SPEEDS: Record<
-  SpeedId,
-  { fall: number; spawnMs: number; labelKey: string }
-> = {
-  slow: { fall: 120, spawnMs: 1300, labelKey: "games.speedSlow" },
-  normal: { fall: 160, spawnMs: 1000, labelKey: "games.speedNormal" },
-  fast: { fall: 210, spawnMs: 800, labelKey: "games.speedFast" },
+type GameSize = {
+    width: number;
+    height: number;
+    cols: number;
+    blockWidth: number;
 };
 
-const MAX_TEXT_WIDTH = 14;
-
-const truncate = (text: string, max: number) =>
-  text.length > max ? `${text.slice(0, max - 1)}…` : text;
-
-const WordCollapseGame: React.FC<Props> = ({
-  stream,
-  playableTerms,
-  currentLevel: _currentLevel,
-}) => {
+// --- Main Component ---
+const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
   const { t, i18n } = useTranslation();
-  const canvasRef = useRef<HTMLDivElement | null>(null);
-  const appRef = useRef<Application | null>(null);
-  const stageRef = useRef<Container | null>(null);
-  const blocksRef = useRef<Map<string, Block>>(new Map());
-  const pairQueueRef = useRef<Pair[]>([]);
-  const spawnElapsedRef = useRef(0);
-  const selectedRef = useRef<string | null>(null);
-  const colsRef = useRef(6);
-  const waveIdRef = useRef(0);
-  const totalInWaveRef = useRef(0);
-  const landedRef = useRef(0);
-  const matchedRef = useRef(0);
-  const acceptingRef = useRef(false);
-  const [pairCount, setPairCount] = useState(8);
-  const [speed, setSpeed] = useState<SpeedId>("normal");
-  const [running, setRunning] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
+  const [status, setStatus] = useState<GameStatus>("pre-game");
+  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [score, setScore] = useState(0);
-  const [mistakes, setMistakes] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [bestStreak, setBestStreak] = useState(0);
-  const runningRef = useRef(false);
-  const gameOverRef = useRef(false);
+  const [incorrectScore, setIncorrectScore] = useState(0);
+  const [isInitialPhase, setIsInitialPhase] = useState(true);
+  const [comboCount, setComboCount] = useState(0);
+  const [showComboAnimation, setShowComboAnimation] = useState<number | null>(null);
+  const [isFrozen, setIsFrozen] = useState(false);
 
-  const availablePairs = useMemo<Pair[]>(() => {
-    const pairs: Pair[] = [];
-    for (const term of playableTerms) {
-      const nor = getNorwegianForTerm(term, stream);
-      const tr = pickTranslationForTower(term, i18n);
-      if (!nor || !tr) continue;
-      pairs.push({
-        id: `pair-${term.id}`,
-        termId: term.id,
-        nor,
-        tr,
-      });
-    }
-    return pairs.slice(0, 40);
-  }, [playableTerms, stream, i18n]);
+  // --- Game Settings ---
+  const [pairCount, setPairCount] = useState(3);
+  const [spawnSpeed, setSpawnSpeed] = useState<SpawnSpeed>(6000);
 
-  const resizeStage = () => {
-    if (!canvasRef.current || !appRef.current) return;
-    const width = canvasRef.current.clientWidth;
-    const height = Math.max(
-      520,
-      Math.min(960, Math.floor(window.innerHeight * 0.72)),
-    );
-    appRef.current.renderer.resize(width, height);
-    colsRef.current = width < 540 ? 5 : 7;
-  };
+  // --- Responsive Sizing ---
+  const gameWrapperRef = useRef<HTMLDivElement>(null);
+  const [gameSize, setGameSize] = useState<GameSize>({ width: 0, height: 0, cols: 8, blockWidth: 120 });
 
-  const clearBlocks = () => {
-    blocksRef.current.forEach((block) => {
-      stageRef.current?.removeChild(block.node);
-      block.node.destroy({ children: true });
-    });
-    blocksRef.current.clear();
-    selectedRef.current = null;
-    landedRef.current = 0;
-    matchedRef.current = 0;
-    totalInWaveRef.current = 0;
-    acceptingRef.current = false;
-  };
-
-  const stopGame = () => {
-    setRunning(false);
-    runningRef.current = false;
-    setGameOver(false);
-    gameOverRef.current = false;
-  };
-
-  const resetGame = () => {
-    clearBlocks();
-    setScore(0);
-    setMistakes(0);
-    setStreak(0);
-    setGameOver(false);
-    gameOverRef.current = false;
-    spawnElapsedRef.current = 0;
-    selectedRef.current = null;
-  };
-
-  const setupApp = async () => {
-    if (!canvasRef.current) return;
-    const app = new Application();
-    await app.init({
-      backgroundAlpha: 0,
-      antialias: true,
-      resolution: window.devicePixelRatio || 1,
-      autoDensity: true,
-      powerPreference: "high-performance",
-      resizeTo: canvasRef.current,
-    });
-    appRef.current = app;
-    const stage = new Container();
-    stageRef.current = stage;
-    app.stage.addChild(stage);
-    canvasRef.current.appendChild(app.canvas);
-    resizeStage();
-
-    app.ticker.add((ticker) => {
-      if (!runningRef.current || gameOverRef.current) return;
-      const dt = ticker.deltaMS / 1000;
-      spawnElapsedRef.current += ticker.deltaMS;
-      const { spawnMs } = SPEEDS[speed];
-
-      if (
-        spawnElapsedRef.current >= spawnMs &&
-        pairQueueRef.current.length > 0 &&
-        totalInWaveRef.current === 0
-      ) {
-        spawnElapsedRef.current = 0;
-        startWave();
+  useLayoutEffect(() => {
+    const updateSize = () => {
+      if (gameWrapperRef.current) {
+        const parentWidth = gameWrapperRef.current.offsetWidth;
+        const minBlockWidth = 80;
+        let cols = Math.floor(parentWidth / minBlockWidth);
+        if (cols > 10) cols = 10;
+        if (cols < 4) cols = 4;
+        if (cols % 2 !== 0) cols -= 1;
+        const blockWidth = parentWidth / cols;
+        setGameSize({
+          width: parentWidth,
+          height: 12 * BLOCK_HEIGHT,
+          cols: cols,
+          blockWidth: blockWidth,
+        });
       }
+    };
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
-      const height = app.renderer.height;
+  const gameBackground = useMemo(() => {
+    if (score >= 30) {
+      return "linear-gradient(90deg, rgba(13,27,42,0.9) 0%, rgba(27,38,59,0.9) 50%, rgba(22,50,64,0.9) 50%, rgba(34,68,74,0.9) 100%)";
+    }
+    if (score >= 20) {
+      return "linear-gradient(90deg, rgba(74,14,78,0.9) 0%, rgba(140,26,106,0.9) 50%, rgba(216,49,91,0.85) 50%, rgba(238,120,138,0.85) 100%)";
+    }
+    if (score >= 10) {
+      return "linear-gradient(90deg, rgba(207,235,255,0.9) 0%, rgba(181,219,255,0.9) 50%, rgba(221,248,237,0.9) 50%, rgba(198,243,224,0.9) 100%)";
+    }
+    return "linear-gradient(90deg, #e6f2ff 0%, #e6f2ff 50%, #e9fbf4 50%, #e9fbf4 100%)";
+  }, [score]);
 
-      blocksRef.current.forEach((block) => {
-        if (block.landed) return;
-        block.node.y += block.vy * dt;
-        if (block.node.y >= height - block.height - 6) {
-          block.node.y = height - block.height - 6;
-          block.vy = 0;
-          block.landed = true;
-          landedRef.current += 1;
-          if (landedRef.current >= totalInWaveRef.current) {
-            acceptingRef.current = true;
+  const spawnBlockPairs = useCallback(() => {
+    if (playableTerms.length < pairCount || gameSize.cols < 2) return null;
+
+    const newBlocks: Block[] = [];
+    const shuffledTerms = [...playableTerms].sort(() => 0.5 - Math.random());
+    const selectedTerms = shuffledTerms.slice(0, pairCount);
+    const colsPerSide = Math.max(2, Math.floor(gameSize.cols / 2));
+    const halfWidth = gameSize.width / 2;
+
+    for (const term of selectedTerms) {
+        const norwegian = getNorwegianForTerm(term, stream);
+        const translation = pickTranslationForTower(term, i18n);
+
+        if (!norwegian || !translation) continue;
+
+        const col1 = Math.floor(Math.random() * colsPerSide);
+        let col2 = Math.floor(Math.random() * colsPerSide);
+        if (colsPerSide > 1) {
+          while (col2 === col1) {
+            col2 = Math.floor(Math.random() * colsPerSide);
           }
         }
-      });
-    });
-  };
 
-  const decorateBlock = (
-    block: Container,
-    text: string,
-    color: number,
-    width: number,
-    height: number,
-  ) => {
-    const bg = new Graphics()
-      .roundRect(0, 0, width, height, 12)
-      .fill(0xffffff)
-      .stroke({ color, width: 2 });
-    block.addChild(bg);
+        const x1 = col1 * gameSize.blockWidth;
+        const x2 = halfWidth + col2 * gameSize.blockWidth;
+        const y1 = -BLOCK_HEIGHT * (Math.random() * pairCount * 1.5);
+        const y2 = -BLOCK_HEIGHT * (Math.random() * pairCount * 1.5);
 
-    const label = new Text({
-      text,
-      style: {
-        fontFamily: "Inter, system-ui, sans-serif",
-        fontSize: 16,
-        fontWeight: "600",
-        fill: 0x1c2430,
-        align: "center",
-        wordWrap: true,
-        wordWrapWidth: width - 16,
-      },
-    });
-    label.x = 8;
-    label.y = 12;
-    block.addChild(label);
-    return label;
-  };
-
-  const spawnWave = (wavePairs: Pair[], waveId: number) => {
-    if (!stageRef.current || !appRef.current) return;
-    const { fall } = SPEEDS[speed];
-    const width = appRef.current.renderer.width;
-    const padding = 16;
-    const half = (width - padding * 3) / 2;
-    const colsPerSide = colsRef.current / 2;
-    const columnWidth = half / colsPerSide;
-    const blockWidth = Math.max(100, columnWidth - 10);
-    const blockHeight = 64;
-    const leftCols: number[] = [];
-    const rightCols: number[] = [];
-
-    for (let i = 0; i < colsPerSide; i += 1) {
-      leftCols.push(i);
-      rightCols.push(i);
+        newBlocks.push({ id: `block-${term.id}-nor-${Date.now()}-${Math.random()}`, termId: term.id, role: 'nor', text: norwegian, x: x1, y: y1, vy: 0, isFalling: true });
+        newBlocks.push({ id: `block-${term.id}-tr-${Date.now()}-${Math.random()}`, termId: term.id, role: 'tr', text: translation, x: x2, y: y2, vy: 0, isFalling: true });
     }
+    return newBlocks;
+  }, [playableTerms, stream, i18n, pairCount, gameSize]);
 
-    const popCol = (arr: number[]) => {
-      if (arr.length === 0) return Math.floor(Math.random() * colsPerSide);
-      const idx = Math.floor(Math.random() * arr.length);
-      const col = arr[idx];
-      arr.splice(idx, 1);
-      return col;
+  const spawnBonusBlock = useCallback(() => {
+    if (gameSize.cols < 1) return null;
+    const col = Math.floor(Math.random() * gameSize.cols);
+    const x = col * gameSize.blockWidth;
+    const y = -BLOCK_HEIGHT;
+
+    const bonusType = "freeze";
+    const text = "❄️";
+
+    const newBlock: Block = {
+        id: `bonus-${bonusType}-${Date.now()}`,
+        termId: -1,
+        role: 'bonus',
+        bonusType: bonusType,
+        text: text,
+        x: x,
+        y: y,
+        vy: 0,
+        isFalling: true
     };
+    return newBlock;
+  }, [gameSize]);
 
-    wavePairs.forEach((pair) => {
-      const chosenLeft = popCol(leftCols);
-      const chosenRight = popCol(rightCols);
-      const roles: ("nor" | "tr")[] = ["nor", "tr"];
-      roles.forEach((role) => {
-        const col = role === "nor" ? chosenLeft : chosenRight;
-        const offsetX = role === "nor" ? 0 : half + padding;
-        const x = padding + offsetX + col * columnWidth;
-        const y = -blockHeight - Math.random() * 60;
-        const block = new Container();
-        block.x = x;
-        block.y = y;
-        block.eventMode = "static";
-        block.cursor = "pointer";
+  useEffect(() => {
+    if (status !== "running" || isFrozen) return;
+    const gameLoop = setInterval(() => {
+      setBlocks((prevBlocks) =>
+        prevBlocks.filter(b => !b.isMatched).map((b) => {
+          if (!b.isFalling) return b;
+          let newY = b.y + b.vy;
+          let newVy = b.vy + GRAVITY;
+          if (newY + BLOCK_HEIGHT >= gameSize.height) {
+            newY = gameSize.height - BLOCK_HEIGHT;
+            return { ...b, y: newY, vy: 0, isFalling: false };
+          }
+          for (const other of prevBlocks) {
+            if (b.id === other.id || other.isMatched) continue;
+            if (!other.isFalling && b.x < other.x + gameSize.blockWidth && b.x + gameSize.blockWidth > other.x && newY + BLOCK_HEIGHT >= other.y && newY < other.y + BLOCK_HEIGHT) {
+              newY = other.y - BLOCK_HEIGHT;
+              return { ...b, y: newY, vy: 0, isFalling: false };
+            }
+          }
+          return { ...b, y: newY, vy: newVy };
+        })
+      );
+    }, 50);
+    return () => clearInterval(gameLoop);
+  }, [status, gameSize, isFrozen]);
 
-        const text =
-          role === "nor"
-            ? truncate(pair.nor, MAX_TEXT_WIDTH)
-            : truncate(pair.tr, MAX_TEXT_WIDTH);
-        const label = decorateBlock(
-          block,
-          text,
-          role === "nor" ? 0x2d7ff9 : 0x0fb999,
-          blockWidth,
-          blockHeight,
-        );
-        label.y = 14;
-
-        const id = `${pair.id}-${role}-${waveId}-${Math.random()
-          .toString(16)
-          .slice(2)}`;
-        const item: Block = {
-          id,
-          pairId: pair.id,
-          role,
-          termId: pair.termId,
-          node: block,
-          vy: fall,
-          width: blockWidth,
-          height: blockHeight,
-          waveId,
-          landed: false,
-        };
-        blocksRef.current.set(id, item);
-        block.on("pointertap", () => handleSelect(id));
-        stageRef.current?.addChild(block);
-      });
-    });
-    totalInWaveRef.current = wavePairs.length * 2;
-  };
-
-  const removeBlock = (id: string, matched: boolean) => {
-    const block = blocksRef.current.get(id);
-    if (!block || !stageRef.current) return;
-    const node = block.node;
-    blocksRef.current.delete(id);
-    if (matched) {
-      node.alpha = 0.5;
-      node.scale.set(0.8);
+  useEffect(() => {
+    if (status !== 'running' || isFrozen) return;
+    if (isInitialPhase) {
+      const timer = setTimeout(() => setIsInitialPhase(false), 8000);
+      return () => clearTimeout(timer);
     }
-    stageRef.current.removeChild(node);
-    node.destroy({ children: true });
-  };
+    const spawnInterval = setInterval(() => {
+      setBlocks((prevBlocks) => {
+        const shouldSpawnBonus = Math.random() < 0.1;
 
-  const handleSelect = (id: string) => {
-    if (gameOver || !running) return;
-    if (!acceptingRef.current) return;
-    const current = blocksRef.current.get(id);
-    if (!current) return;
-
-    if (!selectedRef.current) {
-      selectedRef.current = id;
-      highlightBlock(id, true);
-      return;
-    }
-
-    if (selectedRef.current === id) {
-      highlightBlock(id, false);
-      selectedRef.current = null;
-      return;
-    }
-
-    const previous = blocksRef.current.get(selectedRef.current);
-    highlightBlock(selectedRef.current, false);
-    selectedRef.current = null;
-    if (!previous) return;
-
-    const isMatch =
-      previous.pairId === current.pairId &&
-      previous.role !== current.role;
-
-    if (isMatch) {
-      removeBlock(previous.id, true);
-      removeBlock(current.id, true);
-      setScore((prev) => prev + 1);
-      matchedRef.current += 2;
-      setStreak((prev) => {
-        const next = prev + 1;
-        setBestStreak((best) => Math.max(best, next));
-        return next;
-      });
-      if (matchedRef.current >= totalInWaveRef.current) {
-        acceptingRef.current = false;
-        setTimeout(() => {
-          if (!runningRef.current || gameOverRef.current) return;
-          clearBlocks();
-          startWave();
-        }, 350);
-      }
-    } else {
-      setMistakes((prev) => {
-        const next = prev + 1;
-        if (next >= MAX_MISTAKES) {
-          setGameOver(true);
-          gameOverRef.current = true;
-          setRunning(false);
-          runningRef.current = false;
+        if (shouldSpawnBonus) {
+            const newBonusBlock = spawnBonusBlock();
+            if (!newBonusBlock) return prevBlocks;
+             if (prevBlocks.some((b) => b.x === newBonusBlock.x && b.y < BLOCK_HEIGHT)) {
+                return prevBlocks;
+            }
+            return [...prevBlocks, newBonusBlock];
+        } else {
+            const newBlockPairs = spawnBlockPairs();
+            if (!newBlockPairs) return prevBlocks;
+            for (const block of newBlockPairs) {
+              if (prevBlocks.some((b) => b.x === block.x && b.y < BLOCK_HEIGHT)) {
+                setStatus("game-over");
+                return prevBlocks;
+              }
+            }
+            return [...prevBlocks, ...newBlockPairs];
         }
-        return next;
       });
-      setStreak(0);
-      flashBlock(current.id);
-      flashBlock(previous.id);
-      acceptingRef.current = false;
-      setTimeout(() => {
-        if (!runningRef.current || gameOverRef.current) return;
-        clearBlocks();
-        startWave();
-      }, 500);
+    }, spawnSpeed);
+    return () => clearInterval(spawnInterval);
+  }, [status, isInitialPhase, isFrozen, spawnBlockPairs, spawnBonusBlock, spawnSpeed]);
+
+  const handleBlockClick = (blockId: string) => {
+    if (status !== 'running' || blocks.find(b => b.id === blockId)?.isMatched) return;
+
+    const clickedBlock = blocks.find((b) => b.id === blockId);
+    if (!clickedBlock || clickedBlock.isFalling) return;
+
+    if (clickedBlock.role === 'bonus') {
+        if (clickedBlock.bonusType === 'freeze') {
+            setIsFrozen(true);
+            setScore(s => s + 5);
+            setTimeout(() => setIsFrozen(false), 3000);
+        }
+        setBlocks(prev => prev.filter(b => b.id !== blockId));
+        setSelectedBlockId(null);
+        return;
     }
-  };
 
-  const highlightBlock = (id: string, active: boolean) => {
-    const block = blocksRef.current.get(id);
-    if (!block) return;
-    const outline = block.node.children[0] as Graphics | undefined;
-    if (!outline) return;
-    outline.stroke({ color: active ? 0xffb703 : 0xced6e0, width: 2 });
-  };
+    if (!selectedBlockId) {
+      setSelectedBlockId(blockId);
+      return;
+    }
+    if (selectedBlockId === blockId) {
+      setSelectedBlockId(null);
+      return;
+    }
+    const selectedBlock = blocks.find((b) => b.id === selectedBlockId);
+    if (!selectedBlock) {
+      setSelectedBlockId(blockId);
+      return;
+    }
 
-  const flashBlock = (id: string) => {
-    const block = blocksRef.current.get(id);
-    if (!block) return;
-    block.node.angle = 0;
-    block.node.alpha = 1;
-    block.node.tint = 0xff6b6b;
-    setTimeout(() => {
-      block.node.tint = 0xffffff;
-    }, 180);
+    if (selectedBlock.termId === clickedBlock.termId && selectedBlock.role !== clickedBlock.role) {
+      const newCombo = comboCount + 1;
+      setComboCount(newCombo);
+      let basePoints = 1;
+      let bonusPoints = 0;
+      if (newCombo >= 3) {
+          bonusPoints = newCombo;
+          setShowComboAnimation(newCombo);
+          setTimeout(() => setShowComboAnimation(null), 1500);
+      }
+      setScore((s) => s + basePoints + bonusPoints);
+
+      setBlocks((prev) => prev.map((b) => (b.id === selectedBlockId || b.id === clickedBlock.id ? { ...b, isMatched: true } : b)));
+      setTimeout(() => {
+        setBlocks(prev => {
+            const remaining = prev.filter(b => !b.isMatched);
+            return remaining.map(b => {
+                const isSupported = remaining.some(other => other.id !== b.id && b.x < other.x + gameSize.blockWidth && b.x + gameSize.blockWidth > other.x && b.y + BLOCK_HEIGHT === other.y) || (b.y + BLOCK_HEIGHT >= gameSize.height);
+                return { ...b, isFalling: !isSupported };
+            });
+        });
+      }, 5000);
+      setSelectedBlockId(null);
+    } else {
+      setIncorrectScore(s => s + 1);
+      setComboCount(0);
+      setShowComboAnimation(null);
+      setBlocks(prev => prev.map(b => (b.id === selectedBlockId || b.id === clickedBlock.id ? { ...b, isWrong: true } : b)));
+      setTimeout(() => setBlocks(prev => prev.map(b => ({ ...b, isWrong: false }))), 500);
+      setSelectedBlockId(null);
+    }
   };
 
   const handleStart = () => {
-    if (availablePairs.length < 3) return;
-    resetGame();
-    spawnElapsedRef.current = 0;
-    pairQueueRef.current = availablePairs
-      .sort(() => Math.random() - 0.5)
-      .slice(0, Math.max(3, pairCount));
-    setRunning(true);
-    runningRef.current = true;
-    setGameOver(false);
-    gameOverRef.current = false;
-    startWave();
+    setScore(0); setIncorrectScore(0); setSelectedBlockId(null); setComboCount(0);
+    const initialBlocks = spawnBlockPairs();
+    setBlocks(initialBlocks || []);
+    setIsInitialPhase(true);
+    setStatus("running");
   };
 
-  const startWave = () => {
-    if (pairQueueRef.current.length === 0 || !runningRef.current) return;
-    waveIdRef.current += 1;
-    landedRef.current = 0;
-    matchedRef.current = 0;
-    totalInWaveRef.current = 0;
-    acceptingRef.current = false;
-    spawnElapsedRef.current = 0;
-    clearBlocks();
-    const shuffled = [...pairQueueRef.current].sort(
-      () => Math.random() - 0.5,
-    );
-    const wavePairs = shuffled.slice(0, Math.max(3, pairCount));
-    spawnWave(wavePairs, waveIdRef.current);
-  };
-
-  useEffect(() => {
-    setupApp();
-    const onResize = () => resizeStage();
-    window.addEventListener("resize", onResize);
-    return () => {
-      window.removeEventListener("resize", onResize);
-      clearBlocks();
-      appRef.current?.destroy(true);
-      appRef.current = null;
-      stageRef.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!running) return;
-    if (availablePairs.length < 3) {
-      stopGame();
-    } else {
-      pairQueueRef.current = availablePairs
-        .sort(() => Math.random() - 0.5)
-        .slice(0, Math.max(3, pairCount));
-    }
-  }, [availablePairs, running, pairCount]);
-
-  useEffect(() => {
-    runningRef.current = running;
-  }, [running]);
-
-  useEffect(() => {
-    gameOverRef.current = gameOver;
-  }, [gameOver]);
+  const speedOptions: { value: SpawnSpeed; label: string }[] = [
+    { value: 12000, label: t('games.speedSuperSlow', 'Super Slow') },
+    { value: 10000, label: t('games.speedVerySlow', 'Very Slow') },
+    { value: 8000, label: t('games.speedSlow', 'Slow') },
+    { value: 6000, label: t('games.speedNormal', 'Normal') },
+    { value: 4000, label: t('games.speedFast', 'Fast') },
+    { value: 2500, label: t('games.speedVeryFast', 'Very Fast') },
+    { value: 1500, label: t('games.speedHyper', 'Hyper') },
+  ];
 
   return (
-    <div className="collapse-game">
-      <div className="collapse-hero">
-        <div>
-          <p className="memory-eyebrow">{t("games.collapseEyebrow")}</p>
-          <h3>{t("games.collapseTitle")}</h3>
-          <p className="muted small">{t("games.collapseSubtitle")}</p>
+    <div className="collapse-game" ref={gameWrapperRef}>
+      <div className="collapse-game-header">
+        <h3>WordCollaps</h3>
+        <div className="collapse-game-scores">
+            <span className="score correct">{t("games.correct", "Correct")}: {score}</span>
+            <span className="score incorrect">{t("games.incorrect", "Incorrect")}: {incorrectScore}</span>
+            {comboCount > 1 && <span className="score combo-couter">Combo: x{comboCount}</span>}
         </div>
-        <div className="collapse-actions">
-          <button
-            type="button"
-            className="memory-start"
-            onClick={handleStart}
-            disabled={availablePairs.length < 3}
-          >
-            {gameOver ? t("games.collapseRestart") : t("games.collapseStart")}
-          </button>
-          <button
-            type="button"
-            className="ghost"
-            onClick={() => {
-              stopGame();
-              resetGame();
-            }}
-          >
-            {t("games.stop")}
-          </button>
-          {availablePairs.length < 3 && (
-            <span className="muted small">
-              {t("games.memoryNotEnough")}
-            </span>
-          )}
+        {status !== "running" && (
+            <div className="game-settings">
+                <label> {t('games.pairsLabel', 'Pairs')}:
+                    <select value={pairCount} onChange={e => setPairCount(Number(e.target.value))}>
+                        {[...Array(9).keys()].map(i => <option key={i+2} value={i+2}>{i+2}</option>)}
+                    </select>
+                </label>
+                <label> {t('games.speedLabel', 'Speed')}:
+                    <select value={spawnSpeed} onChange={e => setSpawnSpeed(Number(e.target.value) as SpawnSpeed)}>
+                        {speedOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
+                </label>
+            </div>
+        )}
+        <div className="game-buttons">
+            {status !== "running" && <button className="start-btn" onClick={handleStart}>{status === 'game-over' ? t('restart') : t("games.start")}</button>}
+            {status === "running" && <button className="stop-btn" onClick={() => setStatus("pre-game")}>{t("games.stop")}</button>}
         </div>
       </div>
 
-      <div className="collapse-controls">
-        <label className="falling-speed-label">
-          <span>{t("games.collapseSpeedLabel")}</span>
-          <select
-            value={speed}
-            onChange={(e) => setSpeed(e.target.value as SpeedId)}
-            disabled={running}
+      {status === 'game-over' && <div className="game-over-message">
+          <h4>{t('games.gameOver', "Game Over")}</h4>
+          <p>{t('games.finalScore', "Final Score")}: {score}</p>
+          <p>{t('games.incorrectCount', "Mistakes")}: {incorrectScore}</p>
+      </div>}
+
+      {gameSize.width > 0 && <div className="collapse-game-area" style={{ width: `${gameSize.width}px`, height: `${gameSize.height}px`, background: gameBackground, transition: 'background 2s linear' }}>
+        {isFrozen && <div className="frozen-overlay" />}
+        {showComboAnimation && (
+            <div className="combo-animation">
+                COMBO x{showComboAnimation}!
+            </div>
+        )}
+        {blocks.map((block) => (
+          <div
+            key={block.id}
+            className={`collapse-block ${selectedBlockId === block.id ? "selected" : ""} ${block.isMatched ? "matched" : ""} ${block.isWrong ? "wrong" : ""} ${block.role} ${block.bonusType || ''}`}
+            style={{ left: `${block.x}px`, top: `${block.y}px`, width: `${gameSize.blockWidth}px`, height: `${BLOCK_HEIGHT}px` }}
+            onClick={() => handleBlockClick(block.id)}
           >
-            {Object.entries(SPEEDS).map(([id, config]) => (
-              <option key={id} value={id}>
-                {t(config.labelKey)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="falling-speed-label">
-          <span>{t("games.collapseDeckLabel")}</span>
-          <input
-            type="number"
-            min={3}
-            max={12}
-            value={pairCount}
-            onChange={(e) =>
-              setPairCount(
-                Math.min(12, Math.max(3, Number(e.target.value) || 3)),
-              )
-            }
-            disabled={running}
-            className="tower-batch-input"
-          />
-        </label>
-        <div className="collapse-life">
-          {t("games.towerLivesLabel")}{" "}
-          {"❤️".repeat(Math.max(0, MAX_MISTAKES - mistakes))}
-          {"🤍".repeat(Math.max(0, mistakes))}
-        </div>
-      </div>
+            {block.text}
+            <i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+        ))}
+      </div>}
+       <style>{`
+        :root {
+          --game-bg: #f0f4f8; --block-bg-nor: #ffffff; --block-border-nor: #c2d1e0; --block-bg-tr: #e6f7ff; --block-border-tr: #91d5ff; --selected-bg: #e8fff0; --selected-border: #34d399; --selected-color: #065f46; --wrong-bg: #ffe5e5; --wrong-border: #f87171; --correct-color: #52c41a; --incorrect-color: #f5222d; --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+        }
+        .collapse-game { font-family: var(--font-family); }
+        .collapse-game-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
+        .collapse-game-scores { display: flex; gap: 1rem; font-weight: 500; order: 1; width: 100%; }
+        .game-settings { display: flex; gap: 1rem; align-items: center; order: 2; flex-grow: 1; }
+        .game-buttons { order: 3; }
+        .score.correct { color: var(--correct-color); }
+        .score.incorrect { color: var(--incorrect-color); }
+        .score.combo-couter { color: #ff7a45; font-weight: bold; }
+        .game-settings label { display: flex; align-items: center; gap: 0.5rem; }
+        .game-buttons button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .start-btn { background-color: #1890ff; color: white; }
+        .stop-btn { background-color: #ff4d4f; color: white; }
+        .game-over-message { text-align: center; padding: 2rem; background-color: #fff1f0; border: 1px solid var(--incorrect-color); border-radius: 8px; margin-top: 1rem; }
+        .collapse-game-area {
+          position: relative; border: 1px solid #d9d9d9; overflow: hidden; margin-top: 1rem; border-radius: 8px;
+        }
+        .combo-animation {
+          position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+          font-size: 4rem;
+          font-weight: 900;
+          color: #ff9f1c;
+          text-shadow: 3px 3px 0px #e71d36;
+          -webkit-text-stroke: 1px #272727;
+          animation: combo-pop 1.5s ease-out forwards;
+          z-index: 100;
+        }
+        .frozen-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(173, 216, 230, 0.5);
+          z-index: 50;
+          pointer-events: none;
+          animation: pulse-freeze 2s infinite;
+        }
+        .collapse-block {
+          position: absolute; display: flex; align-items: center; justify-content: center; font-size: 14px; text-align: center; padding: 2px; box-sizing: border-box; cursor: pointer; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: top 0.1s linear, left 0.1s linear, background-color 0.2s, border-color 0.2s; animation: fall-in 0.3s ease-out;
+        }
+        .collapse-block.bonus.freeze {
+          background-color: #a0e9ff;
+          border: 2px solid #74d9ff;
+          font-size: 24px;
+        }
+        .collapse-block i { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; border-radius: 50%; opacity: 0; }
+        .collapse-block.nor { background-color: var(--block-bg-nor); border: 2px solid var(--block-border-nor); }
+        .collapse-block.tr { background-color: var(--block-bg-tr); border: 2px solid var(--block-border-tr); }
+        .collapse-block.nor.matched i { background: var(--block-border-nor); }
+        .collapse-block.tr.matched i { background: var(--block-border-tr); }
+        .collapse-block.selected { border-color: var(--selected-border); background-color: var(--selected-bg); color: var(--selected-color); }
+        .collapse-block.matched { background: transparent !important; border-color: transparent !important; color: transparent !important; box-shadow: none !important; }
+        .collapse-block.matched i:nth-child(1) { animation: shatter-1 5s forwards; }
+        .collapse-block.matched i:nth-child(2) { animation: shatter-2 5s forwards; }
+        .collapse-block.matched i:nth-child(3) { animation: shatter-3 5s forwards; }
+        .collapse-block.matched i:nth-child(4) { animation: shatter-4 5s forwards; }
+        .collapse-block.matched i:nth-child(5) { animation: shatter-5 5s forwards; }
+        .collapse-block.matched i:nth-child(6) { animation: shatter-6 5s forwards; }
+        .collapse-block.wrong { animation: wrong-match-shake 0.4s; background-color: var(--wrong-bg); border-color: var(--wrong-border); }
 
-      <div className="collapse-stats">
-        <div className="collapse-stat">
-          <span className="muted small">{t("games.collapsePairsLabel")}</span>
-          <strong>{score}</strong>
-        </div>
-        <div className="collapse-stat">
-          <span className="muted small">
-            {t("games.collapseMistakesLabel")}
-          </span>
-          <strong>{mistakes}</strong>
-        </div>
-        <div className="collapse-stat">
-          <span className="muted small">
-            {t("games.collapseStreakLabel")}
-          </span>
-          <strong>{streak}</strong>
-        </div>
-        <div className="collapse-stat">
-          <span className="muted small">
-            {t("games.collapseBestLabel")}
-          </span>
-          <strong>{bestStreak}</strong>
-        </div>
-      </div>
+        @media (max-width: 768px) {
+            .collapse-game-header { flex-direction: column; align-items: stretch; }
+            .collapse-game-scores { order: 1; }
+            .game-settings { order: 2; flex-direction: column; align-items: stretch; width: 100%; }
+            .game-settings label { display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0; }
+            .game-settings select { min-width: 150px; padding: 4px; }
+            .game-buttons { order: 3; display: flex; justify-content: center; margin-top: 1rem; }
+            .collapse-block { font-size: 12px; }
+        }
 
-      {gameOver && (
-        <p className="alert small">{t("games.collapseGameOver")}</p>
-      )}
-
-      <div className="collapse-canvas" ref={canvasRef} />
+        @keyframes fall-in { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes wrong-match-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } }
+        @keyframes combo-pop {
+          0% { transform: translate(-50%, -50%) scale(0.5) rotate(-15deg); opacity: 0; }
+          40% { transform: translate(-50%, -50%) scale(1.2) rotate(5deg); opacity: 1; }
+          60% { transform: translate(-50%, -50%) scale(1.1) rotate(-2deg); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(2) rotate(10deg); opacity: 0; }
+        }
+        @keyframes pulse-freeze {
+            0% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0.5; }
+        }
+        @keyframes shatter-1 { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-100px, -50px) scale(0); } }
+        @keyframes shatter-2 { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(100px, -80px) scale(0); } }
+        @keyframes shatter-3 { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-60px, 80px) scale(0); } }
+        @keyframes shatter-4 { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(40px, 100px) scale(0); } }
+        @keyframes shatter-5 { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-120px, 10px) scale(0); } }
+        @keyframes shatter-6 { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(120px, -20px) scale(0); } }
+      `}</style>
     </div>
   );
 };
