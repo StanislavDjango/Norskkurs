@@ -74,7 +74,7 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
           }`}
           onClick={() => setActiveGame("wordCollapse")}
         >
-          WordCollaps
+          {t("games.tabWordCollapse")}
         </button>
         <button
           type="button"
