@@ -92,6 +92,7 @@ type Section =
   | "tests"
   | "homework"
   | "verbs"
+  | "nouns"
   | "irregularVerbs"
   | "expressions"
   | "games"
@@ -495,6 +496,7 @@ const App = () => {
       { key: "tests" as Section, label: t("nav.tests") },
       { key: "homework" as Section, label: t("nav.homework") },
       { key: "verbs" as Section, label: t("nav.verbs") },
+      { key: "nouns" as Section, label: t("nav.nouns", { defaultValue: "Nouns" }) },
       { key: "irregularVerbs" as Section, label: t("nav.irregularVerbs", { defaultValue: "Irregular verbs" }) },
       { key: "expressions" as Section, label: t("nav.expressions") },
       { key: "games" as Section, label: t("nav.games") },
@@ -1471,6 +1473,20 @@ const App = () => {
               studentEmail={studentEmail}
             />
           );
+      case "nouns":
+        return (
+          <>
+            <h2>{t("nav.nouns", { defaultValue: "Nouns" })}</h2>
+            <GlossaryPage
+              stream={stream}
+              currentLevel={currentLevel}
+              vocabFavorites={vocabFavorites}
+              onToggleFavorite={toggleVocabFavorite}
+              titleOverride={t("nav.nouns", { defaultValue: "Nouns" })}
+              forcedTags={["noun", "nouns", "substantiv", "substantiver"]}
+            />
+          </>
+        );
       case "irregularVerbs":
         return (
           <VerbsPage

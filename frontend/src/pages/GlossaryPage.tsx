@@ -42,6 +42,8 @@ type Props = {
   vocabFavorites: string[];
   onToggleFavorite: (id: string) => void;
   initialView?: "all" | "favorites";
+  forcedTags?: string[];
+  titleOverride?: string;
 };
 
 type GlossaryRow = {
@@ -59,6 +61,8 @@ const GlossaryPage: React.FC<Props> = ({
   vocabFavorites,
   onToggleFavorite,
   initialView = "all",
+  forcedTags,
+  titleOverride,
 }) => {
   const { t } = useTranslation();
 
@@ -72,6 +76,10 @@ const GlossaryPage: React.FC<Props> = ({
   const [isTraining, setIsTraining] = useState(false);
   const [trainingIndex, setTrainingIndex] = useState(0);
   const [trainingShowAnswer, setTrainingShowAnswer] = useState(false);
+  const normalizedForcedTags = useMemo(
+    () => (forcedTags || []).map((tag) => tag.toLowerCase()),
+    [forcedTags],
+  );
 
   useEffect(() => {
     fetchGlossary()
@@ -98,7 +106,16 @@ const GlossaryPage: React.FC<Props> = ({
   const rows = useMemo<GlossaryRow[]>(() => {
     const map = new Map<string, GlossaryRow>();
 
-    terms.forEach((term) => {
+    const sourceTerms =
+      normalizedForcedTags.length === 0
+        ? terms
+        : terms.filter((term) =>
+            (term.tags || []).some((raw) =>
+              normalizedForcedTags.includes(raw.toLowerCase()),
+            ),
+          );
+
+    sourceTerms.forEach((term) => {
       const conceptEn =
         term.translation_en || (term.stream === "english" ? term.term : "");
       const conceptNb =
@@ -240,9 +257,11 @@ const GlossaryPage: React.FC<Props> = ({
     );
   };
 
+  const showTagFilter = normalizedForcedTags.length === 0 && allTags.length > 0;
+
   return (
     <>
-      <h2 className="sr-only">{t("nav.glossary")}</h2>
+      <h2 className="sr-only">{titleOverride || t("nav.glossary")}</h2>
       <div className="glossary-board">
         <div className="verbs-alphabet">
           <button
@@ -315,7 +334,7 @@ const GlossaryPage: React.FC<Props> = ({
             >
               {t("vocabTabs.training")}
             </button>
-            {allTags.length > 0 && (
+            {showTagFilter && (
               <select
                 className="glossary-tag-select"
                 value={tag}
