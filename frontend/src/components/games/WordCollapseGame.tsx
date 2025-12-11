@@ -413,7 +413,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
 
       {isModalOpen && (
         <div className="collapse-game-modal" role="dialog" aria-modal="true">
-          <div className="collapse-modal-backdrop" onClick={handleCloseModal} />
+          <div className="collapse-modal-backdrop" />
           <div className="collapse-modal-window">
             <div className="collapse-game-header">
               <div className="collapse-modal-title">
