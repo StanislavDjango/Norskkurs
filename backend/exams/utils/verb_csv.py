@@ -7,6 +7,8 @@ from typing import Iterable, TextIO
 from django.core.exceptions import MultipleObjectsReturned
 from exams.models import Test, VerbEntry
 
+DELIMITER = ";"
+
 CSV_HEADER = [
     "stream",
     "part_of_speech",
@@ -29,7 +31,7 @@ EXAMPLE_SEPARATOR = " | "
 
 def export_verbs_to_file(file_obj: TextIO, queryset: Iterable[VerbEntry]) -> None:
     file_obj.write("\ufeff")
-    writer = csv.writer(file_obj)
+    writer = csv.writer(file_obj, delimiter=DELIMITER)
     writer.writerow(CSV_HEADER)
     for entry in queryset:
         writer.writerow(

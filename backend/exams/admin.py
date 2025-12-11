@@ -31,7 +31,7 @@ from .utils.expression_csv import (
 )
 from .utils.glossary_csv import export_glossary_to_file, import_glossary_from_reader
 from .utils.reading_csv import export_readings_to_file, import_readings_from_reader
-from .utils.verb_csv import export_verbs_to_file, import_verbs_from_reader
+from .utils.verb_csv import DELIMITER, export_verbs_to_file, import_verbs_from_reader
 
 
 class OptionInline(admin.TabularInline):
@@ -204,7 +204,7 @@ class ReadingAdmin(admin.ModelAdmin):
                 except UnicodeDecodeError:
                     form.add_error("csv_file", _("File must be UTF-8 encoded."))
                 else:
-                    reader = csv.DictReader(io.StringIO(decoded))
+                    reader = csv.DictReader(io.StringIO(decoded), delimiter=DELIMITER)
                     try:
                         stats = import_readings_from_reader(
                             reader, update=form.cleaned_data["update_existing"]
