@@ -8,7 +8,6 @@ from django.core.exceptions import MultipleObjectsReturned
 from exams.models import Test, VerbEntry
 
 CSV_HEADER = [
-    "verb",
     "stream",
     "part_of_speech",
     "infinitive",
@@ -35,7 +34,6 @@ def export_verbs_to_file(file_obj: TextIO, queryset: Iterable[VerbEntry]) -> Non
     for entry in queryset:
         writer.writerow(
             [
-                entry.verb,
                 entry.stream,
                 entry.part_of_speech,
                 entry.infinitive,
@@ -65,7 +63,8 @@ def import_verbs_from_reader(
     reader: csv.DictReader, *, update: bool = False
 ) -> ImportStats:
     stats = ImportStats()
-    missing = set(CSV_HEADER) - set(reader.fieldnames or [])
+    fieldnames = set(reader.fieldnames or [])
+    missing = set(CSV_HEADER) - fieldnames
     if missing:
         raise ValueError(f"Missing columns: {', '.join(sorted(missing))}")
 
@@ -80,6 +79,10 @@ def import_verbs_from_reader(
         )
         if part_of_speech not in VerbEntry.PartOfSpeech.values:
             part_of_speech = VerbEntry.PartOfSpeech.VERB
+        verb_key = (row.get("verb") or "").strip() or row.get("infinitive", "").strip()
+        if not verb_key:
+            stats.skipped += 1
+            continue
         defaults = {
             "infinitive": row["infinitive"].strip(),
             "present": row["present"].strip(),
@@ -95,7 +98,6 @@ def import_verbs_from_reader(
             "tags": tags,
             "part_of_speech": part_of_speech,
         }
-        verb_key = row["verb"].strip()
         try:
             entry, created_flag = VerbEntry.objects.get_or_create(
                 verb=verb_key,
