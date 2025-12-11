@@ -5,12 +5,12 @@ from dataclasses import dataclass
 from typing import Iterable, TextIO
 
 from django.core.exceptions import MultipleObjectsReturned
-
 from exams.models import Test, VerbEntry
 
 CSV_HEADER = [
     "verb",
     "stream",
+    "part_of_speech",
     "infinitive",
     "present",
     "past",
@@ -37,6 +37,7 @@ def export_verbs_to_file(file_obj: TextIO, queryset: Iterable[VerbEntry]) -> Non
             [
                 entry.verb,
                 entry.stream,
+                entry.part_of_speech,
                 entry.infinitive,
                 entry.present,
                 entry.past,
@@ -60,7 +61,9 @@ class ImportStats:
     skipped: int = 0
 
 
-def import_verbs_from_reader(reader: csv.DictReader, *, update: bool = False) -> ImportStats:
+def import_verbs_from_reader(
+    reader: csv.DictReader, *, update: bool = False
+) -> ImportStats:
     stats = ImportStats()
     missing = set(CSV_HEADER) - set(reader.fieldnames or [])
     if missing:
@@ -72,6 +75,11 @@ def import_verbs_from_reader(reader: csv.DictReader, *, update: bool = False) ->
             stats.skipped += 1
             continue
         tags = [tag.strip() for tag in row.get("tags", "").split(";") if tag.strip()]
+        part_of_speech = (
+            row.get("part_of_speech", "").strip() or VerbEntry.PartOfSpeech.VERB
+        )
+        if part_of_speech not in VerbEntry.PartOfSpeech.values:
+            part_of_speech = VerbEntry.PartOfSpeech.VERB
         defaults = {
             "infinitive": row["infinitive"].strip(),
             "present": row["present"].strip(),
@@ -85,6 +93,7 @@ def import_verbs_from_reader(reader: csv.DictReader, *, update: bool = False) ->
             "translation_ru": row.get("translation_ru", "").strip(),
             "translation_nb": row.get("translation_nb", "").strip(),
             "tags": tags,
+            "part_of_speech": part_of_speech,
         }
         verb_key = row["verb"].strip()
         try:

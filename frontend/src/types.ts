@@ -147,6 +147,7 @@ export interface VerbEntry {
   id: number;
   verb: string;
   stream: Stream;
+  part_of_speech: string;
   infinitive: string;
   present: string;
   past: string;

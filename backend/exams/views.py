@@ -617,9 +617,14 @@ class VerbEntryViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     def get_queryset(self):
         qs = VerbEntry.objects.all()
-        return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by(
-            "verb"
-        )
+        qs = FilteredStreamLevelMixin.filter_by_stream_level(self, qs)
+        part = (self.request.query_params.get("part_of_speech") or "").strip().lower()
+        if part:
+            qs = qs.filter(part_of_speech=part)
+        tag = (self.request.query_params.get("tag") or "").strip().lower()
+        if tag:
+            qs = qs.filter(tags__contains=[tag])
+        return qs.order_by("verb")
 
 
 class ExpressionViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):

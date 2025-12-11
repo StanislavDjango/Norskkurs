@@ -91,9 +91,7 @@ type Section =
   | "exercises"
   | "tests"
   | "homework"
-  | "verbs"
-  | "nouns"
-  | "irregularVerbs"
+  | "partsOfSpeech"
   | "expressions"
   | "games"
   | "glossary"
@@ -495,9 +493,7 @@ const App = () => {
       { key: "exercises" as Section, label: t("nav.exercises") },
       { key: "tests" as Section, label: t("nav.tests") },
       { key: "homework" as Section, label: t("nav.homework") },
-      { key: "verbs" as Section, label: t("nav.verbs") },
-      { key: "nouns" as Section, label: t("nav.nouns", { defaultValue: "Nouns" }) },
-      { key: "irregularVerbs" as Section, label: t("nav.irregularVerbs", { defaultValue: "Irregular verbs" }) },
+      { key: "partsOfSpeech" as Section, label: t("nav.partsOfSpeech", { defaultValue: "Parts of speech" }) },
       { key: "expressions" as Section, label: t("nav.expressions") },
       { key: "games" as Section, label: t("nav.games") },
       { key: "glossary" as Section, label: t("nav.glossary") },
@@ -1465,37 +1461,16 @@ const App = () => {
             )}
           </>
         );
-        case "verbs":
+        case "partsOfSpeech":
           return (
             <VerbsPage
               stream={stream}
               currentLevel={currentLevel}
               studentEmail={studentEmail}
+              defaultTag="all"
+              initialPartOfSpeech="verb"
             />
           );
-      case "nouns":
-        return (
-          <>
-            <h2>{t("nav.nouns", { defaultValue: "Nouns" })}</h2>
-            <GlossaryPage
-              stream={stream}
-              currentLevel={currentLevel}
-              vocabFavorites={vocabFavorites}
-              onToggleFavorite={toggleVocabFavorite}
-              titleOverride={t("nav.nouns", { defaultValue: "Nouns" })}
-              forcedTags={["noun", "nouns", "substantiv", "substantiver"]}
-            />
-          </>
-        );
-      case "irregularVerbs":
-        return (
-          <VerbsPage
-            stream={stream}
-            currentLevel={currentLevel}
-            studentEmail={studentEmail}
-            defaultTag="irregular"
-          />
-        );
       case "expressions":
         return (
           <>
@@ -1887,7 +1862,7 @@ const App = () => {
           </main>
         </div>
       ) : (
-        <div className={`layout ${activeSection === "verbs" ? "full-width-panel" : "single-panel"}`}>
+        <div className="layout single-panel">
           <main className="panel">{renderSectionContent()}</main>
         </div>
       )}

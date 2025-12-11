@@ -272,9 +272,17 @@ class VerbImportForm(forms.Form):
 
 @admin.register(VerbEntry)
 class VerbEntryAdmin(admin.ModelAdmin):
-    list_display = ("verb", "stream", "infinitive", "present", "past", "perfect")
+    list_display = (
+        "verb",
+        "stream",
+        "part_of_speech",
+        "infinitive",
+        "present",
+        "past",
+        "perfect",
+    )
     search_fields = ("verb", "infinitive", "tags")
-    list_filter = ("stream",)
+    list_filter = ("stream", "part_of_speech", "tags")
     change_list_template = "admin/exams/verbentry/change_list.html"
 
     def get_urls(self):

@@ -327,9 +327,25 @@ class Exercise(models.Model):
 
 
 class VerbEntry(models.Model):
+    class PartOfSpeech(models.TextChoices):
+        VERB = "verb", _("Verb")
+        NOUN = "noun", _("Noun")
+        ADJECTIVE = "adjective", _("Adjective")
+        ADVERB = "adverb", _("Adverb")
+        PRONOUN = "pronoun", _("Pronoun")
+        NUMERAL = "numeral", _("Numeral")
+        PREPOSITION = "preposition", _("Preposition")
+        CONJUNCTION = "conjunction", _("Conjunction")
+        INTERJECTION = "interjection", _("Interjection")
+
     verb = models.CharField(max_length=120)
     stream = models.CharField(
         max_length=20, choices=Test.Stream.choices, default=Test.Stream.BOKMAAL
+    )
+    part_of_speech = models.CharField(
+        max_length=20,
+        choices=PartOfSpeech.choices,
+        default=PartOfSpeech.VERB,
     )
     infinitive = models.CharField(max_length=120)
     present = models.CharField(max_length=120)

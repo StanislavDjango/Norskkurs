@@ -44,9 +44,28 @@ type Props = {
   currentLevel: Level;
   studentEmail: string;
   defaultTag?: string;
+  initialPartOfSpeech?: string;
 };
 
-const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail, defaultTag = "all" }) => {
+const partOptions = [
+  { value: "verb", labelKey: "parts.verb", fallback: "Глагол" },
+  { value: "noun", labelKey: "parts.noun", fallback: "Существительное" },
+  { value: "adjective", labelKey: "parts.adjective", fallback: "Прилагательное" },
+  { value: "adverb", labelKey: "parts.adverb", fallback: "Наречие" },
+  { value: "pronoun", labelKey: "parts.pronoun", fallback: "Местоимение" },
+  { value: "numeral", labelKey: "parts.numeral", fallback: "Числительное" },
+  { value: "preposition", labelKey: "parts.preposition", fallback: "Предлог" },
+  { value: "conjunction", labelKey: "parts.conjunction", fallback: "Союз" },
+  { value: "interjection", labelKey: "parts.interjection", fallback: "Междометие" },
+];
+
+const VerbsPage: React.FC<Props> = ({
+  stream,
+  currentLevel,
+  studentEmail,
+  defaultTag = "all",
+  initialPartOfSpeech = "verb",
+}) => {
   const { t } = useTranslation();
   const streamLabel = (value: Stream) =>
     ({
@@ -60,6 +79,7 @@ const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail, defaul
   const [activeForm, setActiveForm] = useState<VerbForm>("infinitive");
   const [verbLetter, setVerbLetter] = useState<string>("all");
   const [verbTag, setVerbTag] = useState<string>(defaultTag);
+  const [partOfSpeech, setPartOfSpeech] = useState<string>(initialPartOfSpeech);
   const [verbSearch, setVerbSearch] = useState<string>("");
   const [verbVisibleCount, setVerbVisibleCount] = useState<number>(15);
   const [verbView, setVerbView] = useState<"all" | "favorites">("all");
@@ -78,17 +98,19 @@ const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail, defaul
       stream,
       level: currentLevel,
       student_email: studentEmail || undefined,
+      part_of_speech: partOfSpeech,
+      tag: verbTag !== "all" ? verbTag : undefined,
     };
     fetchVerbs(params).then(setVerbs).catch(() => setVerbs([]));
-  }, [stream, currentLevel, studentEmail]);
+  }, [stream, currentLevel, studentEmail, partOfSpeech, verbTag]);
 
   useEffect(() => {
     setVerbVisibleCount(15);
-  }, [verbLetter, verbTag, verbView, verbs, verbSearch]);
+  }, [verbLetter, verbTag, verbView, verbs, verbSearch, partOfSpeech]);
 
   useEffect(() => {
     setVerbLetter("all");
-  }, [verbTag, verbView]);
+  }, [verbTag, verbView, partOfSpeech]);
 
   useEffect(() => {
     localStorage.setItem("norskkurs_verb_favs", JSON.stringify(verbFavorites));
@@ -141,7 +163,7 @@ const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail, defaul
 
   return (
     <>
-      <h2 className="sr-only">{t("nav.verbs")}</h2>
+      <h2 className="sr-only">{t("nav.partsOfSpeech", { defaultValue: "Parts of speech" })}</h2>
       <div className="card verbs-debug">
         <p className="muted small">
           Verbs debug: <strong>{verbs.length}</strong> items loaded for{" "}
@@ -152,6 +174,23 @@ const VerbsPage: React.FC<Props> = ({ stream, currentLevel, studentEmail, defaul
         <p className="muted">{t("emptyList")}</p>
       ) : (
         <div className="verbs-board">
+          <div className="verbs-tags verbs-part-switch">
+            {partOptions.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={partOfSpeech === opt.value ? "active" : ""}
+                onClick={() => {
+                  setPartOfSpeech(opt.value);
+                  setVerbTag(opt.value === "verb" ? defaultTag : "all");
+                  setVerbView("all");
+                  setVerbSearch("");
+                }}
+              >
+                {t(opt.labelKey, opt.fallback)}
+              </button>
+            ))}
+          </div>
           <div className="verbs-alphabet">
             <button
               type="button"

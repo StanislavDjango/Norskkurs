@@ -190,6 +190,7 @@ class VerbEntrySerializer(serializers.ModelSerializer):
             "id",
             "verb",
             "stream",
+            "part_of_speech",
             "infinitive",
             "present",
             "past",

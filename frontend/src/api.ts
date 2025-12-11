@@ -124,7 +124,12 @@ export const fetchExercises = async (params?: FilterParams): Promise<Exercise[]>
   return res.data;
 };
 
-export const fetchVerbs = async (params?: FilterParams): Promise<VerbEntry[]> => {
+type VerbFilterParams = FilterParams & {
+  part_of_speech?: string;
+  tag?: string;
+};
+
+export const fetchVerbs = async (params?: VerbFilterParams): Promise<VerbEntry[]> => {
   const res = await api.get<VerbEntry[]>("verbs/", { params });
   return res.data;
 };
