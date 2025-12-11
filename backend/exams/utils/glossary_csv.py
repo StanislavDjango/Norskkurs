@@ -4,6 +4,8 @@ from typing import Iterable, TextIO
 
 from ..models import GlossaryTerm
 
+DELIMITER = ";"
+
 
 @dataclass
 class ImportStats:
@@ -21,7 +23,7 @@ def export_glossary_to_file(file_obj: TextIO, queryset: Iterable[GlossaryTerm]) 
         "translation_nb",
         "tags",
     ]
-    writer = csv.DictWriter(file_obj, fieldnames=fieldnames)
+    writer = csv.DictWriter(file_obj, fieldnames=fieldnames, delimiter=DELIMITER)
     writer.writeheader()
     for item in queryset:
         writer.writerow(

@@ -6,6 +6,8 @@ from django.utils.text import slugify
 
 from ..models import Reading
 
+DELIMITER = ";"
+
 
 @dataclass
 class ImportStats:
@@ -32,7 +34,7 @@ def export_readings_to_file(file_obj: TextIO, queryset: Iterable[Reading]) -> No
         "translation_ru",
         "is_published",
     ]
-    writer = csv.DictWriter(file_obj, fieldnames=fieldnames)
+    writer = csv.DictWriter(file_obj, fieldnames=fieldnames, delimiter=DELIMITER)
     writer.writeheader()
     for item in queryset:
         writer.writerow(

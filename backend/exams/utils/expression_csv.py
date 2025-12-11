@@ -4,6 +4,8 @@ from typing import Iterable, TextIO
 
 from ..models import Expression, Test
 
+DELIMITER = ";"
+
 
 @dataclass
 class ImportStats:
@@ -26,7 +28,7 @@ def export_expressions_to_file(
         "stream",
         "tags",
     ]
-    writer = csv.DictWriter(file_obj, fieldnames=fieldnames)
+    writer = csv.DictWriter(file_obj, fieldnames=fieldnames, delimiter=DELIMITER)
     writer.writeheader()
     for item in queryset:
         writer.writerow(

@@ -318,7 +318,7 @@ class VerbEntryAdmin(admin.ModelAdmin):
                 except UnicodeDecodeError:
                     form.add_error("csv_file", _("File must be UTF-8 encoded."))
                 else:
-                    reader = csv.DictReader(io.StringIO(decoded))
+                    reader = csv.DictReader(io.StringIO(decoded), delimiter=DELIMITER)
                     try:
                         stats = import_verbs_from_reader(
                             reader, update=form.cleaned_data["update_existing"]
@@ -393,7 +393,7 @@ class ExpressionAdmin(admin.ModelAdmin):
                 except UnicodeDecodeError:
                     form.add_error("csv_file", _("File must be UTF-8 encoded."))
                 else:
-                    reader = csv.DictReader(io.StringIO(decoded))
+                    reader = csv.DictReader(io.StringIO(decoded), delimiter=DELIMITER)
                     try:
                         stats = import_expressions_from_reader(
                             reader, update=form.cleaned_data["update_existing"]
@@ -482,7 +482,7 @@ class GlossaryTermAdmin(admin.ModelAdmin):
                 except UnicodeDecodeError:
                     form.add_error("csv_file", _("File must be UTF-8 encoded."))
                 else:
-                    reader = csv.DictReader(io.StringIO(decoded))
+                    reader = csv.DictReader(io.StringIO(decoded), delimiter=DELIMITER)
                     try:
                         stats = import_glossary_from_reader(
                             reader, update=form.cleaned_data["update_existing"]

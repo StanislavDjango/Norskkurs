@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import csv
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
-
-from exams.utils.verb_csv import import_verbs_from_reader
+from exams.utils.verb_csv import DELIMITER, import_verbs_from_reader
 
 
 class Command(BaseCommand):
@@ -25,7 +23,9 @@ class Command(BaseCommand):
             raise CommandError(f"File {csv_path} does not exist.")
 
         with csv_path.open(newline="", encoding="utf-8") as csvfile:
-            reader = csv.DictReader(csvfile)
+            import csv
+
+            reader = csv.DictReader(csvfile, delimiter=DELIMITER)
             try:
                 stats = import_verbs_from_reader(reader, update=options["update"])
             except ValueError as exc:
