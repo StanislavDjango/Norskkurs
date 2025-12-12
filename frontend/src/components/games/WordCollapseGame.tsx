@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState, useLayoutEffect, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import type { GlossaryTerm, Level, Stream } from "../../types";
+import type { GlossaryTerm, Level, Stream, VerbEntry } from "../../types";
 import { getNorwegianForTerm, pickTranslationForTower } from "../../utils/terms";
 
 // --- Types ---
@@ -8,6 +8,7 @@ type Props = {
   stream: Stream;
   currentLevel: Level;
   playableTerms: GlossaryTerm[];
+  verbEntries: VerbEntry[];
 };
 
 type GameStatus = "pre-game" | "running" | "game-over";
@@ -40,12 +41,62 @@ type GameSize = {
 };
 
 // --- Main Component ---
-const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
+const partOptions = [
+  { value: "verb", label: "parts.verb" },
+  { value: "noun", label: "parts.noun" },
+  { value: "adjective", label: "parts.adjective" },
+  { value: "adverb", label: "parts.adverb" },
+  { value: "pronoun", label: "parts.pronoun" },
+  { value: "numeral", label: "parts.numeral" },
+  { value: "preposition", label: "parts.preposition" },
+  { value: "conjunction", label: "parts.conjunction" },
+  { value: "interjection", label: "parts.interjection" },
+];
+
+const mapVerbEntryToGlossary = (entry: VerbEntry): GlossaryTerm => ({
+  id: entry.id,
+  term: entry.infinitive,
+  translation: entry.translation_en || entry.translation_nb || entry.translation_ru || "",
+  translation_en: entry.translation_en,
+  translation_ru: entry.translation_ru,
+  translation_nb: entry.translation_nb,
+  translation_nn: entry.translation_nb,
+  explanation: "",
+  stream: entry.stream,
+  level: "A1",
+  tags: [entry.part_of_speech, ...(entry.tags || [])],
+});
+
+const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries }) => {
   const { t, i18n } = useTranslation();
   const [status, setStatus] = useState<GameStatus>("pre-game");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pendingStart, setPendingStart] = useState(false);
   const [isMusicOn, setIsMusicOn] = useState(true);
+  const [isSourceMenuOpen, setIsSourceMenuOpen] = useState(false);
+  const [useGlossary, setUseGlossary] = useState(true);
+  const [selectedParts, setSelectedParts] = useState<string[]>([]);
+  const [useIrregularOnly, setUseIrregularOnly] = useState(false);
+  const combinedTerms = useMemo<GlossaryTerm[]>(() => {
+    const selectedSet = new Set(selectedParts);
+    const includeVerbs = selectedSet.size > 0;
+    const irregularOnly = useIrregularOnly && selectedSet.has("verb");
+
+    const verbsPool = includeVerbs
+      ? verbEntries.filter((entry) => {
+          const partOk = selectedSet.has(entry.part_of_speech);
+          if (!partOk) return false;
+          if (irregularOnly) {
+            return (entry.tags || []).some((tag) => tag.toLowerCase() === "irregular");
+          }
+          return true;
+        })
+      : [];
+
+    const verbLikeGlossary = verbsPool.map(mapVerbEntryToGlossary);
+    const glossaryPool = useGlossary ? playableTerms : [];
+    return [...glossaryPool, ...verbLikeGlossary];
+  }, [playableTerms, selectedParts, useGlossary, useIrregularOnly, verbEntries]);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [score, setScore] = useState(0);
@@ -139,10 +190,10 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
   }, [score]);
 
   const spawnBlockPairs = useCallback(() => {
-    if (playableTerms.length < pairCount || gameSize.cols < 2) return null;
+    if (combinedTerms.length < pairCount || gameSize.cols < 2) return null;
 
     const newBlocks: Block[] = [];
-    const shuffledTerms = [...playableTerms].sort(() => 0.5 - Math.random());
+    const shuffledTerms = [...combinedTerms].sort(() => 0.5 - Math.random());
     const selectedTerms = shuffledTerms.slice(0, pairCount);
     const colsPerSide = Math.max(2, Math.floor(gameSize.cols / 2));
     const halfWidth = gameSize.width / 2;
@@ -170,7 +221,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
         newBlocks.push({ id: `block-${term.id}-tr-${Date.now()}-${Math.random()}`, termId: term.id, role: 'tr', text: translation, x: x2, y: y2, vy: 0, isFalling: true });
     }
     return newBlocks;
-  }, [playableTerms, stream, i18n, pairCount, gameSize]);
+  }, [combinedTerms, stream, i18n, pairCount, gameSize]);
 
   const spawnBonusBlock = useCallback(() => {
     if (gameSize.cols < 1) return null;
@@ -406,6 +457,54 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
           <p className="muted small">{t('games.wordCollapseHint', 'Игра откроется во всплывающем окне — соединяйте норвежские и переводные блоки.')}</p>
         </div>
         {settingsControls("launcher-settings")}
+        <div className="source-select">
+          <button
+            type="button"
+            className="ghost-btn"
+            onClick={() => setIsSourceMenuOpen((prev) => !prev)}
+          >
+            {t("games.wordSources", "Выбор слов")} ▾
+          </button>
+          {isSourceMenuOpen && (
+            <div className="source-dropdown">
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={useGlossary}
+                  onChange={(e) => setUseGlossary(e.target.checked)}
+                />
+                <span>{t("games.sourceGlossary", "Глоссарий")}</span>
+              </label>
+              <div className="divider" />
+              <p className="muted small">{t("games.partsOfSpeech", "Части речи")}</p>
+              {partOptions.map((opt) => (
+                <label key={opt.value} className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={selectedParts.includes(opt.value)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setSelectedParts((prev) => {
+                        if (checked) return [...prev, opt.value];
+                        return prev.filter((val) => val !== opt.value);
+                      });
+                    }}
+                  />
+                  <span>{t(opt.label, opt.value)}</span>
+                </label>
+              ))}
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={useIrregularOnly}
+                  onChange={(e) => setUseIrregularOnly(e.target.checked)}
+                  disabled={!selectedParts.includes("verb")}
+                />
+                <span>{t("games.irregularOnly", "Только неправильные (глаголы)")}</span>
+              </label>
+            </div>
+          )}
+        </div>
         <div className="game-buttons">
             <button className="start-btn" onClick={handleStart} disabled={isModalOpen}>{t("games.start")}</button>
         </div>
@@ -478,6 +577,10 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms }) => {
         .game-settings { display: flex; gap: 1rem; align-items: center; order: 2; flex-grow: 1; flex-wrap: wrap; }
         .game-settings.modal-settings { padding: 0.5rem 0 1rem; }
         .game-buttons { order: 3; display: flex; gap: 0.5rem; align-items: center; }
+        .source-select { position: relative; }
+        .source-dropdown { position: absolute; top: calc(100% + 6px); left: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.75rem; min-width: 240px; box-shadow: 0 10px 40px rgba(0,0,0,0.12); z-index: 10; display: grid; gap: 0.5rem; }
+        .source-dropdown .checkbox-row { display: flex; gap: 0.5rem; align-items: center; }
+        .source-dropdown .divider { height: 1px; background: #e2e8f0; margin: 0.25rem 0; }
         .score.correct { color: var(--correct-color); }
         .score.incorrect { color: var(--incorrect-color); }
         .score.combo-couter { color: #ff7a45; font-weight: bold; }

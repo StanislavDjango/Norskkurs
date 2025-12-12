@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { fetchExpressions, fetchGlossary } from "../api";
+import { fetchExpressions, fetchGlossary, fetchVerbs } from "../api";
 import FallingWordsGame from "../components/games/FallingWordsGame";
 import MemoryPairsGame from "../components/games/MemoryPairsGame";
 import WordCollapseGame from "../components/games/WordCollapseGame";
 import WordTowerGame from "../components/games/WordTowerGame";
-import type { Expression, GlossaryTerm, Level, Stream } from "../types";
+import type { Expression, GlossaryTerm, Level, Stream, VerbEntry } from "../types";
 
 type Props = {
   stream: Stream;
@@ -18,6 +18,7 @@ type GameId = "fallingWords" | "wordTower" | "wordCollapse" | "memoryPairs";
 const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
   const { t } = useTranslation();
   const [terms, setTerms] = useState<GlossaryTerm[]>([]);
+  const [verbEntries, setVerbEntries] = useState<VerbEntry[]>([]);
   const [expressions, setExpressions] = useState<Expression[]>([]);
   const [activeGame, setActiveGame] = useState<GameId>("memoryPairs");
 
@@ -25,6 +26,12 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
     fetchGlossary()
       .then(setTerms)
       .catch(() => setTerms([]));
+  }, [stream, currentLevel]);
+
+  useEffect(() => {
+    fetchVerbs({ stream })
+      .then(setVerbEntries)
+      .catch(() => setVerbEntries([]));
   }, [stream, currentLevel]);
 
   useEffect(() => {
@@ -108,6 +115,7 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
           stream={stream}
           currentLevel={currentLevel}
           playableTerms={playableTerms}
+          verbEntries={verbEntries}
         />
       )}
 
