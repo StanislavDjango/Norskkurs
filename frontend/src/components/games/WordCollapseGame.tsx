@@ -477,22 +477,24 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
               </label>
               <div className="divider" />
               <p className="muted small">{t("games.partsOfSpeech", "Части речи")}</p>
-              {partOptions.map((opt) => (
-                <label key={opt.value} className="checkbox-row">
-                  <input
-                    type="checkbox"
-                    checked={selectedParts.includes(opt.value)}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setSelectedParts((prev) => {
-                        if (checked) return [...prev, opt.value];
-                        return prev.filter((val) => val !== opt.value);
-                      });
-                    }}
-                  />
-                  <span>{t(opt.label, opt.value)}</span>
-                </label>
-              ))}
+              <div className="parts-grid">
+                {partOptions.map((opt) => (
+                  <label key={opt.value} className="checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={selectedParts.includes(opt.value)}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setSelectedParts((prev) => {
+                          if (checked) return [...prev, opt.value];
+                          return prev.filter((val) => val !== opt.value);
+                        });
+                      }}
+                    />
+                    <span>{t(opt.label, opt.value)}</span>
+                  </label>
+                ))}
+              </div>
               <label className="checkbox-row">
                 <input
                   type="checkbox"
@@ -578,9 +580,13 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
         .game-settings.modal-settings { padding: 0.5rem 0 1rem; }
         .game-buttons { order: 3; display: flex; gap: 0.5rem; align-items: center; }
         .source-select { position: relative; }
-        .source-dropdown { position: absolute; top: calc(100% + 6px); left: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.75rem; min-width: 240px; box-shadow: 0 10px 40px rgba(0,0,0,0.12); z-index: 10; display: grid; gap: 0.5rem; }
-        .source-dropdown .checkbox-row { display: flex; gap: 0.5rem; align-items: center; }
+        .source-select > button { min-width: 140px; }
+        .source-dropdown { position: absolute; top: calc(100% + 10px); left: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1rem; min-width: 280px; box-shadow: 0 24px 60px rgba(0,0,0,0.14); z-index: 20; display: grid; gap: 0.5rem; }
+        .source-dropdown .checkbox-row { display: flex; gap: 0.5rem; align-items: center; font-size: 0.95rem; }
+        .source-dropdown .checkbox-row input { width: 16px; height: 16px; }
         .source-dropdown .divider { height: 1px; background: #e2e8f0; margin: 0.25rem 0; }
+        .source-dropdown .parts-grid { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); gap: 0.25rem 0.75rem; }
+        .source-dropdown p { margin: 0; }
         .score.correct { color: var(--correct-color); }
         .score.incorrect { color: var(--incorrect-color); }
         .score.combo-couter { color: #ff7a45; font-weight: bold; }
@@ -650,6 +656,8 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
             .game-settings label { display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0; }
             .game-settings select { min-width: 150px; padding: 4px; }
             .game-buttons { order: 3; display: flex; justify-content: center; margin-top: 1rem; }
+            .source-dropdown { position: fixed; inset: auto 0 0 0; margin: 0.5rem; min-width: auto; max-height: 70vh; overflow-y: auto; }
+            .source-dropdown .parts-grid { grid-template-columns: repeat(2, minmax(110px, 1fr)); }
             .collapse-modal-window { padding: 1rem; }
             .collapse-block { font-size: 12px; }
         }
