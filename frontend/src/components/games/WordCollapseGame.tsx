@@ -105,6 +105,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   const [comboCount, setComboCount] = useState(0);
   const [showComboAnimation, setShowComboAnimation] = useState<number | null>(null);
   const [isFrozen, setIsFrozen] = useState(false);
+  const [bombCharge, setBombCharge] = useState(0);
 
   // --- Game Settings ---
   const [pairCount, setPairCount] = useState(3);
@@ -246,6 +247,25 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     return newBlock;
   }, [gameSize]);
 
+  const spawnBombBlock = useCallback(() => {
+    if (gameSize.cols < 1) return null;
+    const col = Math.floor(Math.random() * gameSize.cols);
+    const x = col * gameSize.blockWidth;
+    const y = -BLOCK_HEIGHT;
+    const newBlock: Block = {
+      id: `bomb-${Date.now()}`,
+      termId: -1,
+      role: "bonus",
+      bonusType: "bomb",
+      text: "💣",
+      x,
+      y,
+      vy: 0,
+      isFalling: true,
+    };
+    return newBlock;
+  }, [gameSize]);
+
   useEffect(() => {
     if (status !== "running" || isFrozen) return;
     const gameLoop = setInterval(() => {
@@ -315,11 +335,27 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
         if (clickedBlock.bonusType === 'freeze') {
             setIsFrozen(true);
             setScore(s => s + 5);
-            setTimeout(() => setIsFrozen(false), 3000);
+            setTimeout(() => setIsFrozen(false), 6000);
+            setBlocks(prev => prev.filter(b => b.id !== blockId));
+            setSelectedBlockId(null);
+            return;
         }
-        setBlocks(prev => prev.filter(b => b.id !== blockId));
-        setSelectedBlockId(null);
-        return;
+        if (clickedBlock.bonusType === 'bomb') {
+            setBlocks(prev => {
+              const playable = prev.filter(b => !b.isMatched && b.termId > 0 && b.role !== 'bonus');
+              const uniqueTerms = Array.from(new Set(playable.map(b => b.termId)));
+              if (uniqueTerms.length === 0) {
+                return prev.filter(b => b.id !== blockId);
+              }
+              const removeCount = Math.max(1, Math.floor(uniqueTerms.length * 0.25));
+              const shuffled = [...uniqueTerms].sort(() => 0.5 - Math.random());
+              const targetTerms = new Set(shuffled.slice(0, removeCount));
+              return prev.filter(b => b.id !== blockId && !targetTerms.has(b.termId));
+            });
+            setSelectedBlockId(null);
+            setComboCount(0);
+            return;
+        }
     }
 
     if (!selectedBlockId) {
@@ -349,6 +385,10 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
           bonusPoints = newCombo;
           setShowComboAnimation(newCombo);
           setTimeout(() => setShowComboAnimation(null), 1500);
+          setBombCharge((charge) => Math.min(100, charge + 30));
+      }
+      if (newCombo < 3) {
+        setBombCharge((charge) => Math.min(100, charge + 10));
       }
       setScore((s) => s + basePoints + bonusPoints);
 
@@ -382,6 +422,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     setBlocks([]);
     setIsInitialPhase(true);
     setIsFrozen(false);
+    setBombCharge(0);
   }, []);
 
   const handleStart = () => {
@@ -453,6 +494,20 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   }, [isModalOpen, isMusicOn, startMusic, status, stopMusic]);
 
   useEffect(() => stopMusic, [stopMusic]);
+
+  useEffect(() => {
+    if (status !== "running") return;
+    if (bombCharge < 100) return;
+    const newBomb = spawnBombBlock();
+    if (!newBomb) return;
+    setBlocks(prev => {
+      if (prev.some((b) => b.x === newBomb.x && b.y < BLOCK_HEIGHT)) {
+        return prev;
+      }
+      return [...prev, newBomb];
+    });
+    setBombCharge((c) => Math.max(0, c - 100));
+  }, [bombCharge, spawnBombBlock, status]);
 
   return (
     <div className="collapse-game">
@@ -610,49 +665,36 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
         .game-buttons { order: 3; display: flex; gap: 0.5rem; align-items: center; }
         .source-select { position: relative; }
         .source-select > button { min-width: 140px; }
-        .settings-window {
-          max-width: 960px;
-          width: min(96vw, 980px);
-          padding: 1.75rem;
-          background:
-            radial-gradient(120% 120% at 10% 10%, rgba(88,190,255,0.12), transparent 35%),
-            radial-gradient(100% 140% at 90% 0%, rgba(255,255,255,0.08), transparent 40%),
-            linear-gradient(140deg, #0c1934 0%, #0f2950 45%, #0f3f69 100%);
-          color: #f7fbff;
-          border-radius: 22px;
-          border: 1px solid rgba(255,255,255,0.08);
-          box-shadow: 0 24px 70px rgba(0,0,0,0.35);
-        }
+        .settings-window { color: #0f172a; }
         .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.2rem; margin-top: 1rem; align-items: start; }
         .settings-card {
-          border: 1px solid rgba(255,255,255,0.14);
+          border: 1px solid #e2e8f0;
           border-radius: 16px;
           padding: 1rem;
-          background: linear-gradient(155deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04));
+          background: linear-gradient(155deg, #ffffff 0%, #f8fafc 100%);
           display: flex;
           flex-direction: column;
           gap: 0.75rem;
-          backdrop-filter: blur(8px);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 10px 35px rgba(15, 23, 42, 0.08);
         }
-        .settings-card.difficulty { background: linear-gradient(170deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02)); }
+        .settings-card.difficulty { background: linear-gradient(170deg, #ffffff 0%, #f0f4ff 100%); }
         .settings-card__title { display: flex; flex-direction: column; gap: 0.15rem; }
         .settings-list { display: grid; gap: 0.5rem; }
         .settings-list.compact .game-settings { padding: 0; gap: 0.6rem; }
         .settings-actions { display: flex; justify-content: flex-end; margin-top: auto; }
         .settings-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
-        .settings-header .eyebrow { color: #8ec5ff; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.75rem; margin: 0; }
-        .settings-header h3 { margin: 0.1rem 0 0; font-size: 1.25rem; font-weight: 700; }
+        .settings-header .eyebrow { color: #3b82f6; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.75rem; margin: 0; }
+        .settings-header h3 { margin: 0.1rem 0 0; font-size: 1.25rem; font-weight: 700; color: #0f172a; }
         .eyebrow { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.75rem; color: #64748b; }
-        .muted.tiny { font-size: 0.85rem; color: #cbd5e1; }
+        .muted.tiny { font-size: 0.85rem; color: #475569; }
         .game-settings.modal-settings { padding: 0; gap: 0.6rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
-        .settings-window .checkbox-row span { color: #f7fbff; }
-        .settings-window .muted.small { color: #cbd5e1; }
-        .settings-window .divider { background: rgba(255,255,255,0.12); margin: 0.35rem 0; }
+        .settings-window .checkbox-row span { color: #0f172a; }
+        .settings-window .muted.small { color: #475569; }
+        .settings-window .divider { background: #e2e8f0; margin: 0.35rem 0; }
         .settings-window .parts-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
-        .settings-window .close-btn.dark { background: rgba(255,255,255,0.16); color: #fff; border: 1px solid rgba(255,255,255,0.24); width: 42px; height: 42px; }
-        .settings-window .game-settings label { flex-direction: column; align-items: flex-start; color: #f7fbff; }
-        .settings-window select { width: 100%; padding: 0.55rem 0.65rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); color: #f7fbff; }
+        .settings-window .close-btn.dark { background: #f8fafc; color: #0f172a; border: 1px solid #e2e8f0; width: 42px; height: 42px; position: static; box-shadow: none; }
+        .settings-window .game-settings label { flex-direction: column; align-items: flex-start; color: #0f172a; }
+        .settings-window select { width: 100%; padding: 0.55rem 0.65rem; border-radius: 12px; border: 1px solid #d7dce3; background: #ffffff; color: #0f172a; }
         .settings-window select option { color: #0f172a; }
         .settings-card.difficulty .settings-list { gap: 0.75rem; }
         .collapse-modal-window.settings-window { height: auto; max-height: 92vh; overflow-y: auto; }
@@ -673,6 +715,19 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
         .collapse-game-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
         .collapse-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(4px); }
         .collapse-modal-window { position: relative; background: #ffffff; border-radius: 16px; padding: 1.25rem; max-width: 1100px; width: 96vw; max-height: 95vh; height: 92vh; box-shadow: 0 20px 60px rgba(0,0,0,0.2); z-index: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .collapse-modal-window.settings-window {
+          max-width: 960px;
+          width: min(94vw, 980px);
+          padding: 1.75rem;
+          height: auto;
+          max-height: 90vh;
+          overflow-y: auto;
+          background: linear-gradient(135deg, #f8fbff 0%, #f1f5f9 60%, #eef2ff 100%);
+          color: #0f172a;
+          border-radius: 22px;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+        }
         .collapse-modal-title h3 { margin: 0; }
         .collapse-game-frame { width: 100%; margin-top: 0.5rem; flex: 1; min-height: 65vh; max-height: calc(95vh - 160px); }
         .game-over-message { text-align: center; padding: 2rem; background-color: #fff1f0; border: 1px solid var(--incorrect-color); border-radius: 8px; margin-top: 1rem; }
@@ -703,11 +758,8 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
         .collapse-block {
           position: absolute; display: flex; align-items: center; justify-content: center; font-size: 14px; text-align: center; padding: 2px; box-sizing: border-box; cursor: pointer; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: top 0.1s linear, left 0.1s linear, background-color 0.2s, border-color 0.2s; animation: fall-in 0.3s ease-out;
         }
-        .collapse-block.bonus.freeze {
-          background-color: #a0e9ff;
-          border: 2px solid #74d9ff;
-          font-size: 24px;
-        }
+        .collapse-block.bonus.freeze { background-color: #a0e9ff; border: 2px solid #74d9ff; font-size: 24px; }
+        .collapse-block.bonus.bomb { background-color: #ffe0b3; border: 2px solid #ff9900; font-size: 22px; }
         .collapse-block i { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; border-radius: 50%; opacity: 0; }
         .collapse-block.nor { background-color: var(--block-bg-nor); border: 2px solid var(--block-border-nor); }
         .collapse-block.tr { background-color: var(--block-bg-tr); border: 2px solid var(--block-border-tr); }
@@ -731,7 +783,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
             .game-settings select { min-width: 100%; padding: 0.5rem; }
             .game-buttons { order: 3; display: flex; justify-content: center; margin-top: 0.75rem; }
             .collapse-modal-window { padding: 1rem; width: 96vw; height: 90vh; }
-            .collapse-modal-window.settings-window { width: calc(100% - 1.2rem); max-height: 90vh; padding: 1.2rem; }
+            .collapse-modal-window.settings-window { width: calc(100% - 1.2rem); max-height: 92vh; padding: 1.2rem; border-radius: 18px; }
             .settings-header { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
             .settings-grid { grid-template-columns: 1fr; }
             .settings-card { padding: 0.9rem; }
