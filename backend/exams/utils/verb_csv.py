@@ -70,9 +70,26 @@ def import_verbs_from_reader(
     if missing:
         raise ValueError(f"Missing columns: {', '.join(sorted(missing))}")
 
+    def normalize_stream(raw: str) -> str | None:
+        value = (raw or "").strip().lower()
+        if not value:
+            return None
+        aliases = {
+            "bm": Test.Stream.BOKMAAL,
+            "nb": Test.Stream.BOKMAAL,
+            "bokmål": Test.Stream.BOKMAAL,
+            "bokmal": Test.Stream.BOKMAAL,
+            "nn": Test.Stream.NYNORSK,
+        }
+        if value in aliases:
+            value = aliases[value]
+        if value not in Test.Stream.values:
+            return None
+        return value
+
     for row in reader:
-        stream = row["stream"].strip()
-        if stream not in Test.Stream.values:
+        stream = normalize_stream(row.get("stream", ""))
+        if not stream:
             stats.skipped += 1
             continue
         tags = [tag.strip() for tag in row.get("tags", "").split(";") if tag.strip()]
