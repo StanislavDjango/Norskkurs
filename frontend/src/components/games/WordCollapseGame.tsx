@@ -266,6 +266,33 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     return newBlock;
   }, [gameSize]);
 
+  const collapseBlocks = useCallback((currentBlocks: Block[]) => {
+    const alive = currentBlocks.filter((b) => !b.isMatched);
+    const byCol: Record<number, Block[]> = {};
+    for (const block of alive) {
+      const colIndex = Math.round(block.x / gameSize.blockWidth);
+      if (!byCol[colIndex]) byCol[colIndex] = [];
+      byCol[colIndex].push(block);
+    }
+
+    const collapsed: Block[] = [];
+    Object.entries(byCol).forEach(([colKey, list]) => {
+      const colIndex = Number(colKey);
+      const sorted = [...list].sort((a, b) => a.y - b.y);
+      sorted.forEach((block, idx) => {
+        const newY = gameSize.height - BLOCK_HEIGHT * (idx + 1);
+        collapsed.push({
+          ...block,
+          x: colIndex * gameSize.blockWidth,
+          y: newY,
+          vy: 0,
+          isFalling: false,
+        });
+      });
+    });
+    return collapsed;
+  }, [gameSize.blockWidth, gameSize.height]);
+
   useEffect(() => {
     if (status !== "running" || isFrozen) return;
     const gameLoop = setInterval(() => {
@@ -350,7 +377,8 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
               const removeCount = Math.max(1, Math.floor(uniqueTerms.length * 0.25));
               const shuffled = [...uniqueTerms].sort(() => 0.5 - Math.random());
               const targetTerms = new Set(shuffled.slice(0, removeCount));
-              return prev.filter(b => b.id !== blockId && !targetTerms.has(b.termId));
+              const filtered = prev.filter(b => b.id !== blockId && !targetTerms.has(b.termId));
+              return collapseBlocks(filtered);
             });
             setSelectedBlockId(null);
             setComboCount(0);
@@ -394,14 +422,8 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
 
       setBlocks((prev) => prev.map((b) => (b.id === selectedBlockId || b.id === clickedBlock.id ? { ...b, isMatched: true } : b)));
       setTimeout(() => {
-        setBlocks(prev => {
-            const remaining = prev.filter(b => !b.isMatched);
-            return remaining.map(b => {
-                const isSupported = remaining.some(other => other.id !== b.id && b.x < other.x + gameSize.blockWidth && b.x + gameSize.blockWidth > other.x && b.y + BLOCK_HEIGHT === other.y) || (b.y + BLOCK_HEIGHT >= gameSize.height);
-                return { ...b, isFalling: !isSupported };
-            });
-        });
-      }, 5000);
+        setBlocks((prev) => collapseBlocks(prev.filter((b) => !b.isMatched)));
+      }, 250);
       setSelectedBlockId(null);
     } else {
       setIncorrectScore(s => s + 1);
