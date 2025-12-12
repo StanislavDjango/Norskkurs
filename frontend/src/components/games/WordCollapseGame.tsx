@@ -106,6 +106,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   const [showComboAnimation, setShowComboAnimation] = useState<number | null>(null);
   const [isFrozen, setIsFrozen] = useState(false);
   const [bombCharge, setBombCharge] = useState(0);
+  const [spawnIntervalMs, setSpawnIntervalMs] = useState<SpawnSpeed>(6000);
 
   // --- Game Settings ---
   const [pairCount, setPairCount] = useState(3);
@@ -348,9 +349,9 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
             return [...prevBlocks, ...newBlockPairs];
         }
       });
-    }, spawnSpeed);
+    }, spawnIntervalMs);
     return () => clearInterval(spawnInterval);
-  }, [status, isInitialPhase, isFrozen, spawnBlockPairs, spawnBonusBlock, spawnSpeed]);
+  }, [status, isInitialPhase, isFrozen, spawnBlockPairs, spawnBonusBlock, spawnIntervalMs]);
 
   const handleBlockClick = (blockId: string) => {
     if (status !== 'running' || blocks.find(b => b.id === blockId)?.isMatched) return;
@@ -490,7 +491,11 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
         </select>
       </label>
       <label> {t('games.speedLabel', 'Speed')}:
-        <select value={spawnSpeed} onChange={e => setSpawnSpeed(Number(e.target.value) as SpawnSpeed)}>
+        <select value={spawnSpeed} onChange={e => {
+          const val = Number(e.target.value) as SpawnSpeed;
+          setSpawnSpeed(val);
+          setSpawnIntervalMs(val);
+        }}>
           {speedOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
       </label>
@@ -504,6 +509,10 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     setBlocks(initialBlocks || []);
     setPendingStart(false);
   }, [gameSize.width, gameSize.height, isModalOpen, pendingStart, spawnBlockPairs]);
+
+  useEffect(() => {
+    setSpawnIntervalMs(spawnSpeed);
+  }, [spawnSpeed]);
 
   useEffect(() => {
     if (!isModalOpen || !isMusicOn) {
