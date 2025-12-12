@@ -470,62 +470,70 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
         <div className="collapse-game-modal" role="dialog" aria-modal="true">
           <div className="collapse-modal-backdrop" />
           <div className="collapse-modal-window settings-window">
-            <div className="collapse-game-header">
-              <div className="collapse-modal-title">
-                <h3>{t("games.settings", "Настройки")}</h3>
-                <p className="muted small">{t("games.settingsHint", "Выберите источники слов и сложность перед стартом.")}</p>
+            <div className="settings-header">
+              <div>
+                <p className="eyebrow">{t("games.settings", "Настройки")}</p>
+                <h3>{t("games.settingsHint", "Выберите источники слов и сложность перед стартом.")}</h3>
               </div>
-              <div className="game-buttons">
-                <button className="close-btn" onClick={beginGame} aria-label={t('games.start', 'Start')}>×</button>
-              </div>
+              <button className="close-btn dark" onClick={beginGame} aria-label={t('games.start', 'Start')}>×</button>
             </div>
             <div className="settings-grid">
               <div className="settings-card">
-                <h4>{t("games.wordSources", "Выбор слов")}</h4>
-                <div className="checkbox-row">
-                  <input
-                    type="checkbox"
-                    checked={useGlossary}
-                    onChange={(e) => setUseGlossary(e.target.checked)}
-                  />
-                  <span>{t("games.sourceGlossary", "Глоссарий")}</span>
+                <div className="settings-card__title">
+                  <span className="eyebrow">{t("games.wordSources", "Выбор слов")}</span>
+                  <span className="muted tiny">{t("games.sourceHint", "Можно выбрать сразу несколько источников")}</span>
                 </div>
-                <div className="divider" />
-                <p className="muted small">{t("games.partsOfSpeech", "Части речи")}</p>
-                <div className="parts-grid">
-                  {partOptions.map((opt) => (
-                    <label key={opt.value} className="checkbox-row">
-                      <input
-                        type="checkbox"
-                        checked={selectedParts.includes(opt.value)}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          setSelectedParts((prev) => {
-                            if (checked) return [...prev, opt.value];
-                            return prev.filter((val) => val !== opt.value);
-                          });
-                        }}
-                      />
-                      <span>{t(opt.label, opt.value)}</span>
-                    </label>
-                  ))}
+                <div className="settings-list">
+                  <label className="checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={useGlossary}
+                      onChange={(e) => setUseGlossary(e.target.checked)}
+                    />
+                    <span>{t("games.sourceGlossary", "Глоссарий")}</span>
+                  </label>
+                  <div className="divider" />
+                  <p className="muted tiny">{t("games.partsOfSpeech", "Части речи")}</p>
+                  <div className="parts-grid">
+                    {partOptions.map((opt) => (
+                      <label key={opt.value} className="checkbox-row">
+                        <input
+                          type="checkbox"
+                          checked={selectedParts.includes(opt.value)}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setSelectedParts((prev) => {
+                              if (checked) return [...prev, opt.value];
+                              return prev.filter((val) => val !== opt.value);
+                            });
+                          }}
+                        />
+                        <span>{t(opt.label, opt.value)}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <label className="checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={useIrregularOnly}
+                      onChange={(e) => setUseIrregularOnly(e.target.checked)}
+                      disabled={!selectedParts.includes("verb")}
+                    />
+                    <span>{t("games.irregularOnly", "Только неправильные (глаголы)")}</span>
+                  </label>
                 </div>
-                <label className="checkbox-row">
-                  <input
-                    type="checkbox"
-                    checked={useIrregularOnly}
-                    onChange={(e) => setUseIrregularOnly(e.target.checked)}
-                    disabled={!selectedParts.includes("verb")}
-                  />
-                  <span>{t("games.irregularOnly", "Только неправильные (глаголы)")}</span>
-                </label>
               </div>
 
               <div className="settings-card">
-                <h4>{t("games.difficulty", "Сложность")}</h4>
-                {settingsControls("modal-settings")}
+                <div className="settings-card__title">
+                  <span className="eyebrow">{t("games.difficulty", "Сложность")}</span>
+                  <span className="muted tiny">{t("games.difficultyHint", "Подберите комфортный темп игры")}</span>
+                </div>
+                <div className="settings-list compact">
+                  {settingsControls("modal-settings")}
+                </div>
                 <div className="settings-actions">
-                  <button className="start-btn" onClick={beginGame}>{t("games.start")}</button>
+                  <button className="start-btn big" onClick={beginGame}>{t("games.start")}</button>
                 </div>
               </div>
             </div>
@@ -602,17 +610,57 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
         .game-buttons { order: 3; display: flex; gap: 0.5rem; align-items: center; }
         .source-select { position: relative; }
         .source-select > button { min-width: 140px; }
-        .source-dropdown { position: absolute; top: calc(100% + 10px); left: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1rem; min-width: 280px; box-shadow: 0 24px 60px rgba(0,0,0,0.14); z-index: 20; display: grid; gap: 0.5rem; }
-        .source-dropdown .checkbox-row { display: flex; gap: 0.5rem; align-items: center; font-size: 0.95rem; }
-        .source-dropdown .checkbox-row input { width: 16px; height: 16px; }
-        .source-dropdown .divider { height: 1px; background: #e2e8f0; margin: 0.25rem 0; }
-        .source-dropdown .parts-grid { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); gap: 0.25rem 0.75rem; }
-        .source-dropdown p { margin: 0; }
-        .settings-window { max-width: 900px; }
-        .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
-        .settings-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; background: #f8fafc; display: grid; gap: 0.6rem; }
-        .settings-card h4 { margin: 0; }
-        .settings-actions { display: flex; justify-content: flex-end; }
+        .settings-window {
+          max-width: 960px;
+          width: min(96vw, 980px);
+          padding: 1.75rem;
+          background:
+            radial-gradient(120% 120% at 10% 10%, rgba(88,190,255,0.12), transparent 35%),
+            radial-gradient(100% 140% at 90% 0%, rgba(255,255,255,0.08), transparent 40%),
+            linear-gradient(140deg, #0c1934 0%, #0f2950 45%, #0f3f69 100%);
+          color: #f7fbff;
+          border-radius: 22px;
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: 0 24px 70px rgba(0,0,0,0.35);
+        }
+        .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.2rem; margin-top: 1rem; align-items: start; }
+        .settings-card {
+          border: 1px solid rgba(255,255,255,0.14);
+          border-radius: 16px;
+          padding: 1rem;
+          background: linear-gradient(155deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04));
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          backdrop-filter: blur(8px);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+        .settings-card.difficulty { background: linear-gradient(170deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02)); }
+        .settings-card__title { display: flex; flex-direction: column; gap: 0.15rem; }
+        .settings-list { display: grid; gap: 0.5rem; }
+        .settings-list.compact .game-settings { padding: 0; gap: 0.6rem; }
+        .settings-actions { display: flex; justify-content: flex-end; margin-top: auto; }
+        .settings-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+        .settings-header .eyebrow { color: #8ec5ff; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.75rem; margin: 0; }
+        .settings-header h3 { margin: 0.1rem 0 0; font-size: 1.25rem; font-weight: 700; }
+        .eyebrow { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.75rem; color: #64748b; }
+        .muted.tiny { font-size: 0.85rem; color: #cbd5e1; }
+        .game-settings.modal-settings { padding: 0; gap: 0.6rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+        .settings-window .checkbox-row span { color: #f7fbff; }
+        .settings-window .muted.small { color: #cbd5e1; }
+        .settings-window .divider { background: rgba(255,255,255,0.12); margin: 0.35rem 0; }
+        .settings-window .parts-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+        .settings-window .close-btn.dark { background: rgba(255,255,255,0.16); color: #fff; border: 1px solid rgba(255,255,255,0.24); width: 42px; height: 42px; }
+        .settings-window .game-settings label { flex-direction: column; align-items: flex-start; color: #f7fbff; }
+        .settings-window select { width: 100%; padding: 0.55rem 0.65rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); color: #f7fbff; }
+        .settings-window select option { color: #0f172a; }
+        .settings-card.difficulty .settings-list { gap: 0.75rem; }
+        .collapse-modal-window.settings-window { height: auto; max-height: 92vh; overflow-y: auto; }
+        .start-btn.big { min-width: 160px; }
+        .checkbox-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.65rem; border-radius: 12px; border: 1px solid transparent; transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease; }
+        .checkbox-row:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.14); transform: translateY(-1px); }
+        .checkbox-row input { width: 18px; height: 18px; accent-color: #5bd5ff; }
+        .checkbox-row span { font-weight: 600; letter-spacing: 0.01em; }
         .score.correct { color: var(--correct-color); }
         .score.incorrect { color: var(--incorrect-color); }
         .score.combo-couter { color: #ff7a45; font-weight: bold; }
@@ -676,15 +724,19 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
         .collapse-block.wrong { animation: wrong-match-shake 0.4s; background-color: var(--wrong-bg); border-color: var(--wrong-border); }
 
         @media (max-width: 768px) {
-            .collapse-game-header { flex-direction: column; align-items: stretch; }
+            .collapse-game-header { flex-direction: column; align-items: stretch; gap: 0.75rem; }
             .collapse-game-scores { order: 1; }
             .game-settings { order: 2; flex-direction: column; align-items: stretch; width: 100%; }
-            .game-settings label { display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0; }
-            .game-settings select { min-width: 150px; padding: 4px; }
-            .game-buttons { order: 3; display: flex; justify-content: center; margin-top: 1rem; }
-            .source-dropdown { position: fixed; inset: auto 0 0 0; margin: 0.5rem; min-width: auto; max-height: 70vh; overflow-y: auto; }
-            .source-dropdown .parts-grid { grid-template-columns: repeat(2, minmax(110px, 1fr)); }
-            .collapse-modal-window { padding: 1rem; }
+            .game-settings label { display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; padding: 0.25rem 0; }
+            .game-settings select { min-width: 100%; padding: 0.5rem; }
+            .game-buttons { order: 3; display: flex; justify-content: center; margin-top: 0.75rem; }
+            .collapse-modal-window { padding: 1rem; width: 96vw; height: 90vh; }
+            .collapse-modal-window.settings-window { width: calc(100% - 1.2rem); max-height: 90vh; padding: 1.2rem; }
+            .settings-header { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+            .settings-grid { grid-template-columns: 1fr; }
+            .settings-card { padding: 0.9rem; }
+            .parts-grid { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+            .start-btn.big { width: 100%; }
             .collapse-block { font-size: 12px; }
         }
 
