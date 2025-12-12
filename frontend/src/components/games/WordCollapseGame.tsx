@@ -71,9 +71,9 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   const { t, i18n } = useTranslation();
   const [status, setStatus] = useState<GameStatus>("pre-game");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [pendingStart, setPendingStart] = useState(false);
   const [isMusicOn, setIsMusicOn] = useState(true);
-  const [isSourceMenuOpen, setIsSourceMenuOpen] = useState(false);
   const [useGlossary, setUseGlossary] = useState(true);
   const [selectedParts, setSelectedParts] = useState<string[]>([]);
   const [useIrregularOnly, setUseIrregularOnly] = useState(false);
@@ -385,7 +385,12 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   }, []);
 
   const handleStart = () => {
+    setIsSettingsOpen(true);
+  };
+
+  const beginGame = () => {
     resetGameState();
+    setIsSettingsOpen(false);
     setIsModalOpen(true);
     setPendingStart(true);
     setStatus("running");
@@ -456,61 +461,77 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
           <h3>WordCollaps</h3>
           <p className="muted small">{t('games.wordCollapseHint', 'Игра откроется во всплывающем окне — соединяйте норвежские и переводные блоки.')}</p>
         </div>
-        {settingsControls("launcher-settings")}
-        <div className="source-select">
-          <button
-            type="button"
-            className="ghost-btn"
-            onClick={() => setIsSourceMenuOpen((prev) => !prev)}
-          >
-            {t("games.wordSources", "Выбор слов")} ▾
-          </button>
-          {isSourceMenuOpen && (
-            <div className="source-dropdown">
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={useGlossary}
-                  onChange={(e) => setUseGlossary(e.target.checked)}
-                />
-                <span>{t("games.sourceGlossary", "Глоссарий")}</span>
-              </label>
-              <div className="divider" />
-              <p className="muted small">{t("games.partsOfSpeech", "Части речи")}</p>
-              <div className="parts-grid">
-                {partOptions.map((opt) => (
-                  <label key={opt.value} className="checkbox-row">
-                    <input
-                      type="checkbox"
-                      checked={selectedParts.includes(opt.value)}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setSelectedParts((prev) => {
-                          if (checked) return [...prev, opt.value];
-                          return prev.filter((val) => val !== opt.value);
-                        });
-                      }}
-                    />
-                    <span>{t(opt.label, opt.value)}</span>
-                  </label>
-                ))}
-              </div>
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={useIrregularOnly}
-                  onChange={(e) => setUseIrregularOnly(e.target.checked)}
-                  disabled={!selectedParts.includes("verb")}
-                />
-                <span>{t("games.irregularOnly", "Только неправильные (глаголы)")}</span>
-              </label>
-            </div>
-          )}
-        </div>
         <div className="game-buttons">
-            <button className="start-btn" onClick={handleStart} disabled={isModalOpen}>{t("games.start")}</button>
+            <button className="start-btn" onClick={handleStart} disabled={isModalOpen || isSettingsOpen}>{t("games.settings", "Настройки")}</button>
         </div>
       </div>
+
+      {isSettingsOpen && (
+        <div className="collapse-game-modal" role="dialog" aria-modal="true">
+          <div className="collapse-modal-backdrop" />
+          <div className="collapse-modal-window settings-window">
+            <div className="collapse-game-header">
+              <div className="collapse-modal-title">
+                <h3>{t("games.settings", "Настройки")}</h3>
+                <p className="muted small">{t("games.settingsHint", "Выберите источники слов и сложность перед стартом.")}</p>
+              </div>
+              <div className="game-buttons">
+                <button className="close-btn" onClick={beginGame} aria-label={t('games.start', 'Start')}>×</button>
+              </div>
+            </div>
+            <div className="settings-grid">
+              <div className="settings-card">
+                <h4>{t("games.wordSources", "Выбор слов")}</h4>
+                <div className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={useGlossary}
+                    onChange={(e) => setUseGlossary(e.target.checked)}
+                  />
+                  <span>{t("games.sourceGlossary", "Глоссарий")}</span>
+                </div>
+                <div className="divider" />
+                <p className="muted small">{t("games.partsOfSpeech", "Части речи")}</p>
+                <div className="parts-grid">
+                  {partOptions.map((opt) => (
+                    <label key={opt.value} className="checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={selectedParts.includes(opt.value)}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setSelectedParts((prev) => {
+                            if (checked) return [...prev, opt.value];
+                            return prev.filter((val) => val !== opt.value);
+                          });
+                        }}
+                      />
+                      <span>{t(opt.label, opt.value)}</span>
+                    </label>
+                  ))}
+                </div>
+                <label className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={useIrregularOnly}
+                    onChange={(e) => setUseIrregularOnly(e.target.checked)}
+                    disabled={!selectedParts.includes("verb")}
+                  />
+                  <span>{t("games.irregularOnly", "Только неправильные (глаголы)")}</span>
+                </label>
+              </div>
+
+              <div className="settings-card">
+                <h4>{t("games.difficulty", "Сложность")}</h4>
+                {settingsControls("modal-settings")}
+                <div className="settings-actions">
+                  <button className="start-btn" onClick={beginGame}>{t("games.start")}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isModalOpen && (
         <div className="collapse-game-modal" role="dialog" aria-modal="true">
@@ -587,6 +608,11 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
         .source-dropdown .divider { height: 1px; background: #e2e8f0; margin: 0.25rem 0; }
         .source-dropdown .parts-grid { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); gap: 0.25rem 0.75rem; }
         .source-dropdown p { margin: 0; }
+        .settings-window { max-width: 900px; }
+        .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+        .settings-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; background: #f8fafc; display: grid; gap: 0.6rem; }
+        .settings-card h4 { margin: 0; }
+        .settings-actions { display: flex; justify-content: flex-end; }
         .score.correct { color: var(--correct-color); }
         .score.incorrect { color: var(--incorrect-color); }
         .score.combo-couter { color: #ff7a45; font-weight: bold; }
