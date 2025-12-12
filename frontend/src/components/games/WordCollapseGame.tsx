@@ -639,6 +639,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
                   <div
                     key={block.id}
                     className={`collapse-block ${selectedBlockId === block.id ? "selected" : ""} ${block.isMatched ? "matched" : ""} ${block.isWrong ? "wrong" : ""} ${block.role} ${block.bonusType || ''}`}
+                    data-bonus={block.bonusType ? block.bonusType.toUpperCase() : undefined}
                     style={{ left: `${block.x}px`, top: `${block.y}px`, width: `${gameSize.blockWidth}px`, height: `${BLOCK_HEIGHT}px` }}
                     onClick={() => handleBlockClick(block.id)}
                   >
@@ -653,7 +654,19 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
       )}
        <style>{`
         :root {
-          --game-bg: #f0f4f8; --block-bg-nor: #ffffff; --block-border-nor: #c2d1e0; --block-bg-tr: #e6f7ff; --block-border-tr: #91d5ff; --selected-bg: #e8fff0; --selected-border: #34d399; --selected-color: #065f46; --wrong-bg: #ffe5e5; --wrong-border: #f87171; --correct-color: #52c41a; --incorrect-color: #f5222d; --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+          --game-bg: #f0f4f8;
+          --block-bg-nor: #eef5ff;
+          --block-border-nor: #b4cff6;
+          --block-bg-tr: #fff3e8;
+          --block-border-tr: #f2c6a0;
+          --selected-bg: #e7f7ef;
+          --selected-border: #34d399;
+          --selected-color: #0f5132;
+          --wrong-bg: #ffe5e5;
+          --wrong-border: #f87171;
+          --correct-color: #2f9b2f;
+          --incorrect-color: #f5222d;
+          --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
         }
         .collapse-game { font-family: var(--font-family); }
         .collapse-launcher { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; }
@@ -756,24 +769,58 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
           animation: pulse-freeze 2s infinite;
         }
         .collapse-block {
-          position: absolute; display: flex; align-items: center; justify-content: center; font-size: 14px; text-align: center; padding: 2px; box-sizing: border-box; cursor: pointer; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: top 0.1s linear, left 0.1s linear, background-color 0.2s, border-color 0.2s; animation: fall-in 0.3s ease-out;
+          position: absolute;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 15px;
+          line-height: 1.25;
+          text-align: center;
+          padding: 6px 8px;
+          box-sizing: border-box;
+          cursor: pointer;
+          border-radius: 12px;
+          box-shadow: 0 6px 18px rgba(15,23,42,0.12), 0 1px 0 rgba(255,255,255,0.6) inset;
+          transition: top 0.1s linear, left 0.1s linear, background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+          animation: fall-in 0.25s ease-out;
+          text-shadow: 0 1px 1px rgba(255,255,255,0.6);
+          word-break: break-word;
         }
-        .collapse-block.bonus.freeze { background-color: #a0e9ff; border: 2px solid #74d9ff; font-size: 24px; }
-        .collapse-block.bonus.bomb { background-color: #ffe0b3; border: 2px solid #ff9900; font-size: 22px; }
+        .collapse-block:hover { transform: translateY(-1px) scale(1.01); }
+        .collapse-block:active { transform: translateY(1px) scale(0.99); }
+        .collapse-block.bonus.freeze { background-color: #a0e9ff; border: 2px solid #74d9ff; font-size: 22px; box-shadow: 0 8px 18px rgba(80,196,255,0.35); }
+        .collapse-block.bonus.bomb { background-color: #ffe0b3; border: 2px solid #ff9900; font-size: 22px; box-shadow: 0 8px 18px rgba(255,153,0,0.3); }
+        .collapse-block.bonus::after {
+          content: attr(data-bonus);
+          position: absolute;
+          top: 6px;
+          left: 6px;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 2px 6px;
+          border-radius: 999px;
+          background: rgba(0,0,0,0.1);
+          color: #0f172a;
+        }
         .collapse-block i { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; border-radius: 50%; opacity: 0; }
-        .collapse-block.nor { background-color: var(--block-bg-nor); border: 2px solid var(--block-border-nor); }
-        .collapse-block.tr { background-color: var(--block-bg-tr); border: 2px solid var(--block-border-tr); }
+        .collapse-block.nor { background-color: var(--block-bg-nor); border: 2px solid var(--block-border-nor); color: #0f172a; }
+        .collapse-block.tr { background-color: var(--block-bg-tr); border: 2px solid var(--block-border-tr); color: #1f2937; }
         .collapse-block.nor.matched i { background: var(--block-border-nor); }
         .collapse-block.tr.matched i { background: var(--block-border-tr); }
-        .collapse-block.selected { border-color: var(--selected-border); background-color: var(--selected-bg); color: var(--selected-color); }
+        .collapse-block.selected {
+          border-color: var(--selected-border);
+          background-color: var(--selected-bg);
+          color: var(--selected-color);
+          box-shadow: 0 6px 16px rgba(52,211,153,0.25), 0 1px 0 rgba(255,255,255,0.6) inset;
+        }
         .collapse-block.matched { background: transparent !important; border-color: transparent !important; color: transparent !important; box-shadow: none !important; }
-        .collapse-block.matched i:nth-child(1) { animation: shatter-1 5s forwards; }
-        .collapse-block.matched i:nth-child(2) { animation: shatter-2 5s forwards; }
-        .collapse-block.matched i:nth-child(3) { animation: shatter-3 5s forwards; }
-        .collapse-block.matched i:nth-child(4) { animation: shatter-4 5s forwards; }
-        .collapse-block.matched i:nth-child(5) { animation: shatter-5 5s forwards; }
-        .collapse-block.matched i:nth-child(6) { animation: shatter-6 5s forwards; }
-        .collapse-block.wrong { animation: wrong-match-shake 0.4s; background-color: var(--wrong-bg); border-color: var(--wrong-border); }
+        .collapse-block.matched i:nth-child(1) { animation: shatter-1 3s forwards; }
+        .collapse-block.matched i:nth-child(2) { animation: shatter-2 3s forwards; }
+        .collapse-block.matched i:nth-child(3) { animation: shatter-3 3s forwards; }
+        .collapse-block.matched i:nth-child(4) { animation: shatter-4 3s forwards; }
+        .collapse-block.matched i:nth-child(5) { animation: shatter-5 3s forwards; }
+        .collapse-block.matched i:nth-child(6) { animation: shatter-6 3s forwards; }
+        .collapse-block.wrong { animation: wrong-match-shake 0.4s; background-color: var(--wrong-bg); border-color: var(--wrong-border); box-shadow: 0 6px 14px rgba(248,113,113,0.25); }
 
         @media (max-width: 768px) {
             .collapse-game-header { flex-direction: column; align-items: stretch; gap: 0.75rem; }
