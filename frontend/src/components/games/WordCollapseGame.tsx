@@ -473,6 +473,14 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     setIsModalOpen(false);
   };
 
+  const handleRestart = () => {
+    resetGameState();
+    setStatus("running");
+    setPendingStart(true);
+    setIsModalOpen(true);
+    startMusic();
+  };
+
   const speedOptions: { value: SpawnSpeed; label: string }[] = [
     { value: 12000, label: t('games.speedSuperSlow', 'Super Slow') },
     { value: 10000, label: t('games.speedVerySlow', 'Very Slow') },
@@ -654,6 +662,9 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
                 <h4>{t('games.gameOver', "Game Over")}</h4>
                 <p>{t('games.finalScore', "Final Score")}: {score}</p>
                 <p>{t('games.incorrectCount', "Mistakes")}: {incorrectScore}</p>
+                <div className="game-over-actions">
+                  <button className="start-btn" onClick={handleRestart}>{t('games.restart', "Сыграть ещё")}</button>
+                </div>
             </div>}
 
             {status !== "running" && settingsControls("modal-settings")}
@@ -775,6 +786,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
         .collapse-modal-title h3 { margin: 0; }
         .collapse-game-frame { width: 100%; margin-top: 0.5rem; flex: 1; min-height: 65vh; max-height: calc(95vh - 160px); }
         .game-over-message { text-align: center; padding: 2rem; background-color: #fff1f0; border: 1px solid var(--incorrect-color); border-radius: 8px; margin-top: 1rem; }
+        .game-over-actions { margin-top: 1rem; display: flex; justify-content: center; gap: 0.5rem; }
         .collapse-game-area {
           position: relative; border: 1px solid #d9d9d9; overflow: hidden; margin-top: 1rem; border-radius: 8px;
         }
