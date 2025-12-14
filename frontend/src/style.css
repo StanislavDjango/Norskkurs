@@ -1222,17 +1222,28 @@ h2 {
   gap: 12px;
 }
 
+.falling-game--v2 {
+  gap: 10px;
+}
+
 .falling-game-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+.falling-game-title h3 {
+  margin: 0;
 }
 
 .falling-game-controls {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .falling-speed-label {
@@ -1241,79 +1252,241 @@ h2 {
   gap: 6px;
   font-size: 0.85rem;
   color: #64748b;
+  white-space: nowrap;
 }
 
 .falling-speed-label select {
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid rgba(148, 163, 184, 0.6);
   background: #ffffff;
   font-size: 0.85rem;
 }
 
+.falling-game-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 8px;
+}
+
+.falling-stat {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 56px;
+}
+
+.falling-stat strong {
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
 .falling-game-area {
   position: relative;
-  height: 320px;
-  border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  background: radial-gradient(circle at 0 0, rgba(59, 130, 246, 0.05), transparent 55%),
-    radial-gradient(circle at 100% 0, rgba(56, 189, 248, 0.08), transparent 55%),
-    #f8fafc;
+  height: 340px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background:
+    radial-gradient(circle at 0 0, rgba(59, 130, 246, 0.10), transparent 60%),
+    radial-gradient(circle at 100% 0, rgba(56, 189, 248, 0.12), transparent 55%),
+    radial-gradient(circle at 50% 100%, rgba(34, 197, 94, 0.10), transparent 55%),
+    linear-gradient(180deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%);
   overflow: hidden;
+}
+
+.falling-game-area--v2::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(to right, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.falling-game--hit .falling-game-area--v2 {
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.22);
+}
+
+.falling-game--miss .falling-game-area--v2 {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.22);
 }
 
 .falling-word {
   position: absolute;
-  top: -15%;
-  transform: translateX(-50%);
-  padding: 6px 12px;
+  top: 0;
+  transform: translate3d(-50%, 0, 0);
+  padding: 7px 12px;
   border-radius: 999px;
-  border: none;
-  background: #0ea5e9;
-  color: #f9fafb;
-  font-weight: 600;
-  cursor: pointer;
+  border: 1px solid rgba(2, 132, 199, 0.25);
+  background: linear-gradient(180deg, rgba(14, 165, 233, 1) 0%, rgba(2, 132, 199, 1) 100%);
+  color: #f8fafc;
+  font-weight: 700;
+  cursor: default;
   white-space: nowrap;
-  animation-name: falling-word-move;
-  animation-timing-function: linear;
-  animation-fill-mode: forwards;
+  user-select: none;
+  box-shadow: 0 10px 24px rgba(2, 132, 199, 0.18);
+  max-width: min(80vw, 440px);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.falling-word:hover {
-  background: #0284c7;
+.falling-word--target {
+  border-color: rgba(250, 204, 21, 0.65);
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.18), 0 10px 24px rgba(2, 132, 199, 0.18);
 }
 
-.falling-translation {
-  display: inline-flex;
+.falling-word--caught {
+  border-color: rgba(34, 197, 94, 0.38);
+  background: linear-gradient(180deg, rgba(34, 197, 94, 1) 0%, rgba(22, 163, 74, 1) 100%);
+  box-shadow: 0 10px 24px rgba(22, 163, 74, 0.18);
+}
+
+.falling-word--caught.falling-word--target {
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.18), 0 10px 24px rgba(22, 163, 74, 0.18);
+}
+
+.falling-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.03);
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  font-size: 0.95rem;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.05);
+  backdrop-filter: blur(4px);
+  z-index: 2;
 }
 
-.falling-translation .label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #94a3b8;
+.falling-overlay-card {
+  width: min(520px, 100%);
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.90);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  text-align: center;
 }
 
-.falling-translation .arrow {
-  color: #94a3b8;
+.falling-overlay-card h4 {
+  margin: 0 0 6px;
 }
 
-@keyframes falling-word-move {
-  from {
-    top: -15%;
-  }
-  to {
-    top: 110%;
-  }
+.falling-ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 58px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, 0.06) 55%, rgba(15, 23, 42, 0.10) 100%);
+  pointer-events: none;
 }
 
+.falling-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.falling-input-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: min(340px, 100%);
+}
+
+.falling-input-label input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: #ffffff;
+  font-size: 1rem;
+}
+
+.falling-input-label input:disabled {
+  background: rgba(248, 250, 252, 1);
+}
+
+.falling-hint {
+  margin: 0;
+}
+
+.falling-settings {
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.falling-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.falling-settings-card {
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(248, 250, 252, 0.8);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.falling-settings-card__title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.falling-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.falling-settings-list.compact {
+  gap: 10px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #0ea5e9;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(148, 163, 184, 0.35);
+  margin: 4px 0;
+}
+
+.parts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 6px;
+}
 .verb-modal__translations {
   display: flex;
   gap: 8px;
@@ -1661,6 +1834,10 @@ h2 {
   .falling-game-controls {
     flex-wrap: wrap;
     gap: 6px;
+  }
+
+  .falling-game-area {
+    height: 280px;
   }
 
   .tower-stats {

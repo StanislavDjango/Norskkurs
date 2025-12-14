@@ -132,4 +132,3 @@
   - добавлен health‑check и debug‑лог `cloudflared` в job;
   - текущая проблема — `websocket: bad handshake` от Access‑приложения `ssh.norskkurs.xyz`, причиной которого можно заняться позже через UI Cloudflare (Access Logs или Logpush).
 - Этот файл можно использовать как компактный конспект по состоянию CI‑деплоя и точку старта для следующего этапа настройки Cloudflare Access, когда будет время/желание довести GitHub Actions‑деплой до зелёного состояния.
-

@@ -5,8 +5,8 @@
 ## 1. Что было сделано
 
 - **Прочитана и учтена инфраструктурная документация:**
-  - `docs/deploy-status-2025-11-24.md` — базовый чек‑лист по автодеплою.
-  - `docs/deploy.md`, `README.md`, `docs/work-report-2025-11-24.md` — общая картина по CI/CD и прод‑стеку.
+  - `docs/reports/deploy-status-2025-11-24.md` — базовый чек‑лист по автодеплою.
+  - `docs/deploy.md`, `README.md`, `docs/reports/work-report-2025-11-24.md` — общая картина по CI/CD и прод‑стеку.
   - `~/codex reed/norskkurs.odt` и `~/secrets/norskkurs.txt` — справочник по токенам/ID (GitHub PAT, Cloudflare, Tailscale, SSH, Postgres).
 
 - **Извлечены и аккуратно использованы чувствительные данные (без вывода в лог):**
@@ -62,9 +62,9 @@
   - `docs/deploy.md`:
     - добавлена пометка, что для автодеплоя из CI требуется рабочий Access‑туннель и корректные `CF_ACCESS_CLIENT_ID`/`CF_ACCESS_CLIENT_SECRET`;
     - fallback через `DEPLOY_HOST`/`DEPLOY_PORT` описан как опция **только для ручных деплоев** с машин, имеющих доступ к серверу.
-  - `docs/deploy-status-2025-11-24.md`:
+  - `docs/reports/deploy-status-2025-11-24.md`:
     - уточнено, что из‑за блокировки прямого SSH провайдером вариант с `DEPLOY_HOST`/`DEPLOY_PORT` из CI нерабочий, и нужен Cloudflare Access.
-  - `docs/work-report-2025-11-24.md`:
+  - `docs/reports/work-report-2025-11-24.md`:
     - в разделе про Cloudflare SSH Access‑app добавлено, что реальный CI‑деплой должен идти через туннель `ssh.norskkurs.xyz`, а попытки прямого SSH с GitHub будут упираться в timeout.
 
 ## 2. Что не получилось и почему

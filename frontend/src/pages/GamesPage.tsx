@@ -99,6 +99,7 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
           stream={stream}
           currentLevel={currentLevel}
           playableTerms={playableTerms}
+          verbEntries={verbEntries}
         />
       )}
 
