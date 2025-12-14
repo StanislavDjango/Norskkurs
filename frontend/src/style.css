@@ -113,6 +113,10 @@ h2 {
   font-size: 0.9rem;
 }
 
+.tiny {
+  font-size: 0.85rem;
+}
+
 .layout {
   display: grid;
   grid-template-columns: 320px 1fr;
@@ -3150,4 +3154,548 @@ button.ghost {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ========== WORDCOLLAPS GAME ========== */
+.collapse-game {
+  --wc-board-bg: linear-gradient(
+      90deg,
+      rgba(14, 165, 233, 0.12) 0%,
+      rgba(14, 165, 233, 0.12) 50%,
+      rgba(180, 83, 9, 0.12) 50%,
+      rgba(180, 83, 9, 0.12) 100%
+    ),
+    #0b1220;
+  --wc-left-bg: #0b5cab;
+  --wc-right-bg: #7a4a24;
+  --wc-block-border: rgba(255, 255, 255, 0.18);
+  --wc-highlight: rgba(250, 204, 21, 0.9);
+  --wc-wrong: rgba(239, 68, 68, 0.65);
+  --wc-text: #f8fafc;
+}
+
+.collapse-launcher {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.collapse-launcher-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.collapse-game-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.collapse-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+}
+
+.collapse-modal-window {
+  position: relative;
+  z-index: 1000;
+  width: min(1100px, 96vw);
+  height: min(820px, 90vh);
+  padding: 1.2rem 1.4rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  outline: none;
+}
+
+.collapse-game-modal.fullscreen {
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.collapse-game-modal.fullscreen .collapse-modal-backdrop {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.collapse-game-modal.fullscreen .collapse-modal-window {
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  border-radius: 0;
+  padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
+    calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+}
+
+.collapse-game-modal.fullscreen .collapse-modal-window.settings-window {
+  width: 100vw;
+  max-width: 100vw;
+  max-height: 100vh;
+  border-radius: 0;
+}
+
+.collapse-modal-window.settings-window {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.collapse-game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.collapse-modal-title h3 {
+  margin: 0;
+}
+
+.collapse-game-scores {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  font-weight: 600;
+}
+
+.collapse-game-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.bomb-meter {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 220px;
+}
+
+.bomb-meter__label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-weight: 700;
+}
+
+.bomb-meter__bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+}
+
+.bomb-meter__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(250, 204, 21, 0.95), rgba(245, 158, 11, 0.95));
+  transition: width 180ms ease;
+}
+
+.collapse-game-frame {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.collapse-game-area {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: var(--wc-board-bg);
+}
+
+.collapse-block {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  padding: 6px 8px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  box-sizing: border-box;
+  cursor: pointer;
+  user-select: none;
+  word-break: break-word;
+  will-change: transform;
+  border: 2px solid var(--wc-block-border);
+  color: var(--wc-text);
+  box-shadow: 0 10px 22px rgba(2, 6, 23, 0.28);
+  transition: opacity 180ms ease, border-color 180ms ease, filter 180ms ease;
+}
+
+.collapse-block.left {
+  background: var(--wc-left-bg);
+}
+
+.collapse-block.right {
+  background: var(--wc-right-bg);
+}
+
+.collapse-block.selected {
+  border-color: var(--wc-highlight);
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.16), 0 10px 22px rgba(2, 6, 23, 0.28);
+}
+
+.collapse-block.hint {
+  border-color: var(--wc-highlight);
+  filter: brightness(1.08);
+}
+
+.collapse-block.dimmed {
+  opacity: 0.38;
+}
+
+.collapse-block.matched {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.collapse-block.wrong {
+  border-color: var(--wc-wrong);
+  background: rgba(239, 68, 68, 0.18);
+}
+
+.collapse-block.bonus.freeze {
+  background: rgba(14, 165, 233, 0.95);
+  border-color: rgba(255, 255, 255, 0.22);
+  font-size: 22px;
+}
+
+.collapse-block.bonus.bomb {
+  background: rgba(245, 158, 11, 0.92);
+  border-color: rgba(255, 255, 255, 0.22);
+  font-size: 22px;
+  color: #0b1220;
+}
+
+.collapse-block.bonus::after {
+  content: attr(data-bonus);
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.combo-animation {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: rgba(250, 204, 21, 0.92);
+  letter-spacing: 0.02em;
+  animation: wc-combo-pop 1.2s ease-out forwards;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.frozen-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(56, 189, 248, 0.16);
+  z-index: 50;
+  pointer-events: none;
+  animation: wc-pulse-freeze 3s infinite;
+}
+
+.pause-overlay,
+.tutorial-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(2, 6, 23, 0.35);
+  backdrop-filter: blur(6px);
+}
+
+.pause-card,
+.tutorial-card {
+  width: min(520px, 96%);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+}
+
+.tutorial-steps {
+  margin: 0.75rem 0 0;
+  padding-left: 1.25rem;
+  color: #0f172a;
+}
+
+.tutorial-content {
+  padding-top: 0.5rem;
+}
+
+.tutorial-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.settings-window {
+  color: #0f172a;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.2rem;
+  margin-top: 1rem;
+  align-items: start;
+}
+
+.settings-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1rem;
+  background: linear-gradient(155deg, #ffffff 0%, #f8fafc 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 10px 35px rgba(15, 23, 42, 0.08);
+}
+
+.settings-card__title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.settings-header h3 {
+  margin: 0.1rem 0 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.settings-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.collapse-modal-window.settings-window .settings-actions {
+  position: sticky;
+  bottom: 0;
+  padding-top: 12px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.92) 40%,
+    rgba(255, 255, 255, 0.92) 100%
+  );
+}
+
+.settings-warning {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(254, 226, 226, 0.7);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #991b1b;
+  font-weight: 600;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.checkbox-row:hover {
+  background: rgba(15, 23, 42, 0.04);
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+.checkbox-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: #38bdf8;
+}
+
+.checkbox-row span {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.game-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.collapse-launcher .game-buttons .start-btn {
+  padding: 12px 16px;
+}
+
+.game-settings {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.game-settings span {
+  font-weight: 700;
+}
+
+.game-settings select {
+  min-width: 180px;
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px;
+  border: 1px solid #d7dce3;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.parts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.5rem;
+}
+
+.divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 0.35rem 0;
+}
+
+.close-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 22px;
+  line-height: 1;
+  padding: 0;
+}
+
+.close-btn.dark {
+  background: #f8fafc;
+}
+
+.start-btn {
+  background: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.5);
+  color: #ffffff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+.start-btn.big {
+  min-width: 160px;
+}
+
+@media (max-width: 768px) {
+  .collapse-game-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .collapse-game-meta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bomb-meter {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .game-settings {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .game-settings select {
+    min-width: 100%;
+  }
+
+  .collapse-block {
+    font-size: 14px;
+  }
+}
+
+@keyframes wc-combo-pop {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5) rotate(-12deg);
+    opacity: 0;
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(1.15) rotate(4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.9) rotate(10deg);
+    opacity: 0;
+  }
+}
+
+@keyframes wc-pulse-freeze {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0.5;
+  }
 }
