@@ -18,6 +18,7 @@
   `wsl -d Ubuntu bash -lc 'cd ~/Norskkurs && docker compose up --build -d'`.
 - Не использовать UNC-пути вида `\\wsl$\Ubuntu\home\strengerst\Norskkurs` как build context для Docker и Git-команд.
 - В PowerShell избегать связок через `&&` — вместо этого вызывать отдельные команды или запускать цепочку уже внутри `bash -lc '...'`.
+- Подробный runbook с типовыми ловушками (UNC + Windows/WSL Node): `docs/assistant-runbook.md`.
 
 ### Notes for assistants (tests & sandbox)
 - Codex работает в песочнице и не всегда видит реальное Python/Django-окружение (venv, direnv, Docker). Если `python backend/manage.py ...` или команды Django падают из-за отсутствия Python/БД, **не меняйте настройки проекта только ради песочницы**.
