@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -6,44 +6,36 @@ import Footer from "./components/Footer";
 import {
   fetchExercises,
   fetchExpressions,
-  fetchGlossary,
   fetchHomework,
   fetchMaterials,
-  fetchReadings,
   fetchProfile,
-  fetchProfileProgress,
-  fetchTestDetail,
-  fetchTests,
   loginProfile,
   logoutProfile,
   registerProfile,
-  submitTest,
   updateProfile,
   updateStreamLevel,
 } from "./api";
 import type {
-  AnswerPayload,
   Exercise,
   Expression,
-  GlossaryTerm,
   Homework,
   Material,
-  Reading,
-  Question,
-  QuestionReview,
   ProfileInfo,
-  ProfileProgress,
   Stream,
-  SubmissionResponse,
-  Test,
-  TestDetail,
   Level,
 } from "./types";
-import VerbsPage from "./pages/VerbsPage";
-import GlossaryPage from "./pages/GlossaryPage";
-import GamesPage from "./pages/GamesPage";
+const ReadingsPage = React.lazy(() => import("./pages/ReadingsPage"));
 
-const levelOrder: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4 };
+const TestsPage = React.lazy(() => import("./pages/TestsPage"));
+const ProfilePage = React.lazy(() => import("./pages/ProfilePage"));
+const GlossaryPage = React.lazy(() => import("./pages/GlossaryPage"));
+const GamesPage = React.lazy(() => import("./pages/GamesPage"));
+const VerbsPage = React.lazy(() => import("./pages/VerbsPage"));
+const MaterialsPage = React.lazy(() => import("./pages/MaterialsPage"));
+const ExercisesPage = React.lazy(() => import("./pages/ExercisesPage"));
+const HomeworkPage = React.lazy(() => import("./pages/HomeworkPage"));
+const ExpressionsPage = React.lazy(() => import("./pages/ExpressionsPage"));
+const ContactPage = React.lazy(() => import("./pages/ContactPage"));
 
 const normalizeVocabId = (id: string): string => {
   const parts = id.split("|");
@@ -99,13 +91,6 @@ type Section =
 
 const App = () => {
   const { t, i18n } = useTranslation();
-  const [tests, setTests] = useState<Test[]>([]);
-  const [selectedTest, setSelectedTest] = useState<TestDetail | null>(null);
-  const [answers, setAnswers] = useState<Record<number, AnswerPayload>>({});
-  const [summary, setSummary] = useState<SubmissionResponse["summary"] | null>(null);
-  const [review, setReview] = useState<QuestionReview[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState({
     name: "",
     email: "",
@@ -117,12 +102,6 @@ const App = () => {
     nativeLanguage: "",
   });
   const [auth, setAuth] = useState<ProfileInfo | null>(null);
-  const [filterMode, setFilterMode] = useState<"all" | "single" | "fill" | "mixed" | "exam">("all");
-  const [filterLevel, setFilterLevel] = useState<"all" | Level>("all");
-  const [search, setSearch] = useState("");
-  const [visibleCount, setVisibleCount] = useState(12);
-  const [missingQuestions, setMissingQuestions] = useState<Set<number>>(new Set());
-  const questionRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const [studentEmail, setStudentEmail] = useState("");
   const [isTeacher, setIsTeacher] = useState(false);
   const [stream, setStream] = useState<Stream>(() => {
@@ -149,17 +128,7 @@ const App = () => {
     }
   });
   const [expressionView, setExpressionView] = useState<"all" | "favorites">("all");
-  const [readings, setReadings] = useState<Reading[]>([]);
-  const [openTranslations, setOpenTranslations] = useState<Set<number>>(new Set());
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const [readingLookup, setReadingLookup] = useState("");
-  const [readingLookupResults, setReadingLookupResults] = useState<ReadingLookupRow[]>([]);
-  const [readingLookupLoading, setReadingLookupLoading] = useState(false);
-  const [readingLocales, setReadingLocales] =
-    useState<Record<number, "en" | "nb" | "nn" | "ru">>({});
-  const [activeReading, setActiveReading] = useState<Reading | null>(null);
-  const [readingTag, setReadingTag] = useState<string>("all");
-  const [readingTitleFilter, setReadingTitleFilter] = useState<string>("all");
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [profileAuthForm, setProfileAuthForm] = useState({
     name: "",
@@ -170,8 +139,6 @@ const App = () => {
   const [profileAuthError, setProfileAuthError] = useState<string | null>(null);
   const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
-  const [profileProgress, setProfileProgress] = useState<ProfileProgress | null>(null);
-  const [profileProgressLoading, setProfileProgressLoading] = useState(false);
   const [vocabFavorites, setVocabFavorites] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem("norskkurs_vocab_favs");
@@ -192,7 +159,6 @@ const App = () => {
 
   useEffect(() => {
     localStorage.setItem("norskkurs_level", currentLevel);
-    setFilterLevel(currentLevel);
   }, [currentLevel]);
 
   useEffect(() => {
@@ -213,17 +179,6 @@ const App = () => {
       // ignore storage errors
     }
   }, [expressionFavorites]);
-
-  useEffect(() => {
-    const params = {
-      student_email: studentEmail || undefined,
-      stream,
-      level: currentLevel,
-    };
-    fetchTests(params)
-      .then((data) => setTests([...data].sort((a, b) => levelOrder[a.level] - levelOrder[b.level])))
-      .catch(() => setError("Could not load tests"));
-  }, [studentEmail, stream, currentLevel]);
 
   useEffect(() => {
     fetchProfile()
@@ -273,7 +228,6 @@ const App = () => {
         }
         if (data.level) {
           setCurrentLevel(data.level);
-          setFilterLevel(data.level);
           localStorage.setItem("norskkurs_level", data.level);
         }
       })
@@ -289,103 +243,11 @@ const App = () => {
       stream,
       level: currentLevel,
     };
-    const readingParams = {
-      student_email: studentEmail || undefined,
-      level: currentLevel,
-    };
     fetchMaterials(params).then(setMaterials).catch(() => setMaterials([]));
     fetchHomework(params).then(setHomework).catch(() => setHomework([]));
     fetchExercises(params).then(setExercises).catch(() => setExercises([]));
     fetchExpressions(params).then(setExpressions).catch(() => setExpressions([]));
-    fetchReadings(readingParams)
-      .then((data) => {
-        setReadings(data);
-        setOpenTranslations(new Set());
-      })
-      .catch(() => {
-        setReadings([]);
-        setOpenTranslations(new Set());
-      });
   }, [stream, currentLevel, studentEmail]);
-
-  useEffect(() => {
-    const emailForProgress = (studentEmail || auth?.username || "").trim();
-    if (!emailForProgress) {
-      setProfileProgress(null);
-      return;
-    }
-    setProfileProgressLoading(true);
-    fetchProfileProgress({ email: emailForProgress })
-      .then((data) => {
-        setProfileProgress(data);
-      })
-      .catch(() => {
-        setProfileProgress(null);
-      })
-      .finally(() => {
-        setProfileProgressLoading(false);
-      });
-  }, [studentEmail, auth?.username]);
-
-  useEffect(() => {
-    setReadingTitleFilter("all");
-  }, [stream, currentLevel]);
-
-  useEffect(() => {
-    const query = readingLookup.trim();
-    if (!query) {
-      setReadingLookupResults([]);
-      setReadingLookupLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    const handle = setTimeout(() => {
-      if (cancelled) return;
-      setReadingLookupLoading(true);
-      fetchGlossary({ q: query })
-        .then((data) => {
-          if (cancelled) return;
-          setReadingLookupResults(buildReadingLookupRows(data));
-        })
-        .catch(() => {
-          if (cancelled) return;
-          setReadingLookupResults([]);
-        })
-        .finally(() => {
-          if (cancelled) return;
-          setReadingLookupLoading(false);
-        });
-    }, 300);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(handle);
-    };
-  }, [readingLookup, stream]);
-
-  const selectTest = async (slug: string) => {
-    setLoading(true);
-    setError(null);
-    setSummary(null);
-    setReview([]);
-    setMissingQuestions(new Set());
-    try {
-      const detail = await fetchTestDetail(slug, studentEmail ? { student_email: studentEmail } : undefined);
-      setSelectedTest(detail);
-      setAnswers(
-        detail.questions.reduce<Record<number, AnswerPayload>>((acc, q) => {
-          acc[q.id] = { question: q.id, selected_option: null, text_response: "" };
-          return acc;
-        }, {}),
-      );
-    } catch (e) {
-      console.error(e);
-      setError("Could not load test");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const persistStreamLevel = (payload: { stream?: Stream; level?: Level }) => {
     const emailForProfile = studentEmail || profile.email || auth?.username || "";
@@ -400,79 +262,7 @@ const App = () => {
 
   const handleLevelChange = (value: Level) => {
     setCurrentLevel(value);
-    setFilterLevel(value);
     persistStreamLevel({ level: value, stream });
-  };
-
-  const handleSelectOption = (questionId: number, value: number | null) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [questionId]: { ...(prev[questionId] || { question: questionId }), selected_option: value },
-    }));
-    setMissingQuestions((prev) => {
-      const next = new Set(prev);
-      next.delete(questionId);
-      return next;
-    });
-  };
-
-  const handleTextChange = (questionId: number, value: string) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [questionId]: { ...(prev[questionId] || { question: questionId }), text_response: value },
-    }));
-    setMissingQuestions((prev) => {
-      const next = new Set(prev);
-      next.delete(questionId);
-      return next;
-    });
-  };
-
-  const handleSubmit = async () => {
-    if (!selectedTest) return;
-    const unanswered = new Set<number>();
-    selectedTest.questions.forEach((q) => {
-      const ans = answers[q.id];
-      const hasAnswer =
-        q.question_type === "single"
-          ? !!ans?.selected_option
-          : !!ans?.text_response && ans.text_response.trim().length > 0;
-      if (!hasAnswer) unanswered.add(q.id);
-    });
-    if (unanswered.size > 0) {
-      setMissingQuestions(unanswered);
-      setError(t("allRequired"));
-      const firstId = Array.from(unanswered)[0];
-      const ref = questionRefs.current[firstId];
-      if (ref) {
-        ref.scrollIntoView({ behavior: "smooth", block: "center" });
-        ref.classList.add("shake");
-        setTimeout(() => ref.classList.remove("shake"), 800);
-      }
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const payload: AnswerPayload[] = selectedTest.questions.map((q) => ({
-        question: q.id,
-        selected_option: answers[q.id]?.selected_option ?? null,
-        text_response: answers[q.id]?.text_response ?? "",
-      }));
-      const res = await submitTest(selectedTest.slug, payload, {
-        ...profile,
-        locale: i18n.language,
-      });
-      setSummary(res.summary);
-      setReview(res.review || []);
-      setMissingQuestions(new Set());
-    } catch (e) {
-      console.error(e);
-      setError("Could not submit answers");
-    } finally {
-      setLoading(false);
-    }
   };
 
   const levelLabel = (level: string) => t(`levelLabel.${level}`);
@@ -502,107 +292,11 @@ const App = () => {
     [t],
   );
 
-  const questions = useMemo(() => selectedTest?.questions || [], [selectedTest]);
-
-  const filteredTests = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return tests
-      .filter((test) => {
-        if (filterLevel !== "all" && test.level !== filterLevel) return false;
-        switch (filterMode) {
-          case "single":
-            return test.question_mode === "single";
-          case "fill":
-            return test.question_mode === "fill";
-          case "mixed":
-            return test.question_mode === "mixed";
-          case "exam":
-            return ["B1", "B2"].includes(test.level) && test.question_mode !== "fill";
-          default:
-            return true;
-        }
-      })
-      .filter((test) => {
-        if (!term) return true;
-        return (
-          test.title.toLowerCase().includes(term) ||
-          test.description.toLowerCase().includes(term) ||
-          test.slug.toLowerCase().includes(term)
-        );
-      });
-  }, [tests, filterMode, filterLevel, search]);
-
-  const visibleTests = useMemo(() => filteredTests.slice(0, visibleCount), [filteredTests, visibleCount]);
-
-  const readingTags = useMemo(() => {
-    const set = new Set<string>();
-    readings.forEach((item) => {
-      (item.tags || []).forEach((tag) => set.add(tag));
-    });
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [readings]);
-
-  const readingTitleOptions = useMemo(
-    () =>
-      readings
-        .map((item) => {
-          const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
-            bokmaal: "nb",
-            nynorsk: "nn",
-            english: "en",
-          };
-
-          const titleVersions: Record<"en" | "nb" | "nn" | "ru", string> = {
-            en: item.title_en || (item.stream === "english" ? item.title : ""),
-            nb: item.title_nb || (item.stream === "bokmaal" ? item.title : ""),
-            nn: item.title_nn || (item.stream === "nynorsk" ? item.title : ""),
-            ru: item.title_ru || "",
-          };
-
-          const primaryLang = primaryLangByStream[stream];
-          const primaryTitle =
-            (titleVersions[primaryLang] || "").trim() || item.title;
-
-          return {
-            id: String(item.id),
-            title: primaryTitle,
-          };
-        })
-        .filter((option) => option.title.trim().length > 0)
-        .sort((a, b) => a.title.localeCompare(b.title)),
-    [readings, stream],
-  );
-
-  const filteredReadings = useMemo(() => {
-    let result = readings;
-
-    if (readingTag !== "all") {
-      result = result.filter((item) => (item.tags || []).includes(readingTag));
-    }
-
-    if (readingTitleFilter !== "all") {
-      const selectedId = Number(readingTitleFilter);
-      if (!Number.isNaN(selectedId)) {
-        result = result.filter((item) => item.id === selectedId);
-      }
-    }
-
-    return result;
-  }, [readings, readingTag, readingTitleFilter]);
-
-  const filteredExpressions = useMemo(() => {
-    if (expressionView === "all") return expressions;
-    if (expressionFavorites.length === 0) return [];
-    const favoriteSet = new Set(expressionFavorites);
-    return expressions.filter((expr) => favoriteSet.has(expr.id));
-    }, [expressions, expressionFavorites, expressionView]);
-
   const handleLogout = async () => {
     try {
       await logoutProfile();
       setAuth(null);
       setIsTeacher(false);
-      setProfileProgress(null);
     } catch (e) {
       console.error(e);
     }
@@ -654,7 +348,6 @@ const App = () => {
     }
     if (profileInfo.level) {
       setCurrentLevel(profileInfo.level);
-      setFilterLevel(profileInfo.level);
       localStorage.setItem("norskkurs_level", profileInfo.level);
     }
     if (email) {
@@ -877,589 +570,75 @@ const App = () => {
     });
   };
 
-  const renderReadingLookup = (variant: "toolbar" | "modal") => (
-    <div
-      className={
-        variant === "modal"
-          ? "readings-search readings-search--modal"
-          : "readings-search"
-      }
-    >
-      <label className="readings-search-label">
-        <span className="muted small">
-          {t("readings.lookupLabel")}
-        </span>
-        <input
-          type="search"
-          placeholder={t("glossarySearchPlaceholder")}
-          value={readingLookup}
-          onChange={(e) => setReadingLookup(e.target.value)}
-        />
-      </label>
-      {readingLookup.trim() && (
-        <div className="readings-search-results">
-          {readingLookupLoading ? (
-            <p className="muted small">{t("loading")}</p>
-          ) : (
-            readingLookupResults.slice(0, 5).map((row) => {
-              const query = readingLookup.trim();
-              const entries: { key: string; label: string; value: string }[] = [];
-              if (row.bokmaal) entries.push({ key: "nb", label: "NB", value: row.bokmaal });
-              if (row.nynorsk) entries.push({ key: "nn", label: "NN", value: row.nynorsk });
-              if (row.english) entries.push({ key: "en", label: "EN", value: row.english });
-              if (row.russian) entries.push({ key: "ru", label: "RU", value: row.russian });
-              return (
-                <div key={row.id} className="readings-search-result">
-                  <button
-                    type="button"
-                    className={`vocab-bookmark ${
-                      vocabFavorites.includes(row.id) ? "active" : ""
-                    }`}
-                    onClick={() => toggleVocabFavorite(row.id)}
-                    aria-label={
-                      vocabFavorites.includes(row.id)
-                        ? t("removeFavorite")
-                        : t("addFavorite")
-                    }
-                  >
-                    ★
-                  </button>
-                  <span className="muted small">
-                    {entries.map((entry, index) => (
-                      <React.Fragment key={entry.key}>
-                        {index > 0 && " · "}
-                        <strong>{entry.label}:</strong>{" "}
-                        {highlightMatch(entry.value, query)}
-                      </React.Fragment>
-                    ))}
-                  </span>
-                </div>
-              );
-            })
-          )}
-        </div>
-      )}
-    </div>
+  const testProfile = useMemo(
+    () => ({ name: profile.name, email: profile.email }),
+    [profile.name, profile.email],
   );
+
+  const setTestProfile = (
+    update: React.SetStateAction<{ name: string; email: string }>,
+  ) => {
+    setProfile((prev) => {
+      const current = { name: prev.name, email: prev.email };
+      const next = typeof update === "function" ? update(current) : update;
+      return { ...prev, ...next };
+    });
+  };
 
 
   const renderSectionContent = () => {
     switch (activeSection) {
       case "profile":
         return (
-          <>
-            <h2>{t("nav.dashboard")}</h2>
-            <div className="card">
-              <h3>{t("authProfile.profileTitle")}</h3>
-              <p className="muted small">{t("authProfile.profileHint")}</p>
-              <section className="profile">
-                <div>
-                  <label>{t("yourName")}</label>
-                  <input
-                    type="text"
-                    value={profile.name || auth?.display_name || ""}
-                    onChange={(e) =>
-                      setProfile((p) => ({ ...p, name: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <label>{t("yourEmail")}</label>
-                  <input
-                    type="email"
-                    value={
-                      profileProgress?.email ||
-                      studentEmail ||
-                      profile.email
-                    }
-                    readOnly
-                  />
-                </div>
-              </section>
-              <div className="actions">
-                <button
-                  type="button"
-                  className="ghost"
-                  onClick={handleProfileSave}
-                  disabled={!auth?.is_authenticated}
-                >
-                  {t("authProfile.saveProfile")}
-                </button>
-              </div>
-              {profileSaveSuccess && !profileAuthError && auth?.is_authenticated && (
-                <div className="alert small auth-success">
-                  {t("authProfile.saveSuccess")}
-                </div>
-              )}
-              {profileAuthError && (
-                <div className="alert small auth-error">{profileAuthError}</div>
-              )}
-            </div>
-            <div className="card">
-              <h3>{t("authProfile.personalDataTitle")}</h3>
-              <p className="muted small">{t("authProfile.personalDataHint")}</p>
-              <section className="profile">
-                <div>
-                  <label>{t("authProfile.lastName")}</label>
-                  <input
-                    type="text"
-                    value={profile.lastName}
-                    onChange={(e) =>
-                      setProfile((p) => ({ ...p, lastName: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <label>{t("authProfile.firstName")}</label>
-                  <input
-                    type="text"
-                    value={profile.firstName}
-                    onChange={(e) =>
-                      setProfile((p) => ({ ...p, firstName: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <label>{t("authProfile.middleName")}</label>
-                  <input
-                    type="text"
-                    value={profile.middleName}
-                    onChange={(e) =>
-                      setProfile((p) => ({ ...p, middleName: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <label>{t("authProfile.dateOfBirth")}</label>
-                  <input
-                    type="date"
-                    value={profile.dateOfBirth}
-                    onChange={(e) =>
-                      setProfile((p) => ({ ...p, dateOfBirth: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <label>{t("authProfile.learningLanguage")}</label>
-                  <input
-                    type="text"
-                    value={profile.learningLanguage}
-                    onChange={(e) =>
-                      setProfile((p) => ({
-                        ...p,
-                        learningLanguage: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div>
-                  <label>{t("authProfile.nativeLanguage")}</label>
-                  <input
-                    type="text"
-                    value={profile.nativeLanguage}
-                    onChange={(e) =>
-                      setProfile((p) => ({
-                        ...p,
-                        nativeLanguage: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </section>
-              <div className="actions">
-                <button
-                  type="button"
-                  className="ghost"
-                  onClick={handleProfileSave}
-                  disabled={!auth?.is_authenticated}
-                >
-                  {t("authProfile.savePersonal")}
-                </button>
-              </div>
-            </div>
-            <div className="card">
-              <h3>{t("summary.quickStart")}</h3>
-              <p className="muted small">{t("summary.quickHint")}</p>
-              {profileProgressLoading && (
-                <p className="muted small">{t("loading")}</p>
-              )}
-              {profileProgress && (
-                <div className="summary-grid profile-summary-grid">
-                  <div>
-                    <span className="label">{t("auth.testsTakenLabel")}</span>
-                    <strong>{profileProgress.tests_taken}</strong>
-                  </div>
-                  {profileProgress.last_submission && (
-                    <div>
-                      <span className="label">
-                        {t("auth.lastResultLabel")}
-                      </span>
-                      <strong>
-                        {Math.round(
-                          profileProgress.last_submission.percent,
-                        )}
-                        % — {profileProgress.last_submission.test_title}
-                      </strong>
-                    </div>
-                  )}
-                </div>
-              )}
-              {!profileProgress && !profileProgressLoading && (
-                <p className="muted small">{t("auth.noProgress")}</p>
-              )}
-            </div>
-            <div className="card">
-              <h3>{t("authProfile.favoritesTitle")}</h3>
-              <p className="muted small">{t("authProfile.favoritesHint")}</p>
-              <div className="summary-grid profile-summary-grid">
-                <div>
-                  <span className="label">
-                    {t("authProfile.favWordsLabel")}
-                  </span>
-                  <strong>{vocabFavorites.length}</strong>
-                  <div className="actions inline-actions">
-                    <button
-                      type="button"
-                      className="ghost small"
-                      disabled={vocabFavorites.length === 0}
-                      onClick={() => {
-                        setGlossaryInitialView("favorites");
-                        setActiveSection("glossary");
-                      }}
-                    >
-                      {t("authProfile.openVocab")}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <span className="label">
-                    {t("authProfile.favExpressionsLabel")}
-                  </span>
-                  <strong>{expressionFavorites.length}</strong>
-                  <div className="actions inline-actions">
-                    <button
-                      type="button"
-                      className="ghost small"
-                      disabled={expressionFavorites.length === 0}
-                      onClick={() => {
-                        setExpressionView("favorites");
-                        setActiveSection("expressions");
-                      }}
-                    >
-                      {t("authProfile.openExpressions")}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
+          <ProfilePage
+            auth={auth}
+            profile={profile}
+            setProfile={setProfile}
+            studentEmail={studentEmail}
+            profileAuthError={profileAuthError}
+            profileSaveSuccess={profileSaveSuccess}
+            onSaveProfile={handleProfileSave}
+            vocabFavoritesCount={vocabFavorites.length}
+            expressionFavoritesCount={expressionFavorites.length}
+            onOpenVocabFavorites={() => {
+              setGlossaryInitialView("favorites");
+              setActiveSection("glossary");
+            }}
+            onOpenExpressionsFavorites={() => {
+              setExpressionView("favorites");
+              setActiveSection("expressions");
+            }}
+          />
         );
       case "readings":
         return (
-          <>
-            <div className="readings-toolbar">
-              <div className="readings-toolbar-header">
-                <h2>{t("nav.readings")}</h2>
-                <div className="readings-toolbar-actions">
-                  {readingTitleOptions.length > 0 && (
-                    <select
-                      className="glossary-tag-select readings-title-select"
-                      value={readingTitleFilter}
-                      onChange={(e) => setReadingTitleFilter(e.target.value)}
-                    >
-                      <option value="all">
-                        {t("readings.titleFilterAll")}
-                      </option>
-                      {readingTitleOptions.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.title}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  {readingTags.length > 0 && (
-                    <select
-                      className="glossary-tag-select"
-                      value={readingTag}
-                      onChange={(e) => setReadingTag(e.target.value)}
-                    >
-                      <option value="all">{t("tagAll")}</option>
-                      {readingTags.map((tag) => (
-                        <option key={tag} value={tag}>
-                          {tag}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  <button
-                    type="button"
-                    className="ghost small"
-                    onClick={() => {
-                      setGlossaryInitialView("favorites");
-                      setActiveSection("glossary");
-                    }}
-                  >
-                    {t("readings.myWordsButton")}
-                  </button>
-                </div>
-              </div>
-              {renderReadingLookup("toolbar")}
-            </div>
-            {filteredReadings.length === 0 ? (
-              <p className="muted">{t("readings.empty")}</p>
-            ) : (
-              <div className="card-list readings-list">
-                {filteredReadings.map((item) => {
-                  const isOpen = openTranslations.has(item.id);
-
-                  const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
-                    bokmaal: "nb",
-                    nynorsk: "nn",
-                    english: "en",
-                  };
-
-                  const versions: Record<"en" | "nb" | "nn" | "ru", string> = {
-                    en:
-                      item.stream === "english"
-                        ? item.body
-                        : item.translation_en,
-                    nb:
-                      item.stream === "bokmaal"
-                        ? item.body
-                        : item.translation_nb,
-                    nn:
-                      item.stream === "nynorsk"
-                        ? item.body
-                        : item.translation_nn,
-                    ru: item.translation_ru,
-                  };
-
-                  const titleVersions: Record<"en" | "nb" | "nn" | "ru", string> = {
-                    en:
-                      item.title_en ||
-                      (item.stream === "english" ? item.title : ""),
-                    nb:
-                      item.title_nb ||
-                      (item.stream === "bokmaal" ? item.title : ""),
-                    nn:
-                      item.title_nn ||
-                      (item.stream === "nynorsk" ? item.title : ""),
-                    ru: item.title_ru || "",
-                  };
-
-                  const primaryLang = primaryLangByStream[stream];
-                  const primaryBody = (versions[primaryLang] || "").trim() || item.body;
-                  const primaryTitle =
-                    (titleVersions[primaryLang] || "").trim() || item.title;
-
-                  if (!primaryBody) {
-                    return null;
-                  }
-
-                  const translations: {
-                    code: "en" | "nb" | "nn" | "ru";
-                    label: string;
-                    text: string;
-                  }[] = [];
-
-                  const langMeta: { code: "en" | "nb" | "nn" | "ru"; label: string }[] = [
-                    { code: "en", label: "EN" },
-                    { code: "nb", label: "NB" },
-                    { code: "nn", label: "NN" },
-                    { code: "ru", label: "RU" },
-                  ];
-
-                  langMeta.forEach(({ code, label }) => {
-                    if (code === primaryLang) {
-                      return;
-                    }
-                    translations.push({
-                      code,
-                      label,
-                      text: versions[code],
-                    });
-                  });
-
-                  const availableTranslations = translations.filter(
-                    (t) => t.text && t.text.trim().length > 0,
-                  );
-                  const storedLocale = readingLocales[item.id];
-                  const activeLocale =
-                    (storedLocale &&
-                      availableTranslations.find((t) => t.code === storedLocale)?.code) ||
-                    availableTranslations[0]?.code ||
-                    translations[0]?.code ||
-                    "en";
-
-                  const currentEntry = availableTranslations.find(
-                    (t) => t.code === activeLocale,
-                  );
-                  const currentText = currentEntry?.text || "";
-
-                  return (
-                    <article key={item.id} className="card">
-                      <div className="card-meta">
-                        <span className="badge">{streamLabel(stream)}</span>
-                        <span className="badge">{currentLevel}</span>
-                      </div>
-                      <h3>{primaryTitle}</h3>
-                      <div className="muted small">
-                        {primaryBody.split(/\n+/).map((para: string, idx: number) => (
-                          <p key={idx}>{para}</p>
-                        ))}
-                      </div>
-                      <div className="reading-actions">
-                        <button
-                          type="button"
-                          className="pill"
-                          onClick={() => setActiveReading(item)}
-                        >
-                          {t("readings.readButton")}
-                        </button>
-                        <button
-                          type="button"
-                          className="ghost"
-                          onClick={() => {
-                            setOpenTranslations((prev) => {
-                              const next = new Set(prev);
-                              if (next.has(item.id)) {
-                                next.delete(item.id);
-                              } else {
-                                next.add(item.id);
-                              }
-                              return next;
-                            });
-                          }}
-                        >
-                          {isOpen ? t("readings.hideTranslation") : t("readings.showTranslation")}
-                        </button>
-                      </div>
-                      {isOpen && (
-                        <div className="reading-translation">
-                          <div className="reading-translation-tabs">
-                            {translations.map((entry) => (
-                              <button
-                                key={entry.code}
-                                type="button"
-                                className={activeLocale === entry.code ? "active" : ""}
-                                onClick={() =>
-                                  setReadingLocales((prev) => ({
-                                    ...prev,
-                                    [item.id]: entry.code,
-                                  }))
-                                }
-                                disabled={!entry.text}
-                              >
-                                {entry.label}
-                              </button>
-                            ))}
-                          </div>
-                          <div className="muted small">
-                            {currentText
-                              ? currentText.split(/\n+/).map((para, idx) => <p key={idx}>{para}</p>)
-                              : t("readings.translationNotAvailable")}
-                          </div>
-                        </div>
-                      )}
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </>
+          <ReadingsPage
+            stream={stream}
+            currentLevel={currentLevel}
+            studentEmail={studentEmail}
+            vocabFavorites={vocabFavorites}
+            onToggleVocabFavorite={toggleVocabFavorite}
+            onOpenMyWords={() => {
+              setGlossaryInitialView("favorites");
+              setActiveSection("glossary");
+            }}
+            streamLabel={streamLabel}
+          />
         );
       case "materials":
-        return (
-          <>
-            <h2>{t("nav.materials")}</h2>
-            {materials.length === 0 ? (
-              <p className="muted">{t("emptyList")}</p>
-            ) : (
-              <div className="card-list">
-                {materials.map((item) => (
-                  <article key={item.id} className="card">
-                    <div className="card-meta">
-                      <span className="badge">{streamLabel(item.stream)}</span>
-                      <span className="badge">{item.level}</span>
-                      <span className="badge ghost">{item.material_type}</span>
-                    </div>
-                    <h3>{item.title}</h3>
-                    <p className="muted small">{item.body || item.url}</p>
-                    {item.url && (
-                      <a href={item.url} target="_blank" rel="noreferrer noopener" className="ghost small">
-                        {t("open")}
-                      </a>
-                    )}
-                  </article>
-                ))}
-              </div>
-            )}
-          </>
-        );
+        return <MaterialsPage materials={materials} streamLabel={streamLabel} />;
       case "exercises":
-        return (
-          <>
-            <h2>{t("nav.exercises")}</h2>
-            {exercises.length === 0 ? (
-              <p className="muted">{t("emptyList")}</p>
-            ) : (
-              <div className="card-list">
-                {exercises.map((item) => (
-                  <article key={item.id} className="card">
-                    <div className="card-meta">
-                      <span className="badge">{item.kind}</span>
-                      <span className="badge">{item.level}</span>
-                      <span className="badge">{streamLabel(item.stream)}</span>
-                    </div>
-                    <h3>{item.title}</h3>
-                    <p className="muted small">{item.prompt}</p>
-                    <p className="muted small">{t("estimated")}: {item.estimated_minutes} min</p>
-                  </article>
-                ))}
-              </div>
-            )}
-          </>
-        );
+        return <ExercisesPage exercises={exercises} streamLabel={streamLabel} />;
       case "homework":
         return (
-          <>
-            <h2>{t("nav.homework")}</h2>
-            <section className="card">
-              <h3>Mobile debug</h3>
-              <p className="muted small">
-                This block is rendered by React. If you see it on your phone,
-                JavaScript is running.
-              </p>
-              <p className="muted small">
-                Logged in as: <strong>{auth?.display_name || auth?.username || "anonymous"}</strong>
-              </p>
-              <p className="muted small">
-                Current stream: <strong>{streamLabel(stream)}</strong>, level:{" "}
-                <strong>{levelLabel(currentLevel)}</strong>
-              </p>
-              <p className="muted small">
-                Render time: <strong>{new Date().toLocaleString()}</strong>
-              </p>
-            </section>
-            {homework.length === 0 ? (
-              <p className="muted">{t("emptyList")}</p>
-            ) : (
-              <div className="card-list">
-                {homework.map((item) => (
-                  <article key={item.id} className="card">
-                    <div className="card-meta">
-                      <span className="badge">{streamLabel(item.stream)}</span>
-                      <span className="badge">{item.level}</span>
-                      {item.due_date && <span className="badge ghost">{new Date(item.due_date).toLocaleDateString()}</span>}
-                    </div>
-                    <h3>{item.title}</h3>
-                    <p className="muted small">{item.instructions}</p>
-                    <p className="muted small">{t("status")}: {item.status}</p>
-                  </article>
-                ))}
-              </div>
-            )}
-          </>
+          <HomeworkPage
+            homework={homework}
+            auth={auth}
+            stream={stream}
+            currentLevel={currentLevel}
+            streamLabel={streamLabel}
+            levelLabel={levelLabel}
+          />
         );
         case "partsOfSpeech":
           return (
@@ -1473,74 +652,14 @@ const App = () => {
           );
       case "expressions":
         return (
-          <>
-            <h2>{t("nav.expressions")}</h2>
-            {expressions.length > 0 && (
-              <div className="verbs-view-toggle expressions-view-toggle">
-                <button
-                  type="button"
-                  className={expressionView === "all" ? "active" : ""}
-                  onClick={() => setExpressionView("all")}
-                >
-                  {t("expressionTabs.all")}
-                </button>
-                <button
-                  type="button"
-                  className={expressionView === "favorites" ? "active" : ""}
-                  onClick={() => setExpressionView("favorites")}
-                  disabled={expressionFavorites.length === 0}
-                >
-                  {t("expressionTabs.favorites")} ({expressionFavorites.length})
-                </button>
-              </div>
-            )}
-            {filteredExpressions.length === 0 ? (
-              <p className="muted">{t("emptyList")}</p>
-            ) : (
-              <div className="card-list">
-                {filteredExpressions.map((expr) => (
-                  <article key={expr.id} className="card">
-                    <div className="card-meta expression-meta">
-                      <span className="badge">{streamLabel(expr.stream)}</span>
-                      <button
-                        type="button"
-                        className={`vocab-bookmark ${
-                          expressionFavorites.includes(expr.id) ? "active" : ""
-                        }`}
-                        onClick={() => toggleExpressionFavorite(expr.id)}
-                        aria-label={
-                          expressionFavorites.includes(expr.id)
-                            ? t("removeFavorite")
-                            : t("addFavorite")
-                        }
-                      >
-                        ★
-                      </button>
-                    </div>
-                    <h3>{expr.phrase}</h3>
-                    <p className="muted small">
-                      {(() => {
-                        const lang = i18n.language.startsWith("ru")
-                          ? "ru"
-                          : i18n.language.startsWith("nb") || i18n.language.startsWith("no")
-                          ? "nb"
-                          : "en";
-                        if (lang === "ru") return expr.meaning_ru;
-                        if (lang === "nb") {
-                          if (expr.stream === "nynorsk") {
-                            return expr.meaning_nn || expr.meaning_nb || expr.meaning_en;
-                          }
-                          return expr.meaning_nb || expr.meaning_en;
-                        }
-                        return expr.meaning_en || expr.meaning_nb || expr.meaning_ru;
-                      })()}
-                    </p>
-                    <p className="muted small">{expr.example}</p>
-                  </article>
-                ))}
-              </div>
-            )}
-          </>
+          <ExpressionsPage
+            expressions={expressions}
+            expressionFavorites={expressionFavorites}
+            expressionView={expressionView}
+            onChangeView={setExpressionView}
+            onToggleFavorite={toggleExpressionFavorite}
+            streamLabel={streamLabel}
+          />
         );
       case "games":
         return (
@@ -1557,16 +676,7 @@ const App = () => {
           />
         );
       case "contact":
-        return (
-          <div className="card">
-            <h2>{t("nav.contact")}</h2>
-            <p className="muted">{t("contactText")}</p>
-            <ul className="muted">
-              <li>{t("contactEmail")}: support@norskkurs.no</li>
-              <li>{t("contactFaq")}</li>
-            </ul>
-          </div>
-        );
+        return <ContactPage />;
       default:
         return null;
     }
@@ -1643,573 +753,37 @@ const App = () => {
           </div>
         </div>
       )}
-
-      {error && <div className="alert">{error}</div>}
-
-      {activeSection === "tests" ? (
-        <div className="layout">
-          <aside className="panel">
-            <h2>{t("selectTest")}</h2>
-            {!isTeacher && (
-              <div className="student-auth-card">{renderAuthFields()}</div>
-            )}
-            <div className="search-row">
-              <input
-                type="email"
-                placeholder="student@example.com"
-                value={studentEmail}
-                onChange={(e) => {
-                  setStudentEmail(e.target.value.trim());
-                }}
-                onBlur={() => setVisibleCount(12)}
-              />
-            </div>
-            <div className="search-row">
-              <input
-                type="search"
-                placeholder={t("searchPlaceholder")}
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setVisibleCount(12);
-                }}
-              />
-            </div>
-            <div className="filter-row level-row">
-              {(["all", "A1", "A2", "B1", "B2"] as const).map((lvl) => (
-                <button
-                  key={lvl}
-                  className={`pill ${filterLevel === lvl ? "pill--active" : ""}`}
-                  onClick={() => {
-                    setFilterLevel(lvl === "all" ? "all" : lvl);
-                    setVisibleCount(12);
-                  }}
-                >
-                  {lvl === "all" ? "All" : lvl}
-                </button>
-              ))}
-            </div>
-            <div className="filter-row">
-              {(["all", "single", "fill", "mixed", "exam"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  className={`pill ${filterMode === mode ? "pill--active" : ""}`}
-                  onClick={() => {
-                    setFilterMode(mode);
-                    setVisibleCount(12);
-                  }}
-                >
-                  {t(`filters.${mode}`)}
-                </button>
-              ))}
-            </div>
-            <div className="test-list">
-              {visibleTests.map((test) => (
-                <button
-                  key={test.slug}
-                  className={`test-card ${selectedTest?.slug === test.slug ? "selected" : ""}`}
-                  onClick={() => selectTest(test.slug)}
-                >
-                  <div className="test-card__title">
-                    <span className="badge">{test.level}</span>
-                    <span className={`mode mode-${test.question_mode}`}>{test.question_mode}</span>
-                    <span>{test.title}</span>
-                  </div>
-                  <p className="muted small">{test.description}</p>
-                  <div className="test-card__meta">
-                    <span>
-                      {test.question_count} {t("questions")}
-                    </span>
-                    <span>
-                      {t("estimated")}: {test.estimated_minutes} min
-                    </span>
-                  </div>
-                </button>
-              ))}
-              {visibleTests.length === 0 && (
-                <div className="muted small">{t("noTests")}</div>
-              )}
-            </div>
-            {visibleTests.length < filteredTests.length && (
-              <div className="load-more">
-                <span className="muted small">
-                  Showing {visibleTests.length} of {filteredTests.length}
-                </span>
-                <button className="ghost" onClick={() => setVisibleCount((n) => n + 12)}>
-                  Load more
-                </button>
-              </div>
-            )}
-          </aside>
-
-          <main className="panel">
-            {!selectedTest && (
-              <div className="placeholder">
-                <h2>{t("summary.quickStart")}</h2>
-                <p className="muted">{t("summary.quickHint")}</p>
-                {profileProgressLoading && (
-                  <p className="muted small">{t("loading")}</p>
-                )}
-                {profileProgress && (
-                  <div className="summary-grid profile-summary-grid">
-                    <div>
-                      <span className="label">{t("auth.testsTakenLabel")}</span>
-                      <strong>{profileProgress.tests_taken}</strong>
-                    </div>
-                    {profileProgress.last_submission && (
-                      <div>
-                        <span className="label">{t("auth.lastResultLabel")}</span>
-                        <strong>
-                          {Math.round(
-                            profileProgress.last_submission.percent,
-                          )}
-                          % — {profileProgress.last_submission.test_title}
-                        </strong>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {!profileProgress && !profileProgressLoading && (
-                  <p className="muted small">{t("auth.noProgress")}</p>
-                )}
-              </div>
-            )}
-
-            {selectedTest && (
-              <>
-                <div className="test-header">
-                  <div>
-                    <p className="muted small">
-                      {t("level")}: {levelLabel(selectedTest.level)}
-                    </p>
-                    <h2>{selectedTest.title}</h2>
-                    <p className="muted">{selectedTest.description}</p>
-                  </div>
-                  {summary && (
-                    <div className="summary">
-                      <h3>{t("resultTitle")}</h3>
-                      <div className="summary-grid">
-                        <div>
-                          <span className="label">{t("score")}</span>
-                          <strong>
-                            {summary.score}/{summary.total_questions}
-                          </strong>
-                        </div>
-                        <div>
-                          <span className="label">{t("percent")}</span>
-                          <strong>{summary.percent}%</strong>
-                        </div>
-                        <div>
-                          <span className="label">{t("correct")}</span>
-                          <strong>{summary.correct}</strong>
-                        </div>
-                        <div>
-                          <span className="label">{t("incorrect")}</span>
-                          <strong>{summary.incorrect}</strong>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <section className="profile">
-                  <div>
-                    <label>{t("yourName")}</label>
-                    <input
-                      type="text"
-                      value={profile.name}
-                      onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <label>{t("yourEmail")}</label>
-                    <input
-                      type="email"
-                      value={profile.email}
-                      onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
-                    />
-                  </div>
-                </section>
-
-                <section className="questions">
-                  {questions.map((question) => (
-                    <QuestionBlock
-                      key={question.id}
-                      ref={(el) => {
-                        questionRefs.current[question.id] = el;
-                      }}
-                      question={question}
-                      answer={answers[question.id]}
-                      missing={missingQuestions.has(question.id)}
-                      review={review.find((r) => r.question === question.id)}
-                      onSelectOption={handleSelectOption}
-                      onChangeText={handleTextChange}
-                    />
-                  ))}
-                </section>
-
-                <div className="actions">
-                  <button onClick={() => setSelectedTest(null)} className="ghost">
-                    {t("restart")}
-                  </button>
-                  <button disabled={loading} onClick={handleSubmit}>
-                    {loading ? t("loading") : t("submit")}
-                  </button>
-                </div>
-
-              </>
-            )}
-          </main>
-        </div>
-      ) : (
-        <div className="layout single-panel">
-          <main className="panel">{renderSectionContent()}</main>
-        </div>
-      )}
-      {activeReading && (
-        <div className="verb-modal" role="dialog" aria-modal="true">
-          <div
-            className="verb-modal__backdrop"
-            onClick={() => setActiveReading(null)}
-          />
-          <div className="verb-modal__card reading-modal-card">
-            <header>
-              <div>
-                <p className="muted small">
-                  {streamLabel(activeReading.stream)} ·{" "}
-                  {activeReading.level}
-                </p>
-                <h3>{activeReading.title}</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveReading(null)}
-                aria-label={t("close")}
-              >
-                ✕
-              </button>
-	            </header>
-	            <div className="reading-modal__body">
-	              {renderReadingLookup("modal")}
-	              <div className="reading-modal__text">
-	                {(() => {
-                  const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
-                    bokmaal: "nb",
-                    nynorsk: "nn",
-                    english: "en",
-                  };
-                  const versions: Record<"en" | "nb" | "nn" | "ru", string> = {
-                    en:
-                      activeReading.stream === "english"
-                        ? activeReading.body
-                        : activeReading.translation_en,
-                    nb:
-                      activeReading.stream === "bokmaal"
-                        ? activeReading.body
-                        : activeReading.translation_nb,
-                    nn:
-                      activeReading.stream === "nynorsk"
-                        ? activeReading.body
-                        : activeReading.translation_nn,
-                    ru: activeReading.translation_ru,
-                  };
-                  const primaryLang = primaryLangByStream[stream];
-                  const primaryBodyText = (versions[primaryLang] || "").trim() || activeReading.body;
-                  return primaryBodyText.split(/\n+/).map((para: string, idx: number) => (
-                    <p key={idx}>{para}</p>
-                  ));
-                })()}
-              </div>
-              <div className="reading-modal__translation reading-translation">
-                {(() => {
-                  const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
-                    bokmaal: "nb",
-                    nynorsk: "nn",
-                    english: "en",
-                  };
-
-                  const versions: Record<"en" | "nb" | "nn" | "ru", string> = {
-                    en:
-                      activeReading.stream === "english"
-                        ? activeReading.body
-                        : activeReading.translation_en,
-                    nb:
-                      activeReading.stream === "bokmaal"
-                        ? activeReading.body
-                        : activeReading.translation_nb,
-                    nn:
-                      activeReading.stream === "nynorsk"
-                        ? activeReading.body
-                        : activeReading.translation_nn,
-                    ru: activeReading.translation_ru,
-                  };
-
-                  const primaryLang = primaryLangByStream[stream];
-
-                  const translations: {
-                    code: "en" | "nb" | "nn" | "ru";
-                    label: string;
-                    text: string;
-                  }[] = [];
-
-                  const langMeta: { code: "en" | "nb" | "nn" | "ru"; label: string }[] = [
-                    { code: "en", label: "EN" },
-                    { code: "nb", label: "NB" },
-                    { code: "nn", label: "NN" },
-                    { code: "ru", label: "RU" },
-                  ];
-
-                  langMeta.forEach(({ code, label }) => {
-                    if (code === primaryLang) {
-                      return;
-                    }
-                    translations.push({
-                      code,
-                      label,
-                      text: versions[code],
-                    });
-                  });
-
-                  const availableTranslations = translations.filter(
-                    (t) => t.text && t.text.trim().length > 0,
-                  );
-                  const storedLocale = readingLocales[activeReading.id];
-                  const activeLocale =
-                    (storedLocale &&
-                      availableTranslations.find((t) => t.code === storedLocale)?.code) ||
-                    availableTranslations[0]?.code ||
-                    translations[0]?.code ||
-                    "en";
-
-                  const currentEntry = availableTranslations.find(
-                    (t) => t.code === activeLocale,
-                  );
-                  const currentText = currentEntry?.text || "";
-                  return (
-                    <>
-                      <div className="reading-translation-tabs">
-                        {translations.map((entry) => (
-                          <button
-                            key={entry.code}
-                            type="button"
-                            className={activeLocale === entry.code ? "active" : ""}
-                            onClick={() =>
-                              setReadingLocales((prev) => ({
-                                ...prev,
-                                [activeReading.id]: entry.code,
-                              }))
-                            }
-                            disabled={!entry.text}
-                          >
-                            {entry.label}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="muted small reading-modal__translation-body">
-                        {currentText
-                          ? currentText
-                              .split(/\n+/)
-                              .map((para, idx) => <p key={idx}>{para}</p>)
-                          : t("readings.translationNotAvailable")}
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
+      <React.Suspense
+        fallback={
+          <div className="layout single-panel">
+            <main className="panel">
+              <p className="muted">{t("loading")}</p>
+            </main>
           </div>
-        </div>
-      )}
+        }
+      >
+        {activeSection === "tests" ? (
+          <TestsPage
+            auth={auth}
+            isTeacher={isTeacher}
+            renderAuthFields={renderAuthFields}
+            stream={stream}
+            currentLevel={currentLevel}
+            studentEmail={studentEmail}
+            setStudentEmail={setStudentEmail}
+            levelLabel={levelLabel}
+            profile={testProfile}
+            setProfile={setTestProfile}
+          />
+        ) : (
+          <div className="layout single-panel">
+            <main className="panel">{renderSectionContent()}</main>
+          </div>
+        )}
+      </React.Suspense>
       <Footer />
     </div>
   );
 };
-
-type QuestionBlockProps = {
-  question: Question;
-  answer?: AnswerPayload;
-  missing?: boolean;
-  review?: QuestionReview;
-  onSelectOption: (questionId: number, value: number | null) => void;
-  onChangeText: (questionId: number, value: string) => void;
-};
-
-const QuestionBlock = React.forwardRef<HTMLDivElement, QuestionBlockProps>(
-  ({ question, answer, missing, review, onSelectOption, onChangeText }, ref) => {
-    const { t } = useTranslation();
-    const statusClass = review ? (review.is_correct ? "good" : "bad") : missing ? "missing" : "";
-    return (
-      <article className={`question ${statusClass}`} ref={ref}>
-        <div className="question-title">
-          <span className="badge">{question.question_type === "single" ? "MCQ" : "Fill"}</span>
-          <p>{question.text}</p>
-        </div>
-        {question.question_type === "single" ? (
-          <div className="options">
-            {question.options.map((opt) => (
-              <label key={opt.id} className="option">
-                <input
-                  type="radio"
-                  name={`q-${question.id}`}
-                  value={opt.id}
-                  checked={answer?.selected_option === opt.id}
-                  onChange={() => onSelectOption(question.id, opt.id)}
-                />
-                <span>{opt.text}</span>
-              </label>
-            ))}
-          </div>
-        ) : (
-          <input
-            type="text"
-            className="text-answer"
-            placeholder={t("answerPlaceholder")}
-            value={answer?.text_response || ""}
-            onChange={(e) => onChangeText(question.id, e.target.value)}
-          />
-        )}
-        {review && (
-          <div className={`question-review ${review.is_correct ? "good" : "bad"}`}>
-            <span className="badge">{review.is_correct ? t("correct") : t("incorrect")}</span>
-            <div className="review-row inline">
-              <span className="label">{t("yourAnswer")}:</span>
-              <span className="answer-text">
-                {review.selected_text && review.selected_text.trim() ? review.selected_text : "-"}
-              </span>
-            </div>
-            <div className="review-row inline">
-              <span className="label">{t("rightAnswer")}:</span>
-              <span className="answer-text">
-                {review.correct_answers.length ? review.correct_answers.join(", ") : "-"}
-              </span>
-            </div>
-            {review.explanation && (
-              <div className="review-row inline">
-                <span className="label">{t("explanation")}:</span>
-                <span className="answer-text">{review.explanation}</span>
-              </div>
-            )}
-          </div>
-        )}
-        {missing && !review && (
-          <div className="question-hint">{t("answerRequired")}</div>
-        )}
-      </article>
-    );
-  },
-);
-
-QuestionBlock.displayName = "QuestionBlock";
-
-type ReadingLookupRow = {
-  id: string;
-  term: string;
-  bokmaal: string;
-  nynorsk: string;
-  english: string;
-  russian: string;
-};
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function highlightMatch(text: string, query: string): React.ReactNode {
-  const trimmed = query.trim();
-  if (!trimmed) return text;
-  const safe = escapeRegExp(trimmed);
-  if (!safe) return text;
-  const regex = new RegExp(safe, "gi");
-  const matches = text.match(regex);
-  if (!matches) return text;
-
-  const parts = text.split(regex);
-  const result: React.ReactNode[] = [];
-
-  parts.forEach((part, index) => {
-    if (part) {
-      result.push(part);
-    }
-    const match = matches[index];
-    if (match) {
-      result.push(
-        <mark key={`${match}-${index}`} className="readings-search-highlight">
-          {match}
-        </mark>,
-      );
-    }
-  });
-
-  return result;
-}
-
-function buildReadingLookupRows(terms: GlossaryTerm[]): ReadingLookupRow[] {
-  const map = new Map<string, ReadingLookupRow>();
-  terms.forEach((term) => {
-    const conceptEn =
-      term.translation_en || (term.stream === "english" ? term.term : "");
-    const conceptNb =
-      term.translation_nb || (term.stream === "bokmaal" ? term.term : "");
-    const conceptNn =
-      term.translation_nn || (term.stream === "nynorsk" ? term.term : "");
-    const conceptRu = term.translation_ru || "";
-    const key = `${(conceptEn || "").toLowerCase()}|${(conceptNb || "")
-      .toLowerCase()
-      .trim()}|${(conceptNn || "").toLowerCase()}|${(conceptRu || "")
-      .toLowerCase()
-      .trim()}`;
-
-    if (!key.replace(/\|/g, "").trim()) {
-      return;
-    }
-
-    let row = map.get(key);
-    if (!row) {
-      row = {
-        id: key,
-        term:
-          conceptNb ||
-          term.term ||
-          conceptEn ||
-          conceptRu ||
-          term.term,
-        bokmaal: "",
-        nynorsk: "",
-        english: conceptEn || "",
-        russian: conceptRu || "",
-      };
-      map.set(key, row);
-    }
-
-    if (conceptNb) {
-      row.bokmaal = appendVariant(row.bokmaal, conceptNb);
-    }
-    if (conceptNn) {
-      row.nynorsk = appendVariant(row.nynorsk, conceptNn);
-    }
-    if (term.stream === "english") {
-      if (!row.english && (conceptEn || term.term)) {
-        row.english = conceptEn || term.term;
-      }
-    }
-    if (!row.russian && conceptRu) {
-      row.russian = conceptRu;
-    }
-  });
-
-  const result = Array.from(map.values());
-  result.sort((a, b) => a.term.localeCompare(b.term));
-  return result;
-}
-
-function appendVariant(current: string, value: string): string {
-  if (!value) return current;
-  if (!current) return value;
-  const parts = current.split(" / ");
-  if (parts.includes(value)) {
-    return current;
-  }
-  return `${current} / ${value}`;
-}
 
 export default App;

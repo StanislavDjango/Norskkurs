@@ -151,6 +151,21 @@ h2 {
   grid-template-columns: 1fr;
 }
 
+.readings-list .reading-excerpt {
+  color: #334155;
+  font-size: 1rem;
+  line-height: 1.7;
+  max-width: none;
+}
+
+.readings-list .reading-excerpt p {
+  margin: 0 0 0.9em;
+}
+
+.readings-list .reading-excerpt p:last-child {
+  margin-bottom: 0;
+}
+
 .reading-actions {
   display: flex;
   flex-wrap: wrap;
@@ -205,6 +220,41 @@ h2 {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.readings-toolbar-actions .readings-toolbar-control {
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  padding: 0 14px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: #0f172a;
+}
+
+.readings-toolbar-actions select.readings-toolbar-control {
+  cursor: pointer;
+}
+
+.readings-toolbar-actions button.readings-toolbar-control {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.readings-toolbar-actions button.readings-toolbar-control:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+.readings-toolbar-actions .readings-toolbar-control:hover:not(:disabled) {
+  background: rgba(14, 165, 233, 0.05);
+  border-color: rgba(148, 163, 184, 0.65);
+}
+
+.readings-toolbar-actions .readings-toolbar-control:focus-visible {
+  outline: none;
+  border-color: #0d7dfc;
+  box-shadow: 0 0 0 2px rgba(13, 125, 252, 0.15);
 }
 
 .readings-search {
@@ -350,12 +400,13 @@ h2 {
   width: 100%;
   padding: 10px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
   position: sticky;
   top: 0;
   z-index: 5;
+  backdrop-filter: blur(10px);
 }
 
 .section-nav .pill {
