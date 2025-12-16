@@ -663,7 +663,12 @@ const App = () => {
         );
       case "games":
         return (
-          <GamesPage stream={stream} currentLevel={currentLevel} />
+          <GamesPage
+            stream={stream}
+            currentLevel={currentLevel}
+            vocabFavorites={vocabFavorites}
+            onToggleVocabFavorite={toggleVocabFavorite}
+          />
         );
       case "glossary":
         return (

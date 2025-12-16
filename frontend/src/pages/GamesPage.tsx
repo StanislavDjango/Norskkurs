@@ -3,7 +3,10 @@ import { useTranslation } from "react-i18next";
 
 import { fetchExpressions, fetchGlossary, fetchVerbs } from "../api";
 import FallingWordsGame from "../components/games/FallingWordsGame";
+import CafeDialoguesGame from "../components/games/CafeDialoguesGame";
+import FjordExpeditionGame from "../components/games/FjordExpeditionGame";
 import MemoryPairsGame from "../components/games/MemoryPairsGame";
+import SentenceScrambleGame from "../components/games/SentenceScrambleGame";
 import WordCollapseGame from "../components/games/WordCollapseGame";
 import WordTowerGame from "../components/games/WordTowerGame";
 import type { Expression, GlossaryTerm, Level, Stream, VerbEntry } from "../types";
@@ -11,11 +14,25 @@ import type { Expression, GlossaryTerm, Level, Stream, VerbEntry } from "../type
 type Props = {
   stream: Stream;
   currentLevel: Level;
+  vocabFavorites: string[];
+  onToggleVocabFavorite: (id: string) => void;
 };
 
-type GameId = "fallingWords" | "wordTower" | "wordCollapse" | "memoryPairs";
+type GameId =
+  | "fallingWords"
+  | "cafeDialogues"
+  | "fjordExpedition"
+  | "sentenceScramble"
+  | "wordTower"
+  | "wordCollapse"
+  | "memoryPairs";
 
-const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
+const GamesPage: React.FC<Props> = ({
+  stream,
+  currentLevel,
+  vocabFavorites,
+  onToggleVocabFavorite,
+}) => {
   const { t } = useTranslation();
   const [terms, setTerms] = useState<GlossaryTerm[]>([]);
   const [verbEntries, setVerbEntries] = useState<VerbEntry[]>([]);
@@ -68,6 +85,33 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
         <button
           type="button"
           className={`pill ${
+            activeGame === "cafeDialogues" ? "pill--active" : ""
+          }`}
+          onClick={() => setActiveGame("cafeDialogues")}
+        >
+          {t("games.tabCafeDialogues")}
+        </button>
+        <button
+          type="button"
+          className={`pill ${
+            activeGame === "sentenceScramble" ? "pill--active" : ""
+          }`}
+          onClick={() => setActiveGame("sentenceScramble")}
+        >
+          {t("games.tabSentenceScramble")}
+        </button>
+        <button
+          type="button"
+          className={`pill ${
+            activeGame === "fjordExpedition" ? "pill--active" : ""
+          }`}
+          onClick={() => setActiveGame("fjordExpedition")}
+        >
+          {t("games.tabFjordExpedition")}
+        </button>
+        <button
+          type="button"
+          className={`pill ${
             activeGame === "wordTower" ? "pill--active" : ""
           }`}
           onClick={() => setActiveGame("wordTower")}
@@ -103,11 +147,41 @@ const GamesPage: React.FC<Props> = ({ stream, currentLevel }) => {
         />
       )}
 
+      {activeGame === "cafeDialogues" && (
+        <CafeDialoguesGame
+          stream={stream}
+          currentLevel={currentLevel}
+          expressions={expressions}
+          verbEntries={verbEntries}
+        />
+      )}
+
+      {activeGame === "sentenceScramble" && (
+        <SentenceScrambleGame
+          stream={stream}
+          currentLevel={currentLevel}
+          expressions={expressions}
+          verbEntries={verbEntries}
+        />
+      )}
+
+      {activeGame === "fjordExpedition" && (
+        <FjordExpeditionGame
+          stream={stream}
+          currentLevel={currentLevel}
+          playableTerms={playableTerms}
+          verbEntries={verbEntries}
+          vocabFavorites={vocabFavorites}
+          onToggleVocabFavorite={onToggleVocabFavorite}
+        />
+      )}
+
       {activeGame === "wordTower" && (
         <WordTowerGame
           stream={stream}
           currentLevel={currentLevel}
           playableTerms={playableTerms}
+          verbEntries={verbEntries}
         />
       )}
 

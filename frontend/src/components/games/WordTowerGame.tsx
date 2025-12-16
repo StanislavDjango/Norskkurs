@@ -1,398 +1,574 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { GlossaryTerm, Level, Stream } from "../../types";
-import { getNorwegianForTerm, pickTranslationForTower } from "../../utils/terms";
+import type { GlossaryTerm, Level, Stream, VerbEntry } from "../../types";
 
 type Props = {
   stream: Stream;
   currentLevel: Level;
   playableTerms: GlossaryTerm[];
+  verbEntries: VerbEntry[];
 };
 
-type GameSpeed = "verySlow" | "slow" | "normal" | "fast" | "turbo";
-type TowerSpeed = GameSpeed;
+type GameDifficulty = "verySlow" | "slow" | "normal" | "fast" | "turbo";
+type GameStatus = "idle" | "running" | "paused" | "over";
+type TranslationLanguage = Stream | "russian";
 
-type TowerPiece = {
+type FallingCard = {
   id: string;
-  termId: number;
-  role: "nor" | "tr";
-  text: string;
-  dropDuration: number;
-  dropDelay: number;
-  isSelected?: boolean;
-  isPenalty?: boolean;
-  isRemoving?: boolean;
+  prompt: string;
+  reveal: string;
+  displayText: string;
+  isCaught: boolean;
+  leftPct: number;
+  yPx: number;
+  speedPxPerSec: number;
 };
 
-const MAX_TOWER_PIECES = 40;
+const CARD_HEIGHT_PX = 44;
+const MAX_UNCAUGHT = 7;
+const MAX_TOTAL = 12;
+const START_LIVES = 20;
 
-const WordTowerGame: React.FC<Props> = ({ stream, playableTerms }) => {
-  const { t, i18n } = useTranslation();
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-  const [towerPieces, setTowerPieces] = useState<TowerPiece[]>([]);
-  const [towerRunning, setTowerRunning] = useState(false);
-  const [towerSelectedId, setTowerSelectedId] = useState<string | null>(null);
-  const [towerMatches, setTowerMatches] = useState(0);
-  const [towerMistakes, setTowerMistakes] = useState(0);
-  const [towerGotReward, setTowerGotReward] = useState(false);
-  const [towerGameOver, setTowerGameOver] = useState(false);
-  const [towerSpeed, setTowerSpeed] = useState<TowerSpeed>("slow");
-  const [towerInitialBatch, setTowerInitialBatch] = useState<number>(10);
+const partOptions = [
+  { value: "verb", label: "parts.verb" },
+  { value: "noun", label: "parts.noun" },
+  { value: "adjective", label: "parts.adjective" },
+  { value: "adverb", label: "parts.adverb" },
+  { value: "pronoun", label: "parts.pronoun" },
+  { value: "numeral", label: "parts.numeral" },
+  { value: "preposition", label: "parts.preposition" },
+  { value: "conjunction", label: "parts.conjunction" },
+  { value: "interjection", label: "parts.interjection" },
+];
 
-  const spawnTowerBatch = (
-    existing: TowerPiece[],
-    count: number,
-  ): [TowerPiece[], boolean] => {
-    let next = [...existing];
-    if (playableTerms.length === 0 || count <= 0) {
-      return [next, next.length >= MAX_TOWER_PIECES];
-    }
+const mapVerbEntryToGlossary = (entry: VerbEntry): GlossaryTerm => ({
+  id: entry.id,
+  term: entry.infinitive,
+  translation: entry.translation_en || entry.translation_nb || entry.translation_ru || "",
+  translation_en: entry.translation_en,
+  translation_ru: entry.translation_ru,
+  translation_nb: entry.translation_nb,
+  translation_nn: entry.translation_nb,
+  explanation: "",
+  stream: entry.stream,
+  level: "A1",
+  tags: [entry.part_of_speech, ...(entry.tags || [])],
+});
 
-    for (let i = 0; i < count; i += 1) {
-      if (next.length >= MAX_TOWER_PIECES) {
-        return [next, true];
-      }
+const pickTextForStream = (term: GlossaryTerm, selectedStream: TranslationLanguage) => {
+  if (selectedStream === "bokmaal") {
+    return term.translation_nb || term.term;
+  }
+  if (selectedStream === "nynorsk") {
+    return term.translation_nn || term.translation_nb || term.term;
+  }
+  if (selectedStream === "russian") {
+    return term.translation_ru || term.translation_en || term.term;
+  }
+  return term.translation_en || term.term;
+};
 
-      const counts: Record<
-        number,
-        { nor: boolean; tr: boolean; total: number }
-      > = {};
+const WordTowerGame: React.FC<Props> = ({ stream, playableTerms, verbEntries }) => {
+  const { t } = useTranslation();
 
-      for (const p of next) {
-        const info =
-          counts[p.termId] || { nor: false, tr: false, total: 0 };
-        if (p.role === "nor") info.nor = true;
-        if (p.role === "tr") info.tr = true;
-        info.total += 1;
-        counts[p.termId] = info;
-      }
+  const [status, setStatus] = useState<GameStatus>("idle");
+  const [difficulty, setDifficulty] = useState<GameDifficulty>("slow");
+  const [fallingStream, setFallingStream] = useState<Stream>(stream);
+  const [translationStream, setTranslationStream] = useState<TranslationLanguage>(
+    stream === "english" ? "bokmaal" : "english",
+  );
+  const [useGlossary, setUseGlossary] = useState(true);
+  const [selectedParts, setSelectedParts] = useState<string[]>([]);
+  const [useIrregularOnly, setUseIrregularOnly] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-      const openEntries = Object.entries(counts).filter(
-        ([, info]) => info.nor !== info.tr && info.total < 4,
-      );
+  const [cards, setCards] = useState<FallingCard[]>([]);
 
-      const shouldUseExisting =
-        openEntries.length > 0 && Math.random() < 0.6;
+  const [lives, setLives] = useState(START_LIVES);
+  const [score, setScore] = useState(0);
+  const [hits, setHits] = useState(0);
+  const [misses, setMisses] = useState(0);
 
-      let chosenTerm: GlossaryTerm;
-      let role: TowerPiece["role"];
+  const [flash, setFlash] = useState<"hit" | "miss" | null>(null);
 
-      if (shouldUseExisting) {
-        const [termIdStr, info] =
-          openEntries[
-            Math.floor(Math.random() * openEntries.length)
-          ];
-        const termId = Number(termIdStr);
-        const fallback =
-          playableTerms[Math.floor(Math.random() * playableTerms.length)];
-        chosenTerm =
-          playableTerms.find((t) => t.id === termId) || fallback;
-        role = info.nor ? "tr" : "nor";
-      } else {
-        chosenTerm =
-          playableTerms[Math.floor(Math.random() * playableTerms.length)];
-        role = Math.random() < 0.5 ? "nor" : "tr";
-      }
+  const areaRef = useRef<HTMLDivElement | null>(null);
 
-      const norwegian = getNorwegianForTerm(chosenTerm, stream);
-      const translation = pickTranslationForTower(chosenTerm, i18n);
-      if (!norwegian || !translation) {
-        continue;
-      }
+  const cardsRef = useRef<FallingCard[]>([]);
+  const rafRef = useRef<number | null>(null);
+  const lastTsRef = useRef<number | null>(null);
+  const spawnTimeoutRef = useRef<number | null>(null);
+  const flashTimeoutRef = useRef<number | null>(null);
 
-      const text = role === "nor" ? norwegian : translation;
+  const statusRef = useRef<GameStatus>(status);
+  const difficultyRef = useRef<GameDifficulty>(difficulty);
+  const fallingStreamRef = useRef<Stream>(fallingStream);
+  const translationStreamRef = useRef<TranslationLanguage>(translationStream);
 
-      let durationMin: number;
-      let durationMax: number;
-      switch (towerSpeed) {
-        case "verySlow":
-          durationMin = 6;
-          durationMax = 8;
-          break;
-        case "slow":
-          durationMin = 5;
-          durationMax = 7;
-          break;
-        case "fast":
-          durationMin = 3;
-          durationMax = 4.2;
-          break;
-        case "turbo":
-          durationMin = 2;
-          durationMax = 3;
-          break;
-        default:
-          durationMin = 4;
-          durationMax = 5.5;
-          break;
-      }
+  const combinedTerms = useMemo<GlossaryTerm[]>(() => {
+    const selectedSet = new Set(selectedParts);
+    const includeVerbs = selectedSet.size > 0;
+    const irregularOnly = useIrregularOnly && selectedSet.has("verb");
 
-      const dropDuration =
-        durationMin + Math.random() * Math.max(durationMax - durationMin, 0.5);
-      const dropDelay = 0;
+    const verbsPool = includeVerbs
+      ? verbEntries.filter((entry) => {
+          const partOk = selectedSet.has(entry.part_of_speech);
+          if (!partOk) return false;
+          if (irregularOnly) {
+            return (entry.tags || []).some((tag) => tag.toLowerCase() === "irregular");
+          }
+          return true;
+        })
+      : [];
 
-      const piece: TowerPiece = {
-        id: `tower-${chosenTerm.id}-${role}-${Date.now()}-${Math.random()
-          .toString(16)
-          .slice(2)}`,
-        termId: chosenTerm.id,
-        role,
-        text,
-        dropDuration,
-        dropDelay,
-      };
-
-      next = [...next, piece];
-    }
-
-    return [next, next.length >= MAX_TOWER_PIECES];
-  };
+    const verbLikeGlossary = verbsPool.map(mapVerbEntryToGlossary);
+    const glossaryPool = useGlossary ? playableTerms : [];
+    return [...glossaryPool, ...verbLikeGlossary];
+  }, [playableTerms, selectedParts, useGlossary, useIrregularOnly, verbEntries]);
 
   useEffect(() => {
-    if (!towerRunning || towerGameOver) return;
-    if (playableTerms.length === 0) return;
+    statusRef.current = status;
+  }, [status]);
+  useEffect(() => {
+    difficultyRef.current = difficulty;
+  }, [difficulty]);
+  useEffect(() => {
+    fallingStreamRef.current = fallingStream;
+  }, [fallingStream]);
+  useEffect(() => {
+    translationStreamRef.current = translationStream;
+  }, [translationStream]);
 
-    let intervalMs: number;
-    switch (towerSpeed) {
-      case "verySlow":
-        intervalMs = 3200;
-        break;
-      case "slow":
-        intervalMs = 2600;
-        break;
-      case "fast":
-        intervalMs = 1800;
-        break;
-      case "turbo":
-        intervalMs = 1400;
-        break;
-      default:
-        intervalMs = 2200;
-        break;
+  const clearFlashSoon = useCallback(() => {
+    if (flashTimeoutRef.current) window.clearTimeout(flashTimeoutRef.current);
+    flashTimeoutRef.current = window.setTimeout(() => setFlash(null), 220);
+  }, []);
+
+  const stopLoops = useCallback(() => {
+    if (spawnTimeoutRef.current) {
+      window.clearTimeout(spawnTimeoutRef.current);
+      spawnTimeoutRef.current = null;
     }
+    if (rafRef.current) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    lastTsRef.current = null;
+  }, []);
 
-    const batchSize = 6;
+  const endRun = useCallback(() => {
+    stopLoops();
+    setStatus("over");
+  }, [stopLoops]);
 
-    const spawn = () => {
-      let isFull = false;
-      setTowerPieces((prev) => {
-        const [next, full] = spawnTowerBatch(prev, batchSize);
-        isFull = full;
-        return next;
-      });
-      if (isFull) {
-        setTowerGameOver(true);
-        setTowerRunning(false);
-      }
+  const resetRun = useCallback(() => {
+    setScore(0);
+    setHits(0);
+    setMisses(0);
+    setLives(START_LIVES);
+    setFlash(null);
+    cardsRef.current = [];
+    setCards([]);
+  }, []);
+
+  const calcSpawnMs = useCallback(() => {
+    const base =
+      difficultyRef.current === "verySlow"
+        ? 6500
+        : difficultyRef.current === "slow"
+          ? 5200
+          : difficultyRef.current === "fast"
+            ? 2500
+            : difficultyRef.current === "turbo"
+              ? 1900
+              : 3800;
+    return base + Math.floor(Math.random() * 350);
+  }, []);
+
+  const calcSpeedPxPerSec = useCallback(() => {
+    const base =
+      difficultyRef.current === "verySlow"
+        ? 22
+        : difficultyRef.current === "slow"
+          ? 32
+          : difficultyRef.current === "fast"
+            ? 62
+            : difficultyRef.current === "turbo"
+              ? 82
+              : 44;
+    return clamp(base * (0.93 + Math.random() * 0.14), 18, 140);
+  }, []);
+
+  const spawnOne = useCallback(() => {
+    if (statusRef.current !== "running") return;
+    if (combinedTerms.length === 0) return;
+
+    const uncaughtCount = cardsRef.current.filter((card) => !card.isCaught).length;
+    if (uncaughtCount >= MAX_UNCAUGHT) return;
+    if (cardsRef.current.length >= MAX_TOTAL) return;
+
+    const term = combinedTerms[Math.floor(Math.random() * combinedTerms.length)];
+    const prompt = pickTextForStream(term, fallingStreamRef.current);
+    const reveal = pickTextForStream(term, translationStreamRef.current);
+    if (!prompt.trim() || !reveal.trim()) return;
+
+    const id = `wt-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const leftPct = 10 + Math.random() * 80;
+    const yPx = -CARD_HEIGHT_PX - Math.random() * CARD_HEIGHT_PX * 3.2;
+    const speedPxPerSec = calcSpeedPxPerSec();
+
+    const card: FallingCard = {
+      id,
+      prompt,
+      reveal,
+      displayText: prompt,
+      isCaught: false,
+      leftPct,
+      yPx,
+      speedPxPerSec,
     };
 
-    const interval = window.setInterval(spawn, intervalMs);
-    return () => window.clearInterval(interval);
-  }, [
-    towerRunning,
-    towerGameOver,
-    playableTerms,
-    towerSpeed,
-  ]);
+    cardsRef.current = [...cardsRef.current, card];
+    setCards(cardsRef.current);
+  }, [calcSpeedPxPerSec, combinedTerms]);
 
-  const handleTowerToggle = () => {
-    if (towerRunning) {
-      setTowerRunning(false);
-      return;
+  const scheduleSpawn = useCallback(() => {
+    if (spawnTimeoutRef.current) {
+      window.clearTimeout(spawnTimeoutRef.current);
+      spawnTimeoutRef.current = null;
     }
-    if (playableTerms.length === 0) {
-      return;
-    }
-    setTowerPieces([]);
-    setTowerSelectedId(null);
-    setTowerMatches(0);
-    setTowerMistakes(0);
-    setTowerGotReward(false);
-    setTowerGameOver(false);
-    const initialCount = Math.min(
-      20,
-      Math.max(3, Number.isFinite(towerInitialBatch) ? towerInitialBatch : 10),
-    );
-    const [firstBatch, full] = spawnTowerBatch([], initialCount);
-    setTowerPieces(firstBatch);
-    if (full || firstBatch.length === 0) {
-      setTowerGameOver(full);
-      setTowerRunning(false);
-      return;
-    }
-    setTowerRunning(true);
-  };
 
-  const handleTowerPieceClick = (pieceId: string) => {
-    if (towerGameOver) return;
+    const tick = () => {
+      if (statusRef.current !== "running") return;
+      spawnOne();
+      scheduleSpawn();
+    };
 
-    setTowerPieces((prev) => {
-      const piece = prev.find((p) => p.id === pieceId);
-      if (!piece) {
-        return prev;
-      }
+    spawnTimeoutRef.current = window.setTimeout(tick, calcSpawnMs());
+  }, [calcSpawnMs, spawnOne]);
 
-      const currentSelected = towerSelectedId
-        ? prev.find((p) => p.id === towerSelectedId)
-        : undefined;
+  const tickFalling = useCallback(
+    (ts: number) => {
+      if (statusRef.current !== "running") return;
+      const last = lastTsRef.current ?? ts;
+      const dt = Math.min((ts - last) / 1000, 0.05);
+      lastTsRef.current = ts;
 
-      if (!towerSelectedId || !currentSelected) {
-        setTowerSelectedId(pieceId);
-        return prev.map((p) => ({
-          ...p,
-          isSelected: p.id === pieceId,
-        }));
-      }
+      const areaHeight = areaRef.current?.clientHeight ?? 320;
+      const next: FallingCard[] = [];
+      let missedThisFrame = 0;
 
-      if (towerSelectedId === pieceId) {
-        setTowerSelectedId(null);
-        return prev.map((p) => ({ ...p, isSelected: false }));
-      }
-
-      if (
-        currentSelected.termId === piece.termId &&
-        currentSelected.role !== piece.role
-      ) {
-        const idsToRemove = new Set([currentSelected.id, piece.id]);
-        setTowerSelectedId(null);
-        setTowerMatches((m) => {
-          const next = m + 1;
-          if (next >= 10 && !towerGotReward) {
-            setTowerGotReward(true);
-          }
-          return next;
-        });
-        const withAnimation = prev.map((p) => {
-          if (idsToRemove.has(p.id)) {
-            return {
-              ...p,
-              isSelected: false,
-              isPenalty: false,
-              isRemoving: true,
-            };
-          }
-          return p;
-        });
-
-        window.setTimeout(() => {
-          setTowerPieces((later) =>
-            later.filter((p) => !idsToRemove.has(p.id)),
-          );
-        }, 350);
-
-        return withAnimation;
-      }
-
-      setTowerSelectedId(null);
-      setTowerMistakes((m) => m + 1);
-      return prev.map((p) => {
-        if (p.id === currentSelected.id || p.id === piece.id) {
-          return { ...p, isSelected: false, isPenalty: true };
+      for (const card of cardsRef.current) {
+        const yPx = card.yPx + card.speedPxPerSec * dt;
+        if (yPx >= areaHeight - CARD_HEIGHT_PX) {
+          if (!card.isCaught) missedThisFrame += 1;
+          continue;
         }
-        return { ...p, isSelected: false };
+        next.push({ ...card, yPx });
+      }
+
+      if (missedThisFrame > 0) {
+        setFlash("miss");
+        clearFlashSoon();
+        setMisses((prev) => prev + missedThisFrame);
+        setLives((prev) => {
+          const updated = prev - missedThisFrame;
+          if (updated <= 0) {
+            window.setTimeout(endRun, 0);
+            return 0;
+          }
+          return updated;
+        });
+      }
+
+      cardsRef.current = next;
+      setCards(next);
+
+      rafRef.current = window.requestAnimationFrame(tickFalling);
+    },
+    [clearFlashSoon, endRun],
+  );
+
+  useEffect(() => {
+    if (status === "running") {
+      stopLoops();
+      scheduleSpawn();
+      rafRef.current = window.requestAnimationFrame(tickFalling);
+      return;
+    }
+    stopLoops();
+  }, [scheduleSpawn, status, stopLoops, tickFalling]);
+
+  useEffect(() => {
+    return () => {
+      stopLoops();
+      if (flashTimeoutRef.current) window.clearTimeout(flashTimeoutRef.current);
+    };
+  }, [stopLoops]);
+
+  const catchCard = useCallback(
+    (cardId: string) => {
+      if (statusRef.current !== "running") return;
+
+      const target = cardsRef.current.find((card) => card.id === cardId);
+      if (!target || target.isCaught) return;
+
+      const updated = cardsRef.current.map((card) => {
+        if (card.id !== cardId) return card;
+        return { ...card, isCaught: true, displayText: card.reveal };
       });
+
+      cardsRef.current = updated;
+      setCards(updated);
+
+      setFlash("hit");
+      clearFlashSoon();
+      setHits((prev) => prev + 1);
+      setScore((prev) => prev + 1);
+    },
+    [clearFlashSoon],
+  );
+
+  const accuracyPct = useMemo(() => {
+    const total = hits + misses;
+    if (total === 0) return 0;
+    return clamp(Math.round((hits / total) * 100), 0, 100);
+  }, [hits, misses]);
+
+  const topLine = useMemo(() => {
+    if (status === "over") return t("games.fallingGameOver");
+    if (status === "paused") return t("games.fallingPaused");
+    return t("games.towerSubtitle");
+  }, [status, t]);
+
+  const primaryButtonLabel = useMemo(() => {
+    if (status === "idle" || status === "over") return t("games.start");
+    if (status === "paused") return t("games.fallingResume");
+    return t("games.fallingPause");
+  }, [status, t]);
+
+  const onPrimaryAction = useCallback(() => {
+    if (combinedTerms.length === 0) return;
+    if (status === "idle" || status === "over") {
+      setIsSettingsOpen(false);
+      resetRun();
+      setStatus("running");
+      return;
+    }
+    if (status === "paused") {
+      setStatus("running");
+      return;
+    }
+    setStatus("paused");
+  }, [combinedTerms.length, resetRun, status]);
+
+  const onRestart = useCallback(() => {
+    if (combinedTerms.length === 0) return;
+    resetRun();
+    setStatus("running");
+  }, [combinedTerms.length, resetRun]);
+
+  const showOverlay = status === "paused" || status === "over" || status === "idle";
+
+  const hint = useMemo(() => {
+    return t("games.towerHintClickWhatFalls", {
+      falls: t(`streamLabels.${fallingStream}`),
+      turnsInto: t(`streamLabels.${translationStream}`),
     });
-  };
+  }, [fallingStream, t, translationStream]);
 
   return (
-    <div className="tower-game">
-      <div className="tower-header">
-        <div className="tower-header-main">
+    <div className={`falling-game falling-game--v2 ${flash ? `falling-game--${flash}` : ""}`}>
+      <div className="falling-game-header">
+        <div className="falling-game-title">
           <h3>{t("games.towerTitle")}</h3>
-          <div className="falling-game-controls">
-            <label className="falling-speed-label">
-              <span>{t("games.speedLabel")}</span>
-              <select
-                value={towerSpeed}
-                onChange={(e) =>
-                  setTowerSpeed(e.target.value as TowerSpeed)
-                }
-                disabled={towerRunning}
-              >
-                <option value="verySlow">
-                  {t("games.speedVerySlow")}
-                </option>
-                <option value="slow">{t("games.speedSlow")}</option>
-                <option value="normal">
-                  {t("games.speedNormal")}
-                </option>
-                <option value="fast">{t("games.speedFast")}</option>
-                <option value="turbo">{t("games.speedTurbo")}</option>
-              </select>
-            </label>
-            <label className="falling-speed-label">
-              <span>{t("games.towerBatchLabel")}</span>
-              <input
-                type="number"
-                min={3}
-                max={20}
-                value={towerInitialBatch}
-                onChange={(e) =>
-                  setTowerInitialBatch(
-                    Math.min(
-                      20,
-                      Math.max(3, Number(e.target.value) || 3),
-                    ),
-                  )
-                }
-                disabled={towerRunning}
-                className="tower-batch-input"
-              />
-            </label>
+          <p className="muted small">{topLine}</p>
+        </div>
+
+        <div className="falling-game-controls">
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => setIsSettingsOpen((v) => !v)}
+            disabled={status !== "idle"}
+          >
+            {t("games.settings", "Settings")}
+          </button>
+
+          <label className="falling-speed-label">
+            <span>{t("games.speedLabel")}</span>
+            <select
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value as GameDifficulty)}
+              disabled={status !== "idle"}
+            >
+              <option value="verySlow">{t("games.speedVerySlow")}</option>
+              <option value="slow">{t("games.speedSlow")}</option>
+              <option value="normal">{t("games.speedNormal")}</option>
+              <option value="fast">{t("games.speedFast")}</option>
+              <option value="turbo">{t("games.speedTurbo")}</option>
+            </select>
+          </label>
+
+          <button type="button" className="ghost" onClick={onPrimaryAction} disabled={combinedTerms.length === 0}>
+            {primaryButtonLabel}
+          </button>
+
+          <button type="button" className="ghost" onClick={onRestart} disabled={playableTerms.length === 0 || status === "idle"}>
+            {t("games.fallingRestart")}
+          </button>
+        </div>
+      </div>
+
+      {combinedTerms.length === 0 && <p className="muted small">{t("games.noWords")}</p>}
+
+      {isSettingsOpen && status === "idle" && (
+        <div className="falling-settings">
+          <p className="muted small">{t("games.settingsHint", "Выберите источники слов и сложность перед стартом.")}</p>
+
+          <div className="falling-settings-grid">
+            <div className="falling-settings-card">
+              <div className="falling-settings-card__title">
+                <span className="eyebrow">{t("games.wordSources", "Выбор слов")}</span>
+                <span className="muted tiny">{t("games.sourceHint", "Можно включить сразу несколько источников.")}</span>
+              </div>
+              <div className="falling-settings-list">
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={useGlossary} onChange={(e) => setUseGlossary(e.target.checked)} />
+                  <span>{t("games.sourceGlossary", "Глоссарий")}</span>
+                </label>
+                <div className="divider" />
+                <p className="muted tiny">{t("games.partsOfSpeech", "Части речи")}</p>
+                <div className="parts-grid">
+                  {partOptions.map((opt) => (
+                    <label key={opt.value} className="checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={selectedParts.includes(opt.value)}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setSelectedParts((prev) => {
+                            if (checked) return [...prev, opt.value];
+                            return prev.filter((val) => val !== opt.value);
+                          });
+                        }}
+                      />
+                      <span>{t(opt.label, opt.value)}</span>
+                    </label>
+                  ))}
+                </div>
+                <label className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={useIrregularOnly}
+                    onChange={(e) => setUseIrregularOnly(e.target.checked)}
+                    disabled={!selectedParts.includes("verb")}
+                  />
+                  <span>{t("games.irregularOnly", "Только неправильные (глаголы)")}</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="falling-settings-card">
+              <div className="falling-settings-card__title">
+                <span className="eyebrow">{t("games.fallingLanguagesTitle", "Языки")}</span>
+                <span className="muted tiny">{t("games.fallingLanguagesHint", "Выберите, что падает и во что превращается после поимки.")}</span>
+              </div>
+
+              <div className="falling-settings-list compact">
+                <label className="falling-speed-label">
+                  <span>{t("games.fallingFallsStreamLabel", "Падает")}</span>
+                  <select value={fallingStream} onChange={(e) => setFallingStream(e.target.value as Stream)}>
+                    <option value="bokmaal">{t("streamLabels.bokmaal")}</option>
+                    <option value="nynorsk">{t("streamLabels.nynorsk")}</option>
+                    <option value="english">{t("streamLabels.english")}</option>
+                  </select>
+                </label>
+                <label className="falling-speed-label">
+                  <span>{t("games.fallingTranslateToStreamLabel", "Перевод")}</span>
+                  <select
+                    value={translationStream}
+                    onChange={(e) => setTranslationStream(e.target.value as TranslationLanguage)}
+                  >
+                    <option value="bokmaal">{t("streamLabels.bokmaal")}</option>
+                    <option value="nynorsk">{t("streamLabels.nynorsk")}</option>
+                    <option value="english">{t("streamLabels.english")}</option>
+                    <option value="russian">{t("streamLabels.russian")}</option>
+                  </select>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="tower-stats">
-          <span className="muted small">
-            {t("games.towerMatchesLabel")} {towerMatches}
-          </span>
-          <span className="muted small">
-            {t("games.towerMistakesLabel")} {towerMistakes}
-          </span>
-          {towerGotReward && (
-            <span className="tower-reward small">
-              {t("games.towerReward10")}
-            </span>
-          )}
+      )}
+
+      <div className="falling-game-stats">
+        <div className="falling-stat">
+          <span className="label">{t("score")}</span>
+          <strong>{score}</strong>
         </div>
-        <button
-          type="button"
-          className="ghost"
-          onClick={handleTowerToggle}
-          disabled={playableTerms.length === 0}
-        >
-          {towerRunning
-            ? t("games.stop")
-            : towerGameOver
-            ? t("restart")
-            : t("games.start")}
-        </button>
+        <div className="falling-stat">
+          <span className="label">{t("games.fallingLivesLabel")}</span>
+          <strong>{lives}</strong>
+        </div>
+        <div className="falling-stat">
+          <span className="label">{t("games.fallingAccuracyLabel")}</span>
+          <strong>{accuracyPct}%</strong>
+        </div>
       </div>
-      {towerGameOver && (
-        <p className="alert small">{t("games.towerGameOver")}</p>
-      )}
-      {playableTerms.length === 0 && !towerGameOver && !towerRunning && (
-        <p className="muted small">{t("games.noWords")}</p>
-      )}
-      <div className="tower-area">
-        {towerPieces.map((piece) => (
+
+      <div
+        ref={areaRef}
+        className="falling-game-area falling-game-area--v2"
+        aria-label={t("games.towerAriaArea", t("games.fallingAriaArea"))}
+      >
+        {cards.map((card) => (
           <button
-            key={piece.id}
+            key={card.id}
             type="button"
-            className={`tower-piece tower-piece--${piece.role} ${
-              piece.isSelected ? "tower-piece--selected" : ""
-            } ${piece.isPenalty ? "tower-piece--penalty" : ""} ${
-              piece.isRemoving ? "tower-piece--removing" : ""
+            className={`falling-word falling-word--v2 falling-word--button falling-word--clickable ${
+              card.isCaught ? "falling-word--caught" : ""
             }`}
             style={{
-              animationDuration: `${piece.dropDuration}s`,
-              animationDelay: `${piece.dropDelay}s`,
+              left: `${card.leftPct}%`,
+              transform: `translate3d(-50%, ${card.yPx}px, 0)`,
             }}
-            onClick={() => handleTowerPieceClick(piece.id)}
+            title={hint}
+            onClick={() => catchCard(card.id)}
+            disabled={status !== "running" || card.isCaught}
           >
-            {piece.text}
+            {card.displayText}
           </button>
         ))}
+
+        {showOverlay && (
+          <div className="falling-overlay" aria-live="polite">
+            {status === "idle" && (
+              <div className="falling-overlay-card">
+                <p className="muted small">{hint}</p>
+                <p className="muted small">{t("games.towerHowTo")}</p>
+              </div>
+            )}
+            {status === "paused" && (
+              <div className="falling-overlay-card">
+                <p className="muted small">{t("games.fallingPausedHint")}</p>
+              </div>
+            )}
+            {status === "over" && (
+              <div className="falling-overlay-card">
+                <h4>{t("games.fallingGameOver")}</h4>
+                <p className="muted small">
+                  {t("score")}: <strong>{score}</strong> · {t("correct")}: <strong>{hits}</strong> · {t("incorrect")}:{" "}
+                  <strong>{misses}</strong>
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="falling-ground" aria-hidden="true" />
       </div>
     </div>
   );
