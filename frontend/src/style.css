@@ -3671,7 +3671,7 @@ button.ghost {
 .collapse-game-modal {
   position: fixed;
   inset: 0;
-  z-index: 999;
+  z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3686,9 +3686,10 @@ button.ghost {
 
 .collapse-modal-window {
   position: relative;
-  z-index: 1000;
+  z-index: 2001;
   width: min(1100px, 96vw);
   height: min(820px, 90vh);
+  height: min(820px, 90dvh);
   padding: 1.2rem 1.4rem;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.92);
@@ -3713,8 +3714,10 @@ button.ghost {
 .collapse-game-modal.fullscreen .collapse-modal-window {
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   max-width: 100vw;
   max-height: 100vh;
+  max-height: 100dvh;
   border-radius: 0;
   padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
     calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
@@ -3724,6 +3727,7 @@ button.ghost {
   width: 100vw;
   max-width: 100vw;
   max-height: 100vh;
+  max-height: 100dvh;
   border-radius: 0;
 }
 

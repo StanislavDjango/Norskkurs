@@ -21,6 +21,7 @@ const INITIAL_GRACE_MS = 8000;
 const RENDER_FPS = 30;
 const MIN_BLOCK_WIDTH = 80;
 const MAX_COLS = 10;
+const SETTLE_SPEED_MULTIPLIER = 1.6;
 
 const PRIMARY_MUSIC_SRC = "/audio/4f13fc38b4572af.mp3";
 const FALLBACK_MUSIC_SRC = "/audio/wordcollapse.mp3";
@@ -33,6 +34,7 @@ type Block = {
   text: string;
   col: number;
   y: number;
+  targetY?: number;
   isFalling: boolean;
   isMatched?: boolean;
   isWrong?: boolean;
@@ -333,28 +335,30 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     setBlocks(next);
   }, []);
 
-  const collapseBlocks = useCallback(
+  const settleColumns = useCallback(
     (currentBlocks: Block[]) => {
-      const alive = currentBlocks.filter((b) => !b.isMatched);
-      const byCol: Record<number, Block[]> = {};
-      for (const block of alive) {
-        if (!byCol[block.col]) byCol[block.col] = [];
-        byCol[block.col].push(block);
+      const byCol = new Map<number, { landed: Block[]; falling: Block[] }>();
+      for (const block of currentBlocks) {
+        const entry = byCol.get(block.col) ?? { landed: [], falling: [] };
+        if (block.isFalling) entry.falling.push(block);
+        else entry.landed.push(block);
+        byCol.set(block.col, entry);
       }
 
-      const collapsed: Block[] = [];
-      Object.values(byCol).forEach((list) => {
-        const sorted = [...list].sort((a, b) => a.y - b.y);
-        sorted.forEach((block, idx) => {
-          const newY = gameSize.height - BLOCK_HEIGHT * (idx + 1);
-          collapsed.push({
-            ...block,
-            y: newY,
-            isFalling: false,
-          });
+      const next: Block[] = [];
+      for (const entry of byCol.values()) {
+        const landedSorted = [...entry.landed].sort((a, b) => b.y - a.y);
+        landedSorted.forEach((block, idx) => {
+          const desiredY = gameSize.height - BLOCK_HEIGHT * (idx + 1);
+          if (desiredY > block.y + 0.5) {
+            next.push({ ...block, isFalling: true, targetY: desiredY });
+            return;
+          }
+          next.push({ ...block, targetY: undefined });
         });
-      });
-      return collapsed;
+        next.push(...entry.falling);
+      }
+      return next;
     },
     [gameSize.height],
   );
@@ -518,6 +522,9 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
 
     const existing = blocksRef.current;
     const newBlocks: Block[] = [];
+    const isInitialWave = existing.length === 0;
+    const spawnSpread = isInitialWave || isMobileViewport() ? 1.6 : pairCount * 1.5;
+    const spawnBase = isInitialWave || isMobileViewport() ? 0.15 : 0.5;
 
     for (const item of selected) {
       const leftCol = Math.floor(Math.random() * halfCols);
@@ -528,8 +535,8 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
 
       const leftAbsCol = leftCol;
       const rightAbsCol = halfCols + rightCol;
-      const leftY = -BLOCK_HEIGHT * (0.5 + Math.random() * pairCount * 1.5);
-      const rightY = -BLOCK_HEIGHT * (0.5 + Math.random() * pairCount * 1.5);
+      const leftY = -BLOCK_HEIGHT * (spawnBase + Math.random() * spawnSpread);
+      const rightY = -BLOCK_HEIGHT * (spawnBase + Math.random() * spawnSpread);
 
       const blockedLeft = existing.some((b) => b.col === leftAbsCol && b.y < BLOCK_HEIGHT);
       const blockedRight = existing.some((b) => b.col === rightAbsCol && b.y < BLOCK_HEIGHT);
@@ -604,13 +611,14 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
           landedByCol.set(col, list);
         }
 
-        const dy = (fallSpeedPxPerSec * dtMs) / 1000;
         let anyChanged = false;
         const next = prev.map((block) => {
           if (block.isMatched) return block;
           if (!block.isFalling) return block;
 
-          let newY = block.y + dy;
+          const speedPxPerSec = block.targetY !== undefined ? fallSpeedPxPerSec * SETTLE_SPEED_MULTIPLIER : fallSpeedPxPerSec;
+          const dyBlock = (speedPxPerSec * dtMs) / 1000;
+          let newY = block.y + dyBlock;
           let stopY = gameSize.height - BLOCK_HEIGHT;
           const landed = landedByCol.get(block.col);
           if (landed && landed.length > 0) {
@@ -620,14 +628,10 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
               }
             }
           }
-
-          if (newY + BLOCK_HEIGHT >= gameSize.height) {
-            anyChanged = true;
-            return { ...block, y: gameSize.height - BLOCK_HEIGHT, isFalling: false };
-          }
+          if (block.targetY !== undefined) stopY = Math.min(stopY, block.targetY);
           if (newY >= stopY) {
             anyChanged = true;
-            return { ...block, y: stopY, isFalling: false };
+            return { ...block, y: stopY, isFalling: false, targetY: undefined };
           }
 
           if (newY !== block.y) anyChanged = true;
@@ -701,7 +705,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
         const shuffled = [...uniqueTerms].sort(() => 0.5 - Math.random());
         const targetTerms = new Set(shuffled.slice(0, removeCount));
         const filtered = currentBlocks.filter((b) => b.id !== blockId && (!b.termKey || !targetTerms.has(b.termKey)));
-        commitBlocks(collapseBlocks(filtered));
+        commitBlocks(settleColumns(filtered));
         setSelectedBlockId(null);
         setComboCount(0);
         return;
@@ -748,7 +752,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
         currentBlocks.map((b) => (b.id === selectedBlockId || b.id === clickedBlock.id ? { ...b, isMatched: true } : b)),
       );
       setTimeout(() => {
-        commitBlocks(collapseBlocks(blocksRef.current.filter((b) => !b.isMatched)));
+        commitBlocks(settleColumns(blocksRef.current.filter((b) => !b.isMatched)));
       }, 250);
       setSelectedBlockId(null);
       return;
