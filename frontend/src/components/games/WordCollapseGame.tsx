@@ -15,6 +15,8 @@ type SpawnSpeed = 1500 | 2500 | 4000 | 6000 | 8000 | 10000 | 12000;
 type OpenMode = "modal" | "fullscreen";
 type LanguageOption = Stream | "russian";
 type PlayableTerm = GlossaryTerm & { source: "glossary" | "verb" };
+type EndReason = "lives" | "exhausted";
+type SpawnPair = { termKey: string; leftText: string; rightText: string };
 
 const BLOCK_HEIGHT = 48;
 const INITIAL_GRACE_MS = 8000;
@@ -119,6 +121,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   const { t, i18n } = useTranslation();
 
   const [status, setStatus] = useState<GameStatus>("pre-game");
+  const [endReason, setEndReason] = useState<EndReason | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [openMode, setOpenMode] = useState<OpenMode>("modal");
@@ -129,6 +132,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   );
   const [hintsEnabled, setHintsEnabled] = useState(() => loadStoredBool("wordcollapse:hintsEnabled", false));
   const [isMusicOn, setIsMusicOn] = useState(true);
+  const [uniqueOnly, setUniqueOnly] = useState(() => loadStoredBool("wordcollapse:uniqueOnly", false));
 
   const [useGlossary, setUseGlossary] = useState(true);
   const [selectedParts, setSelectedParts] = useState<string[]>([]);
@@ -161,6 +165,10 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   const spawnAccumulatorMsRef = useRef(0);
   const lastRenderAtRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+  const endReasonRef = useRef<EndReason | null>(null);
+  const uniqueOnlyRef = useRef(false);
+  const spawnQueueRef = useRef<SpawnPair[]>([]);
+  const spawnCursorRef = useRef(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const modalWindowRef = useRef<HTMLDivElement>(null);
@@ -187,6 +195,15 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   useEffect(() => {
     storeBool("wordcollapse:hintsEnabled", hintsEnabled);
   }, [hintsEnabled]);
+
+  useEffect(() => {
+    storeBool("wordcollapse:uniqueOnly", uniqueOnly);
+    uniqueOnlyRef.current = uniqueOnly;
+  }, [uniqueOnly]);
+
+  useEffect(() => {
+    endReasonRef.current = endReason;
+  }, [endReason]);
 
   const combinedTerms = useMemo<PlayableTerm[]>(() => {
     const selectedSet = new Set(selectedParts);
@@ -216,7 +233,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   const rightSideLanguage = swapSides ? leftLanguage : rightLanguage;
 
   const spawnPool = useMemo(() => {
-    const pairs: Array<{ termKey: string; leftText: string; rightText: string }> = [];
+    const pairs: SpawnPair[] = [];
     for (const term of combinedTerms) {
       const leftText = pickTextForLanguage(term, leftSideLanguage, requireTranslations);
       const rightText = pickTextForLanguage(term, rightSideLanguage, requireTranslations);
@@ -228,6 +245,8 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   }, [combinedTerms, leftSideLanguage, requireTranslations, rightSideLanguage]);
 
   const isFullscreen = openMode === "fullscreen";
+  const minRequiredPairs = uniqueOnly ? 1 : Math.max(2, pairCount);
+  const canStart = spawnPool.length >= minRequiredPairs;
   const selectedBlock = selectedBlockId ? blocks.find((b) => b.id === selectedBlockId) : undefined;
   const hintTermKey = hintsEnabled ? (selectedBlock?.termKey ?? null) : null;
   const hintRoleNeeded = hintsEnabled
@@ -372,6 +391,10 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     setIsFrozen(false);
     setBombCharge(0);
     setLives(maxLives);
+    setEndReason(null);
+    endReasonRef.current = null;
+    spawnQueueRef.current = [];
+    spawnCursorRef.current = 0;
     spawnAccumulatorMsRef.current = 0;
     lastRenderAtRef.current = 0;
     gameStartedAtRef.current = null;
@@ -392,7 +415,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   const handleQuickStart = () => {
     const mode: OpenMode = preferFullscreen && isMobileViewport() ? "fullscreen" : "modal";
     setOpenMode(mode);
-    if (spawnPool.length < Math.max(2, pairCount)) {
+    if (!canStart) {
       setIsSettingsOpen(true);
       return;
     }
@@ -418,7 +441,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   };
 
   const beginGame = () => {
-    if (spawnPool.length < Math.max(2, pairCount)) return;
+    if (!canStart) return;
 
     resetGameState();
     setIsSettingsOpen(false);
@@ -426,6 +449,10 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     setIsTutorialOpen(false);
     setStatus("running");
     startMusic();
+
+    uniqueOnlyRef.current = uniqueOnly;
+    spawnQueueRef.current = [...spawnPool].sort(() => 0.5 - Math.random());
+    spawnCursorRef.current = 0;
 
     gameStartedAtRef.current = performance.now();
     spawnAccumulatorMsRef.current = 0;
@@ -437,6 +464,10 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     setIsTutorialOpen(false);
     setStatus("running");
     startMusic();
+
+    uniqueOnlyRef.current = uniqueOnly;
+    spawnQueueRef.current = [...spawnPool].sort(() => 0.5 - Math.random());
+    spawnCursorRef.current = 0;
 
     gameStartedAtRef.current = performance.now();
     spawnAccumulatorMsRef.current = 0;
@@ -480,6 +511,8 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     setLives((prev) => {
       const next = Math.max(0, prev - 1);
       if (next <= 0) {
+        endReasonRef.current = "lives";
+        setEndReason("lives");
         setStatus("game-over");
         stopMusic();
       }
@@ -514,16 +547,22 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   );
 
   const spawnWave = useCallback(() => {
-    if (spawnPool.length < pairCount || gameSize.cols < 4) return false;
+    if (spawnPool.length < 1 || gameSize.cols < 4) return false;
 
     const halfCols = Math.max(2, Math.floor(gameSize.cols / 2));
-    const shuffled = [...spawnPool].sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, pairCount);
+    const remaining = uniqueOnlyRef.current ? spawnQueueRef.current.slice(spawnCursorRef.current) : [];
+    const waveSize = uniqueOnlyRef.current ? Math.min(pairCount, remaining.length) : pairCount;
+    if (waveSize < 1) return false;
+
+    const selected = uniqueOnlyRef.current
+      ? spawnQueueRef.current.slice(spawnCursorRef.current, spawnCursorRef.current + waveSize)
+      : [...spawnPool].sort(() => 0.5 - Math.random()).slice(0, waveSize);
+    if (uniqueOnlyRef.current) spawnCursorRef.current += selected.length;
 
     const existing = blocksRef.current;
     const newBlocks: Block[] = [];
     const isInitialWave = existing.length === 0;
-    const spawnSpread = isInitialWave || isMobileViewport() ? 1.6 : pairCount * 1.5;
+    const spawnSpread = isInitialWave || isMobileViewport() ? 1.6 : waveSize * 1.5;
     const spawnBase = isInitialWave || isMobileViewport() ? 0.15 : 0.5;
 
     for (const item of selected) {
@@ -651,6 +690,16 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
             if (!spawned) break;
           }
         }
+
+        if (uniqueOnlyRef.current && spawnCursorRef.current >= spawnQueueRef.current.length) {
+          const hasActiveBlocks = blocksRef.current.some((block) => !block.isMatched);
+          if (!hasActiveBlocks && endReasonRef.current === null) {
+            endReasonRef.current = "exhausted";
+            setEndReason("exhausted");
+            setStatus("game-over");
+            stopMusic();
+          }
+        }
       }
 
       if (now - lastRenderAtRef.current >= renderIntervalMs) {
@@ -676,6 +725,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     spawnBonus,
     spawnIntervalMs,
     spawnWave,
+    stopMusic,
     status,
   ]);
 
@@ -894,7 +944,16 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
                 {status === "game-over" && (
                   <div className="pause-overlay">
                     <div className="pause-card">
-                      <h4>{t("games.gameOver", "Game Over")}</h4>
+                      <h4>
+                        {endReason === "exhausted"
+                          ? t("games.wordCollapseCompletedTitle", "Слова закончились!")
+                          : t("games.gameOver", "Game Over")}
+                      </h4>
+                      {endReason === "exhausted" && (
+                        <p className="muted small">
+                          {t("games.wordCollapseCompletedHint", "Вы прошли все доступные слова без повторов.")}
+                        </p>
+                      )}
                       <p className="muted small">
                         {t("games.finalScore", "Final Score")}: {score}
                       </p>
@@ -1140,10 +1199,14 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
                     <input type="checkbox" checked={hintsEnabled} onChange={(e) => setHintsEnabled(e.target.checked)} />
                     <span>{t("games.wordCollapseHintsEnabled", "Подсказки во время игры")}</span>
                   </label>
+                  <label className="checkbox-row">
+                    <input type="checkbox" checked={uniqueOnly} onChange={(e) => setUniqueOnly(e.target.checked)} />
+                    <span>{t("games.wordCollapseUniqueOnly", "Уникальные слова (без повторов)")}</span>
+                  </label>
                   <p className="muted tiny">
                     {t("games.wordCollapsePoolCount", "Доступно слов: {{count}}", { count: spawnPool.length })}
                   </p>
-                  {spawnPool.length < Math.max(2, pairCount) && (
+                  {!canStart && (
                     <p className="settings-warning">
                       {t(
                         "games.wordCollapsePoolWarning",
@@ -1159,7 +1222,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
                 className="start-btn big"
                 type="button"
                 onClick={beginGame}
-                disabled={spawnPool.length < Math.max(2, pairCount)}
+                disabled={!canStart}
               >
                 {t("games.start")}
               </button>
