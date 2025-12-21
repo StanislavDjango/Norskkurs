@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import SnowOverlay from "./components/SnowOverlay";
+import ApiStatusOverlay from "./components/ApiStatusOverlay";
+import { error as logError } from "./logger";
 
 import {
   fetchExercises,
@@ -298,7 +301,7 @@ const App = () => {
       setAuth(null);
       setIsTeacher(false);
     } catch (e) {
-      console.error(e);
+      logError(e);
     }
   };
 
@@ -689,6 +692,8 @@ const App = () => {
 
   return (
     <div className="page">
+      <SnowOverlay />
+      <ApiStatusOverlay />
       <Header
         auth={auth}
         isTeacher={isTeacher}
