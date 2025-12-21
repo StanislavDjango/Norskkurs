@@ -536,26 +536,28 @@ const WordCollapseGame: React.FC<Props> = ({ stream, currentLevel, playableTerms
 
   const settleColumns = useCallback(
     (currentBlocks: Block[]) => {
-      const byCol = new Map<number, { landed: Block[]; falling: Block[] }>();
+      const byCol = new Map<number, Block[]>();
       for (const block of currentBlocks) {
-        const entry = byCol.get(block.col) ?? { landed: [], falling: [] };
-        if (block.isFalling) entry.falling.push(block);
-        else entry.landed.push(block);
+        const entry = byCol.get(block.col) ?? [];
+        entry.push(block);
         byCol.set(block.col, entry);
       }
 
       const next: Block[] = [];
       for (const entry of byCol.values()) {
-        const landedSorted = [...entry.landed].sort((a, b) => b.y - a.y);
-        landedSorted.forEach((block, idx) => {
+        const sorted = [...entry].sort((a, b) => b.y - a.y);
+        sorted.forEach((block, idx) => {
           const desiredY = gameSize.height - BLOCK_HEIGHT * (idx + 1);
-          if (desiredY > block.y + 0.5) {
+          const needsMove =
+            block.isFalling || block.targetY !== undefined || Math.abs(block.y - desiredY) > 0.5 || block.y < desiredY;
+
+          if (needsMove) {
             next.push({ ...block, isFalling: true, targetY: desiredY });
             return;
           }
-          next.push({ ...block, targetY: undefined });
+
+          next.push({ ...block, y: desiredY, isFalling: false, targetY: undefined });
         });
-        next.push(...entry.falling);
       }
       return next;
     },
