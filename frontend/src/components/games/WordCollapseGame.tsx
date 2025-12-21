@@ -112,12 +112,109 @@ const storeBool = (key: string, value: boolean) => {
   }
 };
 
+const loadStoredNumber = (key: string, fallback: number) => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return fallback;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const storeNumber = (key: string, value: number) => {
+  try {
+    localStorage.setItem(key, String(value));
+  } catch {
+    // ignore
+  }
+};
+
+const loadStoredString = (key: string, fallback: string) => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ?? fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const storeString = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // ignore
+  }
+};
+
+const loadStoredStringArray = (key: string, fallback: string[]) => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return fallback;
+    return parsed.map((value) => String(value)).filter(Boolean);
+  } catch {
+    return fallback;
+  }
+};
+
+const storeJson = (key: string, value: unknown) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+};
+
+const randomInt = (max: number) => Math.floor(Math.random() * max);
+
+const shuffleInPlace = <T,>(items: T[]) => {
+  for (let i = items.length - 1; i > 0; i -= 1) {
+    const j = randomInt(i + 1);
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
+};
+
+const sampleWithoutReplacement = <T,>(items: T[], count: number) => {
+  if (count >= items.length) return [...items];
+  const copy = [...items];
+  for (let i = 0; i < count; i += 1) {
+    const j = i + randomInt(copy.length - i);
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, count);
+};
+
+const languageOptions = ["bokmaal", "nynorsk", "english", "russian"] as const;
+const spawnSpeedOptions: SpawnSpeed[] = [1500, 2500, 4000, 6000, 8000, 10000, 12000];
+const allowedLives = [3, 5, 10, 20] as const;
+const fallSpeedOptions = [60, 90, 120, 150, 180] as const;
+
+const isLanguageOption = (value: string): value is LanguageOption =>
+  (languageOptions as readonly string[]).includes(value);
+
+const isSpawnSpeed = (value: number): value is SpawnSpeed => spawnSpeedOptions.includes(value as SpawnSpeed);
+
+const isAllowedLives = (value: number): value is (typeof allowedLives)[number] =>
+  (allowedLives as readonly number[]).includes(value);
+
+const isFallSpeed = (value: number): value is (typeof fallSpeedOptions)[number] =>
+  (fallSpeedOptions as readonly number[]).includes(value);
+
+const clampInt = (value: number, min: number, max: number) => {
+  const rounded = Math.round(value);
+  return Math.min(max, Math.max(min, rounded));
+};
+
 const isMobileViewport = () => {
   if (typeof window === "undefined") return false;
   return window.matchMedia?.("(max-width: 768px)")?.matches ?? window.innerWidth <= 768;
 };
 
-const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries }) => {
+const WordCollapseGame: React.FC<Props> = ({ stream, currentLevel, playableTerms, verbEntries }) => {
   const { t, i18n } = useTranslation();
 
   const [status, setStatus] = useState<GameStatus>("pre-game");
@@ -131,23 +228,48 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     loadStoredBool("wordcollapse:preferFullscreen", true),
   );
   const [hintsEnabled, setHintsEnabled] = useState(() => loadStoredBool("wordcollapse:hintsEnabled", false));
-  const [isMusicOn, setIsMusicOn] = useState(true);
+  const [isMusicOn, setIsMusicOn] = useState(() => loadStoredBool("wordcollapse:musicOn", true));
   const [uniqueOnly, setUniqueOnly] = useState(() => loadStoredBool("wordcollapse:uniqueOnly", false));
 
-  const [useGlossary, setUseGlossary] = useState(true);
-  const [selectedParts, setSelectedParts] = useState<string[]>([]);
-  const [useIrregularOnly, setUseIrregularOnly] = useState(false);
+  const [useGlossary, setUseGlossary] = useState(() => loadStoredBool("wordcollapse:useGlossary", true));
+  const [selectedParts, setSelectedParts] = useState<string[]>(() =>
+    loadStoredStringArray("wordcollapse:selectedParts", []),
+  );
+  const [useIrregularOnly, setUseIrregularOnly] = useState(() => loadStoredBool("wordcollapse:useIrregularOnly", false));
 
-  const [leftLanguage, setLeftLanguage] = useState<LanguageOption>(stream);
-  const [rightLanguage, setRightLanguage] = useState<LanguageOption>(() => defaultRightLanguageForUi(i18n.language));
-  const [swapSides, setSwapSides] = useState(false);
-  const [requireTranslations, setRequireTranslations] = useState(true);
+  const [leftLanguage, setLeftLanguage] = useState<LanguageOption>(() => {
+    const stored = loadStoredString("wordcollapse:leftLanguage", stream);
+    return isLanguageOption(stored) ? stored : stream;
+  });
+  const [rightLanguage, setRightLanguage] = useState<LanguageOption>(() => {
+    const fallback = defaultRightLanguageForUi(i18n.language);
+    const stored = loadStoredString("wordcollapse:rightLanguage", fallback);
+    return isLanguageOption(stored) ? stored : fallback;
+  });
+  const [swapSides, setSwapSides] = useState(() => loadStoredBool("wordcollapse:swapSides", false));
+  const [requireTranslations, setRequireTranslations] = useState(() =>
+    loadStoredBool("wordcollapse:requireTranslations", true),
+  );
 
-  const [maxLives, setMaxLives] = useState(5);
-  const [lives, setLives] = useState(5);
-  const [pairCount, setPairCount] = useState(3);
-  const [spawnIntervalMs, setSpawnIntervalMs] = useState<SpawnSpeed>(6000);
-  const [fallSpeedPxPerSec, setFallSpeedPxPerSec] = useState(90);
+  const [maxLives, setMaxLives] = useState<number>(() => {
+    const stored = clampInt(loadStoredNumber("wordcollapse:maxLives", 5), 3, 20);
+    return isAllowedLives(stored) ? stored : 5;
+  });
+  const [lives, setLives] = useState<number>(() => {
+    const stored = clampInt(loadStoredNumber("wordcollapse:maxLives", 5), 3, 20);
+    return isAllowedLives(stored) ? stored : 5;
+  });
+  const [pairCount, setPairCount] = useState(() =>
+    clampInt(loadStoredNumber("wordcollapse:pairCount", 3), 2, 10),
+  );
+  const [spawnIntervalMs, setSpawnIntervalMs] = useState<SpawnSpeed>(() => {
+    const stored = loadStoredNumber("wordcollapse:spawnIntervalMs", 6000);
+    return isSpawnSpeed(stored) ? stored : 6000;
+  });
+  const [fallSpeedPxPerSec, setFallSpeedPxPerSec] = useState<number>(() => {
+    const stored = loadStoredNumber("wordcollapse:fallSpeedPxPerSec", 90);
+    return isFallSpeed(stored) ? stored : 90;
+  });
 
   const [score, setScore] = useState(0);
   const [incorrectScore, setIncorrectScore] = useState(0);
@@ -169,6 +291,9 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   const uniqueOnlyRef = useRef(false);
   const spawnQueueRef = useRef<SpawnPair[]>([]);
   const spawnCursorRef = useRef(0);
+  const freezeTimeoutRef = useRef<number | null>(null);
+  const freezeUntilRef = useRef(0);
+  const previousStreamRef = useRef<Stream>(stream);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const modalWindowRef = useRef<HTMLDivElement>(null);
@@ -185,7 +310,12 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   });
 
   useEffect(() => {
-    setLeftLanguage(stream);
+    setLeftLanguage((prev) => {
+      const prevStream = previousStreamRef.current;
+      previousStreamRef.current = stream;
+      if (prev === prevStream) return stream;
+      return prev;
+    });
   }, [stream]);
 
   useEffect(() => {
@@ -197,9 +327,57 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   }, [hintsEnabled]);
 
   useEffect(() => {
+    storeBool("wordcollapse:musicOn", isMusicOn);
+  }, [isMusicOn]);
+
+  useEffect(() => {
     storeBool("wordcollapse:uniqueOnly", uniqueOnly);
     uniqueOnlyRef.current = uniqueOnly;
   }, [uniqueOnly]);
+
+  useEffect(() => {
+    storeBool("wordcollapse:useGlossary", useGlossary);
+  }, [useGlossary]);
+
+  useEffect(() => {
+    storeJson("wordcollapse:selectedParts", selectedParts);
+  }, [selectedParts]);
+
+  useEffect(() => {
+    storeBool("wordcollapse:useIrregularOnly", useIrregularOnly);
+  }, [useIrregularOnly]);
+
+  useEffect(() => {
+    storeString("wordcollapse:leftLanguage", leftLanguage);
+  }, [leftLanguage]);
+
+  useEffect(() => {
+    storeString("wordcollapse:rightLanguage", rightLanguage);
+  }, [rightLanguage]);
+
+  useEffect(() => {
+    storeBool("wordcollapse:swapSides", swapSides);
+  }, [swapSides]);
+
+  useEffect(() => {
+    storeBool("wordcollapse:requireTranslations", requireTranslations);
+  }, [requireTranslations]);
+
+  useEffect(() => {
+    storeNumber("wordcollapse:maxLives", maxLives);
+  }, [maxLives]);
+
+  useEffect(() => {
+    storeNumber("wordcollapse:pairCount", pairCount);
+  }, [pairCount]);
+
+  useEffect(() => {
+    storeNumber("wordcollapse:spawnIntervalMs", spawnIntervalMs);
+  }, [spawnIntervalMs]);
+
+  useEffect(() => {
+    storeNumber("wordcollapse:fallSpeedPxPerSec", fallSpeedPxPerSec);
+  }, [fallSpeedPxPerSec]);
 
   useEffect(() => {
     endReasonRef.current = endReason;
@@ -223,11 +401,13 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
 
     const verbLikeTerms = verbsPool.map(mapVerbEntryToPlayable);
     const glossaryPool = useGlossary
-      ? playableTerms.map((term) => ({ ...term, source: "glossary" as const }))
+      ? playableTerms
+          .filter((term) => term.level === currentLevel)
+          .map((term) => ({ ...term, source: "glossary" as const }))
       : [];
 
     return [...glossaryPool, ...verbLikeTerms];
-  }, [playableTerms, selectedParts, useGlossary, useIrregularOnly, verbEntries]);
+  }, [currentLevel, playableTerms, selectedParts, useGlossary, useIrregularOnly, verbEntries]);
 
   const leftSideLanguage = swapSides ? rightLanguage : leftLanguage;
   const rightSideLanguage = swapSides ? leftLanguage : rightLanguage;
@@ -389,6 +569,11 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     setComboCount(0);
     setShowComboAnimation(null);
     setIsFrozen(false);
+    freezeUntilRef.current = 0;
+    if (freezeTimeoutRef.current) {
+      window.clearTimeout(freezeTimeoutRef.current);
+      freezeTimeoutRef.current = null;
+    }
     setBombCharge(0);
     setLives(maxLives);
     setEndReason(null);
@@ -451,7 +636,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     startMusic();
 
     uniqueOnlyRef.current = uniqueOnly;
-    spawnQueueRef.current = [...spawnPool].sort(() => 0.5 - Math.random());
+    spawnQueueRef.current = uniqueOnly ? shuffleInPlace([...spawnPool]) : [];
     spawnCursorRef.current = 0;
 
     gameStartedAtRef.current = performance.now();
@@ -466,7 +651,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     startMusic();
 
     uniqueOnlyRef.current = uniqueOnly;
-    spawnQueueRef.current = [...spawnPool].sort(() => 0.5 - Math.random());
+    spawnQueueRef.current = uniqueOnly ? shuffleInPlace([...spawnPool]) : [];
     spawnCursorRef.current = 0;
 
     gameStartedAtRef.current = performance.now();
@@ -520,12 +705,35 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     });
   }, [stopMusic]);
 
+  const applyFreeze = useCallback((durationMs: number) => {
+    const now = Date.now();
+    const nextUntil = Math.max(freezeUntilRef.current, now) + durationMs;
+    freezeUntilRef.current = nextUntil;
+    setIsFrozen(true);
+    if (freezeTimeoutRef.current) {
+      window.clearTimeout(freezeTimeoutRef.current);
+      freezeTimeoutRef.current = null;
+    }
+    freezeTimeoutRef.current = window.setTimeout(() => {
+      freezeUntilRef.current = 0;
+      freezeTimeoutRef.current = null;
+      setIsFrozen(false);
+    }, Math.max(0, nextUntil - now));
+  }, []);
+
   const spawnBonus = useCallback(
     (bonusType: "freeze" | "bomb") => {
       if (gameSize.cols < 1) return false;
-      const col = Math.floor(Math.random() * gameSize.cols);
       const existing = blocksRef.current;
-      if (existing.some((b) => b.col === col && b.y < BLOCK_HEIGHT)) return false;
+      const blockedCols = new Set<number>();
+      for (const block of existing) {
+        if (block.isMatched) continue;
+        if (block.y < BLOCK_HEIGHT) blockedCols.add(block.col);
+      }
+      const candidates = Array.from({ length: gameSize.cols }, (_, idx) => idx);
+      shuffleInPlace(candidates);
+      const col = candidates.find((candidate) => !blockedCols.has(candidate));
+      if (col === undefined) return false;
 
       const text = bonusType === "freeze" ? "❄️" : "💣";
       commitBlocks([
@@ -549,40 +757,72 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   const spawnWave = useCallback(() => {
     if (spawnPool.length < 1 || gameSize.cols < 4) return false;
 
+    const existing = blocksRef.current;
+    const blockedCols = new Set<number>();
+    for (const block of existing) {
+      if (block.isMatched) continue;
+      if (block.y < BLOCK_HEIGHT) blockedCols.add(block.col);
+    }
+
     const halfCols = Math.max(2, Math.floor(gameSize.cols / 2));
-    const remaining = uniqueOnlyRef.current ? spawnQueueRef.current.slice(spawnCursorRef.current) : [];
-    const waveSize = uniqueOnlyRef.current ? Math.min(pairCount, remaining.length) : pairCount;
+    const remainingCount = uniqueOnlyRef.current
+      ? Math.max(0, spawnQueueRef.current.length - spawnCursorRef.current)
+      : spawnPool.length;
+    const waveSize = Math.min(pairCount, remainingCount);
     if (waveSize < 1) return false;
 
+    const cursorStart = spawnCursorRef.current;
     const selected = uniqueOnlyRef.current
-      ? spawnQueueRef.current.slice(spawnCursorRef.current, spawnCursorRef.current + waveSize)
-      : [...spawnPool].sort(() => 0.5 - Math.random()).slice(0, waveSize);
-    if (uniqueOnlyRef.current) spawnCursorRef.current += selected.length;
+      ? spawnQueueRef.current.slice(cursorStart, cursorStart + waveSize)
+      : sampleWithoutReplacement(spawnPool, waveSize);
+    if (selected.length < 1) return false;
 
-    const existing = blocksRef.current;
     const newBlocks: Block[] = [];
     const isInitialWave = existing.length === 0;
-    const spawnSpread = isInitialWave || isMobileViewport() ? 1.6 : waveSize * 1.5;
+    const spawnSpread = isInitialWave || isMobileViewport() ? 1.6 : Math.max(2.8, waveSize * 1.35);
     const spawnBase = isInitialWave || isMobileViewport() ? 0.15 : 0.5;
 
+    const leftCandidates = Array.from({ length: halfCols }, (_, idx) => idx).filter((col) => !blockedCols.has(col));
+    const rightCandidates = Array.from({ length: halfCols }, (_, idx) => halfCols + idx).filter(
+      (col) => !blockedCols.has(col),
+    );
+    if (leftCandidates.length === 0 || rightCandidates.length === 0) {
+      loseLife();
+      return false;
+    }
+
+    const usedLeftCols = new Set<number>();
+    const usedRightCols = new Set<number>();
+    const bandStartByCol = new Map<number, number>();
+    const spawnedByCol = new Map<number, number>();
+
+    const pickColumn = (available: number[], used: Set<number>) => {
+      const unused = available.filter((col) => !used.has(col));
+      const pool = unused.length > 0 ? unused : available;
+      if (pool.length === 0) return null;
+      const col = pool[randomInt(pool.length)];
+      used.add(col);
+      return col;
+    };
+
+    const spawnYForCol = (col: number) => {
+      const count = spawnedByCol.get(col) ?? 0;
+      const bandStart = bandStartByCol.get(col) ?? spawnBase + Math.random() * spawnSpread;
+      bandStartByCol.set(col, bandStart);
+      spawnedByCol.set(col, count + 1);
+      return -BLOCK_HEIGHT * (bandStart + count * 1.15);
+    };
+
     for (const item of selected) {
-      const leftCol = Math.floor(Math.random() * halfCols);
-      let rightCol = Math.floor(Math.random() * halfCols);
-      if (halfCols > 1) {
-        while (rightCol === leftCol) rightCol = Math.floor(Math.random() * halfCols);
-      }
-
-      const leftAbsCol = leftCol;
-      const rightAbsCol = halfCols + rightCol;
-      const leftY = -BLOCK_HEIGHT * (spawnBase + Math.random() * spawnSpread);
-      const rightY = -BLOCK_HEIGHT * (spawnBase + Math.random() * spawnSpread);
-
-      const blockedLeft = existing.some((b) => b.col === leftAbsCol && b.y < BLOCK_HEIGHT);
-      const blockedRight = existing.some((b) => b.col === rightAbsCol && b.y < BLOCK_HEIGHT);
-      if (blockedLeft || blockedRight) {
+      const leftAbsCol = pickColumn(leftCandidates, usedLeftCols);
+      const rightAbsCol = pickColumn(rightCandidates, usedRightCols);
+      if (leftAbsCol === null || rightAbsCol === null) {
         loseLife();
         return false;
       }
+
+      const leftY = spawnYForCol(leftAbsCol);
+      const rightY = spawnYForCol(rightAbsCol);
 
       newBlocks.push({
         id: `wc-${Date.now()}-${Math.random()}-L`,
@@ -605,6 +845,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
     }
 
     commitBlocks([...existing, ...newBlocks]);
+    if (uniqueOnlyRef.current) spawnCursorRef.current = cursorStart + selected.length;
     return true;
   }, [commitBlocks, gameSize.cols, loseLife, pairCount, spawnPool]);
 
@@ -619,8 +860,8 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
   useEffect(() => {
     if (status !== "running") return;
     if (bombCharge < 100) return;
-    spawnBonus("bomb");
-    setBombCharge((c) => Math.max(0, c - 100));
+    const spawned = spawnBonus("bomb");
+    if (spawned) setBombCharge((c) => Math.max(0, c - 100));
   }, [bombCharge, spawnBonus, status]);
 
   useEffect(() => {
@@ -637,46 +878,52 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
       const shouldSimulate = status === "running" && !isFrozen && !isTutorialOpen;
       if (shouldSimulate && gameSize.width > 0) {
         const prev = blocksRef.current;
-        const landedByCol = new Map<number, number[]>();
+        const byCol = new Map<number, Block[]>();
         for (const block of prev) {
           if (block.isMatched) continue;
-          if (block.isFalling) continue;
-          const list = landedByCol.get(block.col) || [];
-          list.push(block.y);
-          landedByCol.set(block.col, list);
-        }
-        for (const [col, list] of landedByCol.entries()) {
-          list.sort((a, b) => a - b);
-          landedByCol.set(col, list);
+          const list = byCol.get(block.col) || [];
+          list.push(block);
+          byCol.set(block.col, list);
         }
 
-        let anyChanged = false;
-        const next = prev.map((block) => {
-          if (block.isMatched) return block;
-          if (!block.isFalling) return block;
+        const updates = new Map<string, Block>();
+        for (const columnBlocks of byCol.values()) {
+          const sorted = [...columnBlocks].sort((a, b) => b.y - a.y);
+          let ceilingY = gameSize.height - BLOCK_HEIGHT;
 
-          const speedPxPerSec = block.targetY !== undefined ? fallSpeedPxPerSec * SETTLE_SPEED_MULTIPLIER : fallSpeedPxPerSec;
-          const dyBlock = (speedPxPerSec * dtMs) / 1000;
-          let newY = block.y + dyBlock;
-          let stopY = gameSize.height - BLOCK_HEIGHT;
-          const landed = landedByCol.get(block.col);
-          if (landed && landed.length > 0) {
-            for (const y of landed) {
-              if (block.y < y && newY + BLOCK_HEIGHT >= y) {
-                stopY = Math.min(stopY, y - BLOCK_HEIGHT);
-              }
+          for (const block of sorted) {
+            if (!block.isFalling) {
+              updates.set(block.id, block);
+              ceilingY = block.y - BLOCK_HEIGHT;
+              continue;
             }
-          }
-          if (block.targetY !== undefined) stopY = Math.min(stopY, block.targetY);
-          if (newY >= stopY) {
-            anyChanged = true;
-            return { ...block, y: stopY, isFalling: false, targetY: undefined };
-          }
 
-          if (newY !== block.y) anyChanged = true;
-          return { ...block, y: newY };
-        });
+            const speedPxPerSec =
+              block.targetY !== undefined ? fallSpeedPxPerSec * SETTLE_SPEED_MULTIPLIER : fallSpeedPxPerSec;
+            const dyBlock = (speedPxPerSec * dtMs) / 1000;
+            let stopY = ceilingY;
+            if (block.targetY !== undefined) stopY = Math.min(stopY, block.targetY);
 
+            const movedY = Math.min(block.y + dyBlock, stopY);
+            if (movedY >= stopY) {
+              updates.set(block.id, { ...block, y: stopY, isFalling: false, targetY: undefined });
+              ceilingY = stopY - BLOCK_HEIGHT;
+              continue;
+            }
+
+            if (movedY !== block.y) {
+              updates.set(block.id, { ...block, y: movedY });
+              ceilingY = movedY - BLOCK_HEIGHT;
+              continue;
+            }
+
+            updates.set(block.id, block);
+            ceilingY = block.y - BLOCK_HEIGHT;
+          }
+        }
+
+        const next = prev.map((block) => updates.get(block.id) ?? block);
+        const anyChanged = next.some((block, idx) => block !== prev[idx]);
         if (anyChanged) blocksRef.current = next;
 
         const startedAt = gameStartedAtRef.current ?? now;
@@ -686,7 +933,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
           while (spawnAccumulatorMsRef.current >= spawnIntervalMs) {
             spawnAccumulatorMsRef.current -= spawnIntervalMs;
             const shouldSpawnBonus = Math.random() < 0.1;
-            const spawned = shouldSpawnBonus ? spawnBonus("freeze") : spawnWave();
+            const spawned = shouldSpawnBonus ? spawnBonus("freeze") || spawnWave() : spawnWave();
             if (!spawned) break;
           }
         }
@@ -737,9 +984,8 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
 
     if (clickedBlock.role === "bonus") {
       if (clickedBlock.bonusType === "freeze") {
-        setIsFrozen(true);
+        applyFreeze(6000);
         setScore((s) => s + 5);
-        setTimeout(() => setIsFrozen(false), 6000);
         commitBlocks(currentBlocks.filter((b) => b.id !== blockId));
         setSelectedBlockId(null);
         return;
@@ -752,7 +998,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
           return;
         }
         const removeCount = Math.max(1, Math.floor(uniqueTerms.length * 0.25));
-        const shuffled = [...uniqueTerms].sort(() => 0.5 - Math.random());
+        const shuffled = shuffleInPlace([...uniqueTerms]);
         const targetTerms = new Set(shuffled.slice(0, removeCount));
         const filtered = currentBlocks.filter((b) => b.id !== blockId && (!b.termKey || !targetTerms.has(b.termKey)));
         commitBlocks(settleColumns(filtered));
@@ -822,6 +1068,43 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      const activeDialog = isTutorialOpen
+        ? tutorialWindowRef.current
+        : isSettingsOpen
+          ? settingsWindowRef.current
+          : isModalOpen
+            ? modalWindowRef.current
+            : null;
+
+      if (event.key === "Tab" && activeDialog) {
+        const focusable = Array.from(
+          activeDialog.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter((element) => element.getAttribute("aria-hidden") !== "true");
+        if (focusable.length > 0) {
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          const active = document.activeElement;
+          if (!(active instanceof HTMLElement) || !activeDialog.contains(active)) {
+            event.preventDefault();
+            (event.shiftKey ? last : first).focus();
+            return;
+          }
+          if (event.shiftKey && active === first) {
+            event.preventDefault();
+            last.focus();
+            return;
+          }
+          if (!event.shiftKey && active === last) {
+            event.preventDefault();
+            first.focus();
+            return;
+          }
+        }
+        return;
+      }
+
       if (event.key !== "Escape") return;
       if (isTutorialOpen) {
         event.preventDefault();
@@ -886,6 +1169,14 @@ const WordCollapseGame: React.FC<Props> = ({ stream, playableTerms, verbEntries 
                   <span className="score incorrect">
                     {t("incorrect", "Incorrect")}: {incorrectScore}
                   </span>
+                  {uniqueOnly && spawnQueueRef.current.length > 0 && (
+                    <span className="score unique-progress">
+                      {t("games.wordCollapseUniqueProgress", "Уникальные: {{used}}/{{total}}", {
+                        used: Math.min(spawnCursorRef.current, spawnQueueRef.current.length),
+                        total: spawnQueueRef.current.length,
+                      })}
+                    </span>
+                  )}
                   {comboCount > 1 && <span className="score combo-couter">Combo: x{comboCount}</span>}
                 </div>
               </div>
