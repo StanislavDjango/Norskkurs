@@ -16,6 +16,10 @@ import type {
   VerbEntry,
   Expression,
   Level,
+  UserLexeme,
+  LexemeSource,
+  LexemeKind,
+  PaginatedResponse,
 } from "./types";
 
 import { publishApiError, publishOffline } from "./apiStatus";
@@ -255,6 +259,91 @@ export const fetchExpressions = async (params?: FilterParams): Promise<Expressio
 
 export const fetchGlossary = async (params?: GlossarySearchParams): Promise<GlossaryTerm[]> => {
   return requestJsonWithRetry<GlossaryTerm[]>("get", "glossary/", undefined, { params });
+};
+
+type UserLexemeListParams = {
+  source?: LexemeSource;
+  kind?: LexemeKind;
+  level?: Level | string;
+  language?: Stream | string;
+  q?: string;
+  tag?: string;
+  archived?: boolean;
+  page?: number;
+  page_size?: number;
+};
+
+export const fetchUserLexemes = async (
+  params?: UserLexemeListParams,
+): Promise<PaginatedResponse<UserLexeme>> => {
+  const normalizedParams: Record<string, unknown> = { ...(params || {}) };
+  if (typeof normalizedParams.archived === "boolean") {
+    normalizedParams.archived = normalizedParams.archived ? "true" : "false";
+  }
+  const data = await requestJsonWithRetry<PaginatedResponse<UserLexeme> | UserLexeme[]>(
+    "get",
+    "user-lexemes/",
+    undefined,
+    {
+      params: normalizedParams,
+      silentStatuses: [401, 403],
+    },
+  );
+  if (Array.isArray(data)) {
+    return {
+      count: data.length,
+      next: null,
+      previous: null,
+      results: data,
+    };
+  }
+  return data;
+};
+
+export const reviewUserLexeme = async (id: number, correct: boolean): Promise<UserLexeme> => {
+  return requestJson<UserLexeme>("post", `user-lexemes/${id}/review/`, { correct });
+};
+
+export const createUserLexeme = async (
+  payload: Partial<UserLexeme> & {
+    text?: string;
+    translation_en?: string;
+    translation_ru?: string;
+    translation_nb?: string;
+    translation_nn?: string;
+    language?: Stream | string;
+    level?: Level | string;
+    tags?: string[];
+    source?: LexemeSource;
+    kind?: LexemeKind;
+  },
+): Promise<UserLexeme> => {
+  return requestJson<UserLexeme>("post", "user-lexemes/", payload);
+};
+
+export const updateUserLexeme = async (id: number, payload: Partial<UserLexeme>): Promise<UserLexeme> => {
+  return requestJson<UserLexeme>("patch", `user-lexemes/${id}/`, payload);
+};
+
+export const deleteUserLexeme = async (id: number): Promise<void> => {
+  await requestJson<void>("delete", `user-lexemes/${id}/`);
+};
+
+export const toggleUserLexeme = async (payload: {
+  concept_key?: string;
+  glossary_term?: number;
+  glossary_id?: number;
+  term_id?: number;
+  translation_en?: string;
+  translation_ru?: string;
+  translation_nb?: string;
+  translation_nn?: string;
+  text?: string;
+  language?: Stream | string;
+  level?: Level | string;
+  kind?: LexemeKind;
+}): Promise<{ is_favorite: boolean; lexeme?: UserLexeme }> => {
+  return requestJson("post", "user-lexemes/toggle_favorite/", payload);
 };
 
 export const fetchReadings = async (params?: FilterParams): Promise<Reading[]> => {

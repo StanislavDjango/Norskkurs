@@ -6,8 +6,10 @@ from typing import Any, Dict, Optional
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.db import models, transaction
 from rest_framework import mixins, status, viewsets
-from rest_framework.authentication import SessionAuthentication
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import (
@@ -24,6 +26,7 @@ from .models import (
     StudentProfile,
     Submission,
     Test,
+    UserLexeme,
     VerbEntry,
 )
 from .serializers import (
@@ -42,6 +45,7 @@ from .serializers import (
     SubmissionSerializer,
     TestDetailSerializer,
     TestListSerializer,
+    UserLexemeSerializer,
     VerbEntrySerializer,
 )
 
@@ -636,6 +640,184 @@ class ExpressionViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return FilteredStreamLevelMixin.filter_by_stream_level(self, qs).order_by(
             "phrase"
         )
+
+
+class UserLexemePagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = "page_size"
+    max_page_size = 200
+
+
+class UserLexemeViewSet(viewsets.ModelViewSet):
+    authentication_classes = (BasicAuthentication, CsrfExemptSessionAuthentication)
+    permission_classes = (IsAuthenticated,)
+    serializer_class = UserLexemeSerializer
+    pagination_class = UserLexemePagination
+
+    def get_queryset(self):
+        qs = UserLexeme.objects.filter(user=self.request.user)
+        archived = (self.request.query_params.get("archived") or "").lower() == "true"
+        if not archived:
+            qs = qs.filter(is_archived=False)
+        source = (self.request.query_params.get("source") or "").strip().lower()
+        if source:
+            qs = qs.filter(source=source)
+        kind = (self.request.query_params.get("kind") or "").strip().lower()
+        if kind:
+            qs = qs.filter(kind=kind)
+        level = (self.request.query_params.get("level") or "").strip().upper()
+        if level:
+            qs = qs.filter(level=level)
+        language = (self.request.query_params.get("language") or "").strip().lower()
+        if language:
+            qs = qs.filter(language=language)
+        tag = (self.request.query_params.get("tag") or "").strip().lower()
+        if tag:
+            qs = qs.filter(tags__contains=[tag])
+        search_term = (self.request.query_params.get("q") or "").strip()
+        if search_term:
+            qs = qs.filter(
+                models.Q(text__icontains=search_term)
+                | models.Q(translation_en__icontains=search_term)
+                | models.Q(translation_ru__icontains=search_term)
+                | models.Q(translation_nb__icontains=search_term)
+                | models.Q(translation_nn__icontains=search_term)
+                | models.Q(notes__icontains=search_term)
+                | models.Q(example__icontains=search_term)
+            )
+        return qs.order_by("-updated_at", "-id")
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def perform_destroy(self, instance):
+        instance.is_archived = True
+        instance.save(update_fields=["is_archived", "updated_at"])
+
+    @action(detail=True, methods=["post"], url_path="review")
+    def review(self, request, *args, **kwargs):
+        lexeme = self.get_object()
+        correct = bool(request.data.get("correct"))
+        lexeme.touch_review(correct=correct)
+        lexeme.save(
+            update_fields=["times_reviewed", "times_correct", "last_reviewed_at"]
+        )
+        return Response(self.get_serializer(lexeme).data)
+
+    def _normalize_concept_key(self, value: str) -> str:
+        if not value:
+            return ""
+        parts = value.split("|")
+        while len(parts) < 4:
+            parts.append("")
+        return UserLexeme.build_concept_key(
+            translation_en=parts[0],
+            translation_nb=parts[1],
+            translation_nn=parts[2],
+            translation_ru=parts[3],
+        )
+
+    def _toggle_favorite(self, request):
+        raw_concept_key = request.data.get("concept_key") or ""
+        concept_key = self._normalize_concept_key(raw_concept_key)
+        glossary_id = (
+            request.data.get("glossary_term")
+            or request.data.get("glossary_id")
+            or request.data.get("term_id")
+        )
+        kind = (request.data.get("kind") or UserLexeme.Kind.WORD).strip().lower()
+        language = (request.data.get("language") or "").strip().lower()
+        level = (request.data.get("level") or "").strip().upper()
+
+        glossary_obj = None
+        if glossary_id:
+            try:
+                glossary_obj = GlossaryTerm.objects.get(id=glossary_id)
+            except GlossaryTerm.DoesNotExist:
+                glossary_obj = None
+        if glossary_obj and not concept_key:
+            concept_key = UserLexeme.build_concept_key(
+                translation_en=glossary_obj.translation_en,
+                translation_nb=glossary_obj.translation_nb,
+                translation_nn=glossary_obj.translation_nn,
+                translation_ru=glossary_obj.translation_ru,
+            )
+        if not concept_key:
+            concept_key = UserLexeme.build_concept_key(
+                translation_en=request.data.get("translation_en") or "",
+                translation_nb=request.data.get("translation_nb") or "",
+                translation_nn=request.data.get("translation_nn") or "",
+                translation_ru=request.data.get("translation_ru") or "",
+            )
+
+        existing = None
+        if concept_key or glossary_obj:
+            existing_filter = models.Q()
+            if concept_key:
+                existing_filter |= models.Q(concept_key=concept_key)
+            if glossary_obj:
+                existing_filter |= models.Q(glossary_term=glossary_obj)
+            existing = (
+                UserLexeme.objects.filter(
+                    user=request.user,
+                    source=UserLexeme.Source.GLOSSARY,
+                    is_archived=False,
+                )
+                .filter(existing_filter)
+                .order_by("-id")
+                .first()
+            )
+        if existing:
+            existing.is_archived = True
+            existing.save(update_fields=["is_archived", "updated_at"])
+            return Response({"is_favorite": False})
+
+        text_fallback = (
+            request.data.get("text")
+            or (glossary_obj.term if glossary_obj else "")
+            or concept_key
+        )
+        serializer = self.get_serializer(
+            data={
+                "source": UserLexeme.Source.GLOSSARY,
+                "kind": kind or UserLexeme.Kind.WORD,
+                "glossary_term": glossary_obj.id if glossary_obj else None,
+                "concept_key": concept_key,
+                "text": text_fallback,
+                "translation_en": request.data.get("translation_en")
+                or (glossary_obj.translation_en if glossary_obj else ""),
+                "translation_nb": request.data.get("translation_nb")
+                or (glossary_obj.translation_nb if glossary_obj else ""),
+                "translation_nn": request.data.get("translation_nn")
+                or (glossary_obj.translation_nn if glossary_obj else ""),
+                "translation_ru": request.data.get("translation_ru")
+                or (glossary_obj.translation_ru if glossary_obj else ""),
+                "language": language
+                or (
+                    glossary_obj.stream
+                    if glossary_obj
+                    else request.data.get("language")
+                )
+                or "",
+                "level": level
+                or (glossary_obj.level if glossary_obj else request.data.get("level"))
+                or "",
+            }
+        )
+        serializer.is_valid(raise_exception=True)
+        lexeme = serializer.save()
+        return Response(
+            {"is_favorite": True, "lexeme": self.get_serializer(lexeme).data},
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=False, methods=["post"], url_path="toggle_favorite")
+    def toggle_favorite(self, request):
+        return self._toggle_favorite(request)
+
+    @action(detail=False, methods=["post"], url_path="toggle")
+    def toggle(self, request):
+        return self._toggle_favorite(request)
 
 
 class GlossaryTermViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):

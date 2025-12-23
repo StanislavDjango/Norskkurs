@@ -10,7 +10,18 @@ type Props = {
   playableTerms: GlossaryTerm[];
   verbEntries: VerbEntry[];
   vocabFavorites: string[];
-  onToggleVocabFavorite: (id: string) => void;
+  onToggleVocabFavorite: (
+    id: string,
+    meta?: {
+      text?: string;
+      translation_en?: string;
+      translation_nb?: string;
+      translation_nn?: string;
+      translation_ru?: string;
+      language?: Stream;
+      level?: Level;
+    },
+  ) => void;
 };
 
 type GameDifficulty = "verySlow" | "slow" | "normal" | "fast" | "turbo";
@@ -505,7 +516,17 @@ const FjordExpeditionGame: React.FC<Props> = ({
             <button
               type="button"
               className={`vocab-bookmark ${currentIsFavorite ? "active" : ""}`}
-              onClick={() => onToggleVocabFavorite(currentQuestion.vocabId)}
+              onClick={() =>
+                onToggleVocabFavorite(currentQuestion.vocabId, {
+                  text: currentQuestion.term.term,
+                  translation_en: currentQuestion.term.translation_en,
+                  translation_nb: currentQuestion.term.translation_nb,
+                  translation_nn: currentQuestion.term.translation_nn,
+                  translation_ru: currentQuestion.term.translation_ru,
+                  language: currentQuestion.term.stream,
+                  level: currentQuestion.term.level,
+                })
+              }
               aria-label={currentIsFavorite ? t("removeFavorite") : t("addFavorite")}
               disabled={locked}
               title={t("games.expeditionBookmarkHint")}

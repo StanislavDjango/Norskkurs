@@ -2,6 +2,7 @@
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 
@@ -414,3 +415,89 @@ class GlossaryTerm(models.Model):
 
     def __str__(self) -> str:
         return f"{self.term} ({self.stream}, {self.level})"
+
+
+class UserLexeme(models.Model):
+    class Kind(models.TextChoices):
+        WORD = "word", _("Word")
+        SENTENCE = "sentence", _("Sentence")
+
+    class Source(models.TextChoices):
+        GLOSSARY = "glossary", _("Glossary")
+        CUSTOM = "custom", _("Custom")
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="lexemes",
+    )
+    source = models.CharField(
+        max_length=20, choices=Source.choices, default=Source.CUSTOM
+    )
+    kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.WORD)
+    glossary_term = models.ForeignKey(
+        GlossaryTerm,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="user_lexemes",
+    )
+    concept_key = models.CharField(max_length=255, blank=True, default="")
+    text = models.TextField(blank=True, default="")
+    translation_en = models.TextField(blank=True, default="")
+    translation_ru = models.TextField(blank=True, default="")
+    translation_nb = models.TextField(blank=True, default="")
+    translation_nn = models.TextField(blank=True, default="")
+    example = models.TextField(blank=True, default="")
+    notes = models.TextField(blank=True, default="")
+    tags = models.JSONField(default=list, blank=True)
+    language = models.CharField(
+        max_length=20, choices=Test.Stream.choices, blank=True, default=""
+    )
+    level = models.CharField(
+        max_length=2, choices=Test.Level.choices, blank=True, default=""
+    )
+    times_reviewed = models.PositiveIntegerField(default=0)
+    times_correct = models.PositiveIntegerField(default=0)
+    last_reviewed_at = models.DateTimeField(null=True, blank=True)
+    is_archived = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at", "-id"]
+        indexes = [
+            models.Index(fields=["user", "concept_key", "is_archived"]),
+            models.Index(fields=["user", "source"]),
+            models.Index(fields=["user", "glossary_term"]),
+            models.Index(fields=["user", "kind"]),
+            models.Index(fields=["user", "language"]),
+        ]
+
+    def __str__(self) -> str:
+        label = self.text or self.concept_key or "lexeme"
+        return f"{label} ({self.user_id})"
+
+    @staticmethod
+    def build_concept_key(
+        translation_en: str = "",
+        translation_nb: str = "",
+        translation_nn: str = "",
+        translation_ru: str = "",
+    ) -> str:
+        def _norm(value: str) -> str:
+            return " ".join((value or "").split()).strip().lower()
+
+        parts = [
+            _norm(translation_en),
+            _norm(translation_nb),
+            _norm(translation_nn),
+            _norm(translation_ru),
+        ]
+        return "|".join(parts)
+
+    def touch_review(self, correct: bool = False) -> None:
+        self.times_reviewed += 1
+        if correct:
+            self.times_correct += 1
+        self.last_reviewed_at = timezone.now()

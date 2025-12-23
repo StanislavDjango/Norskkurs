@@ -14,6 +14,7 @@ from .models import (
     StudentProfile,
     Submission,
     Test,
+    UserLexeme,
     VerbEntry,
 )
 
@@ -238,6 +239,243 @@ class GlossaryTermSerializer(serializers.ModelSerializer):
             "level",
             "tags",
         )
+
+
+class UserLexemeSerializer(serializers.ModelSerializer):
+    MAX_TEXT_LENGTH = 500
+    MAX_TRANSLATION_LENGTH = 500
+    MAX_NOTES_LENGTH = 1000
+    MAX_EXAMPLE_LENGTH = 1000
+    MAX_TAG_LENGTH = 40
+
+    @classmethod
+    def _normalize_text(cls, value: str) -> str:
+        return " ".join((value or "").split()).strip()
+
+    @classmethod
+    def _validate_length(cls, value: str, max_len: int, field: str) -> None:
+        if value and len(value) > max_len:
+            raise serializers.ValidationError(
+                {field: f"Ensure this field has no more than {max_len} characters."}
+            )
+
+    @classmethod
+    def _normalize_tags(cls, value: object) -> list[str]:
+        if value is None:
+            raw_tags = []
+        elif isinstance(value, str):
+            raw_tags = value.split(",")
+        elif isinstance(value, (list, tuple)):
+            raw_tags = value
+        else:
+            raw_tags = []
+
+        tags: list[str] = []
+        for raw in raw_tags:
+            if not isinstance(raw, str):
+                continue
+            cleaned = cls._normalize_text(raw).lower()
+            if not cleaned:
+                continue
+            cls._validate_length(cleaned, cls.MAX_TAG_LENGTH, "tags")
+            if cleaned not in tags:
+                tags.append(cleaned)
+        return tags
+
+    class Meta:
+        model = UserLexeme
+        read_only_fields = (
+            "id",
+            "user",
+            "times_reviewed",
+            "times_correct",
+            "last_reviewed_at",
+            "created_at",
+            "updated_at",
+        )
+        fields = (
+            "id",
+            "source",
+            "kind",
+            "glossary_term",
+            "concept_key",
+            "text",
+            "translation_en",
+            "translation_ru",
+            "translation_nb",
+            "translation_nn",
+            "example",
+            "notes",
+            "tags",
+            "language",
+            "level",
+            "times_reviewed",
+            "times_correct",
+            "last_reviewed_at",
+            "is_archived",
+            "created_at",
+            "updated_at",
+        )
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        if not user or not user.is_authenticated:
+            raise serializers.ValidationError("Authentication required.")
+
+        instance = getattr(self, "instance", None)
+        source = (
+            attrs.get("source")
+            or (instance.source if instance else None)
+            or UserLexeme.Source.CUSTOM
+        )
+        glossary_term = (
+            attrs.get("glossary_term")
+            if "glossary_term" in attrs
+            else (instance.glossary_term if instance else None)
+        )
+        language_provided = "language" in attrs
+        language = (
+            attrs.get("language")
+            if language_provided
+            else (instance.language if instance else "")
+        )
+        level = (
+            attrs.get("level")
+            if "level" in attrs
+            else (instance.level if instance else "")
+        )
+
+        text = self._normalize_text(
+            attrs.get("text")
+            if "text" in attrs
+            else (instance.text if instance else "")
+        )
+        translation_en = self._normalize_text(
+            attrs.get("translation_en")
+            if "translation_en" in attrs
+            else (instance.translation_en if instance else "")
+        )
+        translation_nb = self._normalize_text(
+            attrs.get("translation_nb")
+            if "translation_nb" in attrs
+            else (instance.translation_nb if instance else "")
+        )
+        translation_nn = self._normalize_text(
+            attrs.get("translation_nn")
+            if "translation_nn" in attrs
+            else (instance.translation_nn if instance else "")
+        )
+        translation_ru = self._normalize_text(
+            attrs.get("translation_ru")
+            if "translation_ru" in attrs
+            else (instance.translation_ru if instance else "")
+        )
+        notes = self._normalize_text(
+            attrs.get("notes")
+            if "notes" in attrs
+            else (instance.notes if instance else "")
+        )
+        example = self._normalize_text(
+            attrs.get("example")
+            if "example" in attrs
+            else (instance.example if instance else "")
+        )
+        tags = self._normalize_tags(
+            attrs.get("tags")
+            if "tags" in attrs
+            else (instance.tags if instance else [])
+        )
+
+        if source == UserLexeme.Source.GLOSSARY:
+            if not glossary_term:
+                raise serializers.ValidationError(
+                    {"glossary_term": "Glossary term is required for glossary source."}
+                )
+            if (
+                language_provided
+                and language
+                and glossary_term.stream
+                and language != glossary_term.stream
+            ):
+                raise serializers.ValidationError(
+                    {"language": "Language must match glossary term stream."}
+                )
+            if not text:
+                text = glossary_term.term
+            translation_en = translation_en or glossary_term.translation_en
+            translation_nb = translation_nb or glossary_term.translation_nb
+            translation_nn = translation_nn or glossary_term.translation_nn
+            translation_ru = translation_ru or glossary_term.translation_ru
+            language = glossary_term.stream or language
+            level = level or glossary_term.level
+
+        language = (language or "").strip().lower()
+        level = (level or "").strip().upper()
+
+        self._validate_length(text, self.MAX_TEXT_LENGTH, "text")
+        self._validate_length(
+            translation_en, self.MAX_TRANSLATION_LENGTH, "translation_en"
+        )
+        self._validate_length(
+            translation_nb, self.MAX_TRANSLATION_LENGTH, "translation_nb"
+        )
+        self._validate_length(
+            translation_nn, self.MAX_TRANSLATION_LENGTH, "translation_nn"
+        )
+        self._validate_length(
+            translation_ru, self.MAX_TRANSLATION_LENGTH, "translation_ru"
+        )
+        self._validate_length(notes, self.MAX_NOTES_LENGTH, "notes")
+        self._validate_length(example, self.MAX_EXAMPLE_LENGTH, "example")
+
+        if not any([translation_en, translation_nb, translation_nn, translation_ru]):
+            raise serializers.ValidationError("Provide at least one translation.")
+
+        raw_concept_key = attrs.get("concept_key") if "concept_key" in attrs else ""
+        if raw_concept_key:
+            parts = str(raw_concept_key).split("|")
+            while len(parts) < 4:
+                parts.append("")
+            concept_key = UserLexeme.build_concept_key(
+                translation_en=parts[0],
+                translation_nb=parts[1],
+                translation_nn=parts[2],
+                translation_ru=parts[3],
+            )
+        else:
+            concept_key = UserLexeme.build_concept_key(
+                translation_en=translation_en,
+                translation_nb=translation_nb,
+                translation_nn=translation_nn,
+                translation_ru=translation_ru,
+            )
+
+        attrs.update(
+            {
+                "glossary_term": glossary_term,
+                "text": text,
+                "translation_en": translation_en,
+                "translation_nb": translation_nb,
+                "translation_nn": translation_nn,
+                "translation_ru": translation_ru,
+                "notes": notes,
+                "example": example,
+                "tags": tags,
+                "concept_key": concept_key,
+                "language": language,
+                "level": level,
+            }
+        )
+        return attrs
+
+    def create(self, validated_data):
+        validated_data["user"] = self.context["request"].user
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if instance.user != self.context["request"].user:
+            raise serializers.ValidationError("Cannot edit another user's item.")
+        return super().update(instance, validated_data)
 
 
 class ReadingSerializer(serializers.ModelSerializer):

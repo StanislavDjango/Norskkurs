@@ -27,6 +27,7 @@ type Props = {
   expressionFavoritesCount: number;
   onOpenVocabFavorites: () => void;
   onOpenExpressionsFavorites: () => void;
+  onOpenMyWords: () => void;
 };
 
 const ProfilePage: React.FC<Props> = ({
@@ -41,6 +42,7 @@ const ProfilePage: React.FC<Props> = ({
   expressionFavoritesCount,
   onOpenVocabFavorites,
   onOpenExpressionsFavorites,
+  onOpenMyWords,
 }) => {
   const { t } = useTranslation();
 
@@ -220,6 +222,15 @@ const ProfilePage: React.FC<Props> = ({
                 onClick={onOpenExpressionsFavorites}
               >
                 {t("authProfile.openExpressions")}
+              </button>
+            </div>
+          </div>
+          <div>
+            <span className="label">{t("authProfile.myWordsLabel")}</span>
+            <p className="muted small">{t("authProfile.myWordsHint")}</p>
+            <div className="actions inline-actions">
+              <button type="button" className="ghost small" onClick={onOpenMyWords}>
+                {t("authProfile.openMyWords")}
               </button>
             </div>
           </div>

@@ -15,7 +15,18 @@ type Props = {
   stream: Stream;
   currentLevel: Level;
   vocabFavorites: string[];
-  onToggleVocabFavorite: (id: string) => void;
+  onToggleVocabFavorite: (
+    id: string,
+    meta?: {
+      text?: string;
+      translation_en?: string;
+      translation_nb?: string;
+      translation_nn?: string;
+      translation_ru?: string;
+      language?: Stream;
+      level?: Level;
+    },
+  ) => void;
 };
 
 type GameId =

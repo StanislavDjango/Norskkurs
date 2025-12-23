@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { fetchGlossary, fetchReadings } from "../api";
 import type { GlossaryTerm, Level, Reading, Stream } from "../types";
+import { buildConceptKey } from "../utils/lexemes";
 
 type ReadingLookupRow = {
   id: string;
@@ -11,6 +12,8 @@ type ReadingLookupRow = {
   nynorsk: string;
   english: string;
   russian: string;
+  glossaryIds: number[];
+  glossaryIdByStream: Partial<Record<Stream, number>>;
 };
 
 type Props = {
@@ -18,7 +21,20 @@ type Props = {
   currentLevel: Level;
   studentEmail: string;
   vocabFavorites: string[];
-  onToggleVocabFavorite: (id: string) => void;
+  isAuthenticated?: boolean;
+  onToggleVocabFavorite: (
+    id: string,
+    meta?: {
+      glossary_term?: number;
+      text?: string;
+      translation_en?: string;
+      translation_nb?: string;
+      translation_nn?: string;
+      translation_ru?: string;
+      language?: Stream;
+      level?: Level;
+    },
+  ) => void;
   onOpenMyWords: () => void;
   streamLabel: (value: Stream) => string;
 };
@@ -28,6 +44,7 @@ const ReadingsPage: React.FC<Props> = ({
   currentLevel,
   studentEmail,
   vocabFavorites,
+  isAuthenticated,
   onToggleVocabFavorite,
   onOpenMyWords,
   streamLabel,
@@ -172,6 +189,9 @@ const ReadingsPage: React.FC<Props> = ({
           onChange={(e) => setReadingLookup(e.target.value)}
         />
       </label>
+      {!isAuthenticated && (
+        <p className="muted tiny readings-auth-hint">{t("myWords.authHint")}</p>
+      )}
       {readingLookup.trim() && (
         <div className="readings-search-results">
           {readingLookupLoading ? (
@@ -189,7 +209,19 @@ const ReadingsPage: React.FC<Props> = ({
                   <button
                     type="button"
                     className={`vocab-bookmark ${vocabFavorites.includes(row.id) ? "active" : ""}`}
-                    onClick={() => onToggleVocabFavorite(row.id)}
+                    onClick={() =>
+                      onToggleVocabFavorite(row.id, {
+                        glossary_term:
+                          row.glossaryIdByStream[stream] || row.glossaryIds[0],
+                        text: row.bokmaal || row.nynorsk || row.english || row.russian,
+                        translation_en: row.english,
+                        translation_nb: row.bokmaal,
+                        translation_nn: row.nynorsk,
+                        translation_ru: row.russian,
+                        language: stream,
+                        level: currentLevel,
+                      })
+                    }
                     aria-label={
                       vocabFavorites.includes(row.id)
                         ? t("removeFavorite")
@@ -561,9 +593,7 @@ function buildReadingLookupRows(terms: GlossaryTerm[]): ReadingLookupRow[] {
     const conceptNb = term.translation_nb || (term.stream === "bokmaal" ? term.term : "");
     const conceptNn = term.translation_nn || (term.stream === "nynorsk" ? term.term : "");
     const conceptRu = term.translation_ru || "";
-    const key = `${(conceptEn || "").toLowerCase()}|${(conceptNb || "").toLowerCase().trim()}|${(
-      conceptNn || ""
-    ).toLowerCase()}|${(conceptRu || "").toLowerCase().trim()}`;
+    const key = buildConceptKey(conceptEn, conceptNb, conceptNn, conceptRu);
 
     if (!key.replace(/\|/g, "").trim()) {
       return;
@@ -578,8 +608,17 @@ function buildReadingLookupRows(terms: GlossaryTerm[]): ReadingLookupRow[] {
         nynorsk: "",
         english: conceptEn || "",
         russian: conceptRu || "",
+        glossaryIds: [term.id],
+        glossaryIdByStream: { [term.stream]: term.id },
       };
       map.set(key, row);
+    } else {
+      if (!row.glossaryIds.includes(term.id)) {
+        row.glossaryIds.push(term.id);
+      }
+      if (!row.glossaryIdByStream[term.stream]) {
+        row.glossaryIdByStream[term.stream] = term.id;
+      }
     }
 
     if (conceptNb) {

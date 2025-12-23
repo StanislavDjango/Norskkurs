@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { fetchGlossary } from "../api";
 import type { GlossaryTerm, Level, Stream } from "../types";
+import { buildConceptKey } from "../utils/lexemes";
 
 const alphabet = [
   "A",
@@ -40,7 +41,20 @@ type Props = {
   stream: Stream;
   currentLevel: Level;
   vocabFavorites: string[];
-  onToggleFavorite: (id: string) => void;
+  isAuthenticated?: boolean;
+  onToggleFavorite: (
+    id: string,
+    meta?: {
+      glossary_term?: number;
+      text?: string;
+      translation_en?: string;
+      translation_nb?: string;
+      translation_nn?: string;
+      translation_ru?: string;
+      language?: Stream;
+      level?: Level;
+    },
+  ) => void;
   initialView?: "all" | "favorites";
   forcedTags?: string[];
   titleOverride?: string;
@@ -53,12 +67,15 @@ type GlossaryRow = {
   english: string;
   russian: string;
   tags: string[];
+  glossaryIds: number[];
+  glossaryIdByStream: Partial<Record<Stream, number>>;
 };
 
 const GlossaryPage: React.FC<Props> = ({
   stream,
   currentLevel,
   vocabFavorites,
+  isAuthenticated,
   onToggleFavorite,
   initialView = "all",
   forcedTags,
@@ -123,11 +140,7 @@ const GlossaryPage: React.FC<Props> = ({
       const conceptNn =
         term.translation_nn || (term.stream === "nynorsk" ? term.term : "");
       const conceptRu = term.translation_ru || "";
-      const key = `${(conceptEn || "").toLowerCase()}|${(conceptNb || "")
-        .toLowerCase()
-        .trim()}|${(conceptNn || "").toLowerCase()}|${(conceptRu || "")
-        .toLowerCase()
-        .trim()}`;
+      const key = buildConceptKey(conceptEn, conceptNb, conceptNn, conceptRu);
 
       if (!key.replace(/\|/g, "").trim()) {
         return;
@@ -142,8 +155,17 @@ const GlossaryPage: React.FC<Props> = ({
           english: conceptEn || "",
           russian: conceptRu || "",
           tags: [],
+          glossaryIds: [term.id],
+          glossaryIdByStream: { [term.stream]: term.id },
         };
         map.set(key, row);
+      } else {
+        if (!row.glossaryIds.includes(term.id)) {
+          row.glossaryIds.push(term.id);
+        }
+        if (!row.glossaryIdByStream[term.stream]) {
+          row.glossaryIdByStream[term.stream] = term.id;
+        }
       }
 
       if (conceptNb) {
@@ -350,6 +372,9 @@ const GlossaryPage: React.FC<Props> = ({
             )}
           </div>
         </div>
+        {!isAuthenticated && (
+          <p className="muted small glossary-auth-hint">{t("myWords.authHint")}</p>
+        )}
 
         {isTraining && hasTraining ? (
           <div className="card vocab-training-card">
@@ -457,9 +482,21 @@ const GlossaryPage: React.FC<Props> = ({
                     <button
                       type="button"
                       className={`vocab-bookmark ${
-                        vocabFavorites.includes(row.id) ? "active" : ""
-                      }`}
-                      onClick={() => onToggleFavorite(row.id)}
+                    vocabFavorites.includes(row.id) ? "active" : ""
+                  }`}
+                      onClick={() =>
+                        onToggleFavorite(row.id, {
+                          glossary_term:
+                            row.glossaryIdByStream[stream] || row.glossaryIds[0],
+                          text: row.bokmaal || row.nynorsk || row.english || row.russian,
+                          translation_en: row.english,
+                          translation_nb: row.bokmaal,
+                          translation_nn: row.nynorsk,
+                          translation_ru: row.russian,
+                          language: stream,
+                          level: currentLevel,
+                        })
+                      }
                       aria-label={
                         vocabFavorites.includes(row.id)
                           ? t("removeFavorite")

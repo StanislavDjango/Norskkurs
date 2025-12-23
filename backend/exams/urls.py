@@ -9,6 +9,7 @@ from .views import (
     ProfileViewSet,
     ReadingViewSet,
     TestViewSet,
+    UserLexemeViewSet,
     VerbEntryViewSet,
 )
 
@@ -22,5 +23,6 @@ router.register(r"verbs", VerbEntryViewSet, basename="verbs")
 router.register(r"expressions", ExpressionViewSet, basename="expressions")
 router.register(r"glossary", GlossaryTermViewSet, basename="glossary")
 router.register(r"readings", ReadingViewSet, basename="readings")
+router.register(r"user-lexemes", UserLexemeViewSet, basename="user-lexemes")
 
 urlpatterns = router.urls

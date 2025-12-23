@@ -9,6 +9,7 @@ import { error as logError } from "./logger";
 import {
   fetchExercises,
   fetchExpressions,
+  fetchGlossary,
   fetchHomework,
   fetchMaterials,
   fetchProfile,
@@ -17,16 +18,25 @@ import {
   registerProfile,
   updateProfile,
   updateStreamLevel,
+  fetchUserLexemes,
+  createUserLexeme,
+  updateUserLexeme,
+  deleteUserLexeme,
+  toggleUserLexeme,
+  reviewUserLexeme,
 } from "./api";
 import type {
   Exercise,
   Expression,
+  GlossaryTerm,
   Homework,
   Material,
   ProfileInfo,
   Stream,
   Level,
+  UserLexeme,
 } from "./types";
+import { buildConceptKeyFromTerm, normalizeVocabId } from "./utils/lexemes";
 const ReadingsPage = React.lazy(() => import("./pages/ReadingsPage"));
 
 const TestsPage = React.lazy(() => import("./pages/TestsPage"));
@@ -39,15 +49,7 @@ const ExercisesPage = React.lazy(() => import("./pages/ExercisesPage"));
 const HomeworkPage = React.lazy(() => import("./pages/HomeworkPage"));
 const ExpressionsPage = React.lazy(() => import("./pages/ExpressionsPage"));
 const ContactPage = React.lazy(() => import("./pages/ContactPage"));
-
-const normalizeVocabId = (id: string): string => {
-  const parts = id.split("|");
-  if (parts.length === 3) {
-    const [en, nb, ru] = parts;
-    return `${en}|${nb}||${ru}`;
-  }
-  return id;
-};
+const MyWordsPage = React.lazy(() => import("./pages/MyWordsPage"));
 
 const extractAuthErrorMessage = (
   error: any,
@@ -88,6 +90,7 @@ type Section =
   | "homework"
   | "partsOfSpeech"
   | "expressions"
+  | "myWords"
   | "games"
   | "glossary"
   | "contact";
@@ -120,6 +123,10 @@ const App = () => {
   const [homework, setHomework] = useState<Homework[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [expressions, setExpressions] = useState<Expression[]>([]);
+  const [userLexemes, setUserLexemes] = useState<UserLexeme[]>([]);
+  const [userLexemesLoading, setUserLexemesLoading] = useState(false);
+  const [lexemesLoaded, setLexemesLoaded] = useState(false);
+  const [lexemeSyncDone, setLexemeSyncDone] = useState(false);
   const [expressionFavorites, setExpressionFavorites] = useState<number[]>(() => {
     try {
       const raw = localStorage.getItem("norskkurs_expression_favs");
@@ -252,6 +259,36 @@ const App = () => {
     fetchExpressions(params).then(setExpressions).catch(() => setExpressions([]));
   }, [stream, currentLevel, studentEmail]);
 
+  const fetchAllUserLexemes = async (): Promise<UserLexeme[]> => {
+    const results: UserLexeme[] = [];
+    let page = 1;
+    while (true) {
+      const data = await fetchUserLexemes({ page, page_size: 200 });
+      results.push(...data.results);
+      if (!data.next) break;
+      page += 1;
+    }
+    return results;
+  };
+
+  useEffect(() => {
+    if (!auth?.is_authenticated) {
+      setUserLexemes([]);
+      setLexemesLoaded(false);
+      setLexemeSyncDone(false);
+      return;
+    }
+    setUserLexemesLoading(true);
+    setLexemesLoaded(false);
+    fetchAllUserLexemes()
+      .then((data) => setUserLexemes(data))
+      .catch(() => setUserLexemes([]))
+      .finally(() => {
+        setUserLexemesLoading(false);
+        setLexemesLoaded(true);
+      });
+  }, [auth?.is_authenticated]);
+
   const persistStreamLevel = (payload: { stream?: Stream; level?: Level }) => {
     const emailForProfile = studentEmail || profile.email || auth?.username || "";
     if (!emailForProfile) return;
@@ -288,6 +325,7 @@ const App = () => {
       { key: "homework" as Section, label: t("nav.homework") },
       { key: "partsOfSpeech" as Section, label: t("nav.partsOfSpeech", { defaultValue: "Parts of speech" }) },
       { key: "expressions" as Section, label: t("nav.expressions") },
+      { key: "myWords" as Section, label: t("nav.myWords", { defaultValue: "My words" }) },
       { key: "games" as Section, label: t("nav.games") },
       { key: "glossary" as Section, label: t("nav.glossary") },
       { key: "contact" as Section, label: t("nav.contact") },
@@ -381,6 +419,168 @@ const App = () => {
     void syncFavorites(vocabFavorites, expressionFavorites);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth?.is_authenticated, vocabFavorites, expressionFavorites]);
+
+  const upsertLexeme = (lexeme: UserLexeme, keepArchived = false) => {
+    setUserLexemes((prev) => {
+      const others = prev.filter((item) => item.id !== lexeme.id);
+      const next = keepArchived ? [lexeme, ...others] : [lexeme, ...others].filter((item) => !item.is_archived);
+      return next;
+    });
+    if (!lexeme.is_archived && lexeme.concept_key) {
+      const key = normalizeVocabId(lexeme.concept_key);
+      setVocabFavorites((prev) => (prev.includes(key) ? prev : [...prev, key]));
+    } else if (lexeme.concept_key) {
+      const key = normalizeVocabId(lexeme.concept_key);
+      setVocabFavorites((prev) => prev.filter((value) => value !== key));
+    }
+  };
+
+  const buildGlossaryIndex = (terms: GlossaryTerm[]) => {
+    const index = new Map<
+      string,
+      { any: GlossaryTerm; byStream: Partial<Record<Stream, GlossaryTerm>> }
+    >();
+    terms.forEach((term) => {
+      const key = buildConceptKeyFromTerm(term);
+      if (!key.replace(/\|/g, "").trim()) return;
+      const entry = index.get(key) || { any: term, byStream: {} };
+      if (!entry.byStream[term.stream]) {
+        entry.byStream[term.stream] = term;
+      }
+      index.set(key, entry);
+    });
+    return index;
+  };
+
+  useEffect(() => {
+    if (!auth?.is_authenticated || !lexemesLoaded || lexemeSyncDone) return;
+    const serverFavs = userLexemes
+      .filter((lex) => lex.source === "glossary" && !lex.is_archived && lex.concept_key)
+      .map((lex) => normalizeVocabId(lex.concept_key));
+    const localFavs = vocabFavorites.map((value) => normalizeVocabId(value));
+    const merged = Array.from(new Set([...serverFavs, ...localFavs]));
+    const sameSet =
+      merged.length === vocabFavorites.length &&
+      merged.every((value) => vocabFavorites.includes(value));
+    if (!sameSet && merged.length > 0) {
+      setVocabFavorites(merged);
+    }
+    const missing = localFavs.filter((key) => !serverFavs.includes(key));
+    if (missing.length === 0) {
+      setLexemeSyncDone(true);
+      return;
+    }
+    setLexemeSyncDone(true);
+
+    let cancelled = false;
+    const sync = async () => {
+      try {
+        const terms = await fetchGlossary();
+        if (cancelled) return;
+        const index = buildGlossaryIndex(terms);
+        await Promise.all(
+          missing.map(async (key) => {
+            const entry = index.get(key);
+            const term = entry?.byStream[stream] || entry?.any;
+            if (!term) return;
+            try {
+              const translationEn =
+                term.translation_en || (term.stream === "english" ? term.term : "");
+              const translationNb =
+                term.translation_nb || (term.stream === "bokmaal" ? term.term : "");
+              const translationNn =
+                term.translation_nn || (term.stream === "nynorsk" ? term.term : "");
+              const translationRu = term.translation_ru || "";
+              const response = await toggleUserLexeme({
+                concept_key: key,
+                glossary_term: term.id,
+                text: term.term,
+                translation_en: translationEn,
+                translation_nb: translationNb,
+                translation_nn: translationNn,
+                translation_ru: translationRu,
+                language: term.stream,
+                level: term.level,
+                kind: "word",
+              });
+              if (response.lexeme && response.is_favorite) {
+                upsertLexeme(response.lexeme);
+              }
+            } catch (error) {
+              logError(error);
+            }
+          }),
+        );
+      } catch (error) {
+        logError(error);
+      }
+    };
+    void sync();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    auth?.is_authenticated,
+    lexemesLoaded,
+    lexemeSyncDone,
+    stream,
+    userLexemes,
+    vocabFavorites,
+  ]);
+
+  const handleRefreshLexemes = async () => {
+    if (!auth?.is_authenticated) return;
+    setUserLexemesLoading(true);
+    setLexemesLoaded(false);
+    try {
+      const data = await fetchAllUserLexemes();
+      setUserLexemes(data);
+    } catch (e) {
+      logError(e);
+    } finally {
+      setUserLexemesLoading(false);
+      setLexemesLoaded(true);
+    }
+  };
+
+  const handleCreateLexeme = async (
+    payload: Partial<UserLexeme> & { text?: string; translation_en?: string; translation_nb?: string; translation_nn?: string; translation_ru?: string },
+  ) => {
+    if (!auth?.is_authenticated) return null;
+    const created = await createUserLexeme(payload);
+    upsertLexeme(created);
+    return created;
+  };
+
+  const handleUpdateLexeme = async (id: number, payload: Partial<UserLexeme>) => {
+    if (!auth?.is_authenticated) return null;
+    const updated = await updateUserLexeme(id, payload);
+    upsertLexeme(updated, true);
+    return updated;
+  };
+
+  const handleDeleteLexeme = async (id: number) => {
+    if (!auth?.is_authenticated) return;
+    const target = userLexemes.find((item) => item.id === id);
+    await deleteUserLexeme(id);
+    setUserLexemes((prev) => prev.filter((item) => item.id !== id));
+    if (target?.concept_key) {
+      const key = normalizeVocabId(target.concept_key);
+      setVocabFavorites((prev) => prev.filter((value) => value !== key));
+    }
+  };
+
+  const handleReviewLexeme = async (id: number, correct: boolean) => {
+    if (!auth?.is_authenticated) return null;
+    try {
+      const updated = await reviewUserLexeme(id, correct);
+      upsertLexeme(updated, true);
+      return updated;
+    } catch (error) {
+      logError(error);
+      return null;
+    }
+  };
 
   const handleProfileSave = async () => {
     const newName = profile.name.trim();
@@ -554,13 +754,49 @@ const App = () => {
     );
   };
 
-  const toggleVocabFavorite = (id: string) => {
+  const toggleVocabFavorite = async (id: string, meta?: Partial<UserLexeme>) => {
     const normalized = normalizeVocabId(id);
+    if (auth?.is_authenticated) {
+      try {
+        const response = await toggleUserLexeme({
+          concept_key: normalized,
+          text: meta?.text,
+          translation_en: meta?.translation_en,
+          translation_nb: meta?.translation_nb,
+          translation_nn: meta?.translation_nn,
+          translation_ru: meta?.translation_ru,
+          language: meta?.language,
+          level: meta?.level,
+          kind: meta?.kind || "word",
+          glossary_term: meta?.glossary_term ?? undefined,
+        });
+        if (response.lexeme) {
+          setUserLexemes((prev) => {
+            const others = prev.filter((lex) => lex.id !== response.lexeme!.id);
+            return response.is_favorite ? [response.lexeme!, ...others] : others;
+          });
+        } else if (!response.is_favorite) {
+          setUserLexemes((prev) =>
+            prev.map((lex) =>
+              lex.concept_key === normalized ? { ...lex, is_archived: true } : lex,
+            ),
+          );
+        }
+        setVocabFavorites((prev) => {
+          const exists = prev.includes(normalized);
+          if (response.is_favorite) {
+            return exists ? prev : [...prev, normalized];
+          }
+          return prev.filter((value) => value !== normalized);
+        });
+        return;
+      } catch (e) {
+        logError(e);
+      }
+    }
     setVocabFavorites((prev) => {
       const exists = prev.includes(normalized);
-      const next = exists
-        ? prev.filter((value) => value !== normalized)
-        : [...prev, normalized];
+      const next = exists ? prev.filter((value) => value !== normalized) : [...prev, normalized];
       return next;
     });
   };
@@ -604,13 +840,13 @@ const App = () => {
             vocabFavoritesCount={vocabFavorites.length}
             expressionFavoritesCount={expressionFavorites.length}
             onOpenVocabFavorites={() => {
-              setGlossaryInitialView("favorites");
-              setActiveSection("glossary");
+              setActiveSection("myWords");
             }}
             onOpenExpressionsFavorites={() => {
               setExpressionView("favorites");
               setActiveSection("expressions");
             }}
+            onOpenMyWords={() => setActiveSection("myWords")}
           />
         );
       case "readings":
@@ -620,6 +856,7 @@ const App = () => {
             currentLevel={currentLevel}
             studentEmail={studentEmail}
             vocabFavorites={vocabFavorites}
+            isAuthenticated={auth?.is_authenticated}
             onToggleVocabFavorite={toggleVocabFavorite}
             onOpenMyWords={() => {
               setGlossaryInitialView("favorites");
@@ -643,7 +880,7 @@ const App = () => {
             levelLabel={levelLabel}
           />
         );
-        case "partsOfSpeech":
+      case "partsOfSpeech":
           return (
             <VerbsPage
               stream={stream}
@@ -664,6 +901,20 @@ const App = () => {
             streamLabel={streamLabel}
           />
         );
+      case "myWords":
+        return (
+          <MyWordsPage
+            auth={auth}
+            lexemes={userLexemes}
+            loading={userLexemesLoading}
+            onRefresh={handleRefreshLexemes}
+            onAdd={handleCreateLexeme}
+            onUpdate={handleUpdateLexeme}
+            onDelete={handleDeleteLexeme}
+            onToggleFavorite={toggleVocabFavorite}
+            onReview={handleReviewLexeme}
+          />
+        );
       case "games":
         return (
           <GamesPage
@@ -679,6 +930,7 @@ const App = () => {
             stream={stream}
             currentLevel={currentLevel}
             vocabFavorites={vocabFavorites}
+            isAuthenticated={auth?.is_authenticated}
             onToggleFavorite={toggleVocabFavorite}
             initialView={glossaryInitialView}
           />

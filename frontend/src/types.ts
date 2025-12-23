@@ -1,6 +1,13 @@
 export type Level = "A1" | "A2" | "B1" | "B2";
 export type Stream = "bokmaal" | "nynorsk" | "english";
 
+export type PaginatedResponse<T> = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+};
+
 export interface Test {
   id: number;
   title: string;
@@ -83,8 +90,8 @@ export interface ProfileInfo {
   date_of_birth?: string | null;
   learning_language?: string;
   native_language?: string;
-   vocab_favorites?: string[];
-   expression_favorites?: number[];
+  vocab_favorites?: string[];
+  expression_favorites?: number[];
 }
 
 export interface ProfileProgressLevelSummary {
@@ -156,9 +163,9 @@ export interface VerbEntry {
   examples_present: string;
   examples_past: string;
   examples_perfect: string;
-   translation_en: string;
-   translation_ru: string;
-   translation_nb: string;
+  translation_en: string;
+  translation_ru: string;
+  translation_nb: string;
   tags: string[];
 }
 
@@ -197,6 +204,33 @@ export interface GlossarySearchParams {
   stream?: Stream;
   level?: Level;
   q?: string;
+}
+
+export type LexemeSource = "glossary" | "custom";
+export type LexemeKind = "word" | "sentence";
+
+export interface UserLexeme {
+  id: number;
+  source: LexemeSource;
+  kind: LexemeKind;
+  glossary_term?: number | null;
+  concept_key: string;
+  text: string;
+  translation_en: string;
+  translation_ru: string;
+  translation_nb: string;
+  translation_nn: string;
+  example: string;
+  notes: string;
+  tags: string[];
+  language: Stream | "" | string;
+  level: Level | "" | string;
+  times_reviewed: number;
+  times_correct: number;
+  last_reviewed_at?: string | null;
+  is_archived: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Reading {
