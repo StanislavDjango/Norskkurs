@@ -21,6 +21,7 @@ import type {
   LexemeKind,
   PaginatedResponse,
 } from "./types";
+import type { paths } from "./api-schema";
 
 import { publishApiError, publishOffline } from "./apiStatus";
 import { error as logError } from "./logger";
@@ -31,6 +32,24 @@ const api = axios.create({
 });
 
 type FilterParams = { student_email?: string; stream?: Stream; level?: Level };
+
+// OpenAPI response helpers for typing API calls.
+type ApiPaths = paths;
+type ApiPath = keyof ApiPaths;
+type ApiMethod<Path extends ApiPath> = keyof ApiPaths[Path];
+type ApiContent<Content> = Content extends { "application/json": infer Json }
+  ? Json
+  : Content extends { "application/vnd.oai.openapi+json": infer Json }
+    ? Json
+    : Content extends Record<string, infer Any>
+      ? Any
+      : never;
+type ApiResponse<Path extends ApiPath, Method extends ApiMethod<Path>> =
+  ApiPaths[Path][Method] extends { responses: infer Responses }
+    ? Responses[keyof Responses] extends { content: infer Content }
+      ? ApiContent<Content>
+      : never
+    : never;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -160,14 +179,26 @@ const requestJsonWithRetry = async <T>(
 };
 
 export const fetchTests = async (params?: FilterParams): Promise<Test[]> => {
-  return requestJsonWithRetry<Test[]>("get", "tests/", undefined, { params });
+  const data = await requestJsonWithRetry<ApiResponse<"/api/tests/", "get">>(
+    "get",
+    "tests/",
+    undefined,
+    { params },
+  );
+  return data as Test[];
 };
 
 export const fetchTestDetail = async (
   slug: string,
   params?: FilterParams,
 ): Promise<TestDetail> => {
-  return requestJsonWithRetry<TestDetail>("get", `tests/${slug}/`, undefined, { params });
+  const data = await requestJsonWithRetry<ApiResponse<"/api/tests/{slug}/", "get">>(
+    "get",
+    `tests/${slug}/`,
+    undefined,
+    { params },
+  );
+  return data as TestDetail;
 };
 
 export const submitTest = async (
@@ -233,15 +264,33 @@ export const fetchProfileProgress = async (params: {
 };
 
 export const fetchMaterials = async (params?: FilterParams): Promise<Material[]> => {
-  return requestJsonWithRetry<Material[]>("get", "materials/", undefined, { params });
+  const data = await requestJsonWithRetry<ApiResponse<"/api/materials/", "get">>(
+    "get",
+    "materials/",
+    undefined,
+    { params },
+  );
+  return data as Material[];
 };
 
 export const fetchHomework = async (params?: FilterParams): Promise<Homework[]> => {
-  return requestJsonWithRetry<Homework[]>("get", "homework/", undefined, { params });
+  const data = await requestJsonWithRetry<ApiResponse<"/api/homework/", "get">>(
+    "get",
+    "homework/",
+    undefined,
+    { params },
+  );
+  return data as Homework[];
 };
 
 export const fetchExercises = async (params?: FilterParams): Promise<Exercise[]> => {
-  return requestJsonWithRetry<Exercise[]>("get", "exercises/", undefined, { params });
+  const data = await requestJsonWithRetry<ApiResponse<"/api/exercises/", "get">>(
+    "get",
+    "exercises/",
+    undefined,
+    { params },
+  );
+  return data as Exercise[];
 };
 
 type VerbFilterParams = FilterParams & {
@@ -250,15 +299,33 @@ type VerbFilterParams = FilterParams & {
 };
 
 export const fetchVerbs = async (params?: VerbFilterParams): Promise<VerbEntry[]> => {
-  return requestJsonWithRetry<VerbEntry[]>("get", "verbs/", undefined, { params });
+  const data = await requestJsonWithRetry<ApiResponse<"/api/verbs/", "get">>(
+    "get",
+    "verbs/",
+    undefined,
+    { params },
+  );
+  return data as VerbEntry[];
 };
 
 export const fetchExpressions = async (params?: FilterParams): Promise<Expression[]> => {
-  return requestJsonWithRetry<Expression[]>("get", "expressions/", undefined, { params });
+  const data = await requestJsonWithRetry<ApiResponse<"/api/expressions/", "get">>(
+    "get",
+    "expressions/",
+    undefined,
+    { params },
+  );
+  return data as Expression[];
 };
 
 export const fetchGlossary = async (params?: GlossarySearchParams): Promise<GlossaryTerm[]> => {
-  return requestJsonWithRetry<GlossaryTerm[]>("get", "glossary/", undefined, { params });
+  const data = await requestJsonWithRetry<ApiResponse<"/api/glossary/", "get">>(
+    "get",
+    "glossary/",
+    undefined,
+    { params },
+  );
+  return data as GlossaryTerm[];
 };
 
 type UserLexemeListParams = {
@@ -280,7 +347,7 @@ export const fetchUserLexemes = async (
   if (typeof normalizedParams.archived === "boolean") {
     normalizedParams.archived = normalizedParams.archived ? "true" : "false";
   }
-  const data = await requestJsonWithRetry<PaginatedResponse<UserLexeme> | UserLexeme[]>(
+  const data = await requestJsonWithRetry<ApiResponse<"/api/user-lexemes/", "get">>(
     "get",
     "user-lexemes/",
     undefined,
@@ -297,11 +364,16 @@ export const fetchUserLexemes = async (
       results: data,
     };
   }
-  return data;
+  return data as PaginatedResponse<UserLexeme>;
 };
 
 export const reviewUserLexeme = async (id: number, correct: boolean): Promise<UserLexeme> => {
-  return requestJson<UserLexeme>("post", `user-lexemes/${id}/review/`, { correct });
+  const data = await requestJson<ApiResponse<"/api/user-lexemes/{id}/review/", "post">>(
+    "post",
+    `user-lexemes/${id}/review/`,
+    { correct },
+  );
+  return data as UserLexeme;
 };
 
 export const createUserLexeme = async (
@@ -318,11 +390,21 @@ export const createUserLexeme = async (
     kind?: LexemeKind;
   },
 ): Promise<UserLexeme> => {
-  return requestJson<UserLexeme>("post", "user-lexemes/", payload);
+  const data = await requestJson<ApiResponse<"/api/user-lexemes/", "post">>(
+    "post",
+    "user-lexemes/",
+    payload,
+  );
+  return data as UserLexeme;
 };
 
 export const updateUserLexeme = async (id: number, payload: Partial<UserLexeme>): Promise<UserLexeme> => {
-  return requestJson<UserLexeme>("patch", `user-lexemes/${id}/`, payload);
+  const data = await requestJson<ApiResponse<"/api/user-lexemes/{id}/", "patch">>(
+    "patch",
+    `user-lexemes/${id}/`,
+    payload,
+  );
+  return data as UserLexeme;
 };
 
 export const deleteUserLexeme = async (id: number): Promise<void> => {
@@ -347,5 +429,11 @@ export const toggleUserLexeme = async (payload: {
 };
 
 export const fetchReadings = async (params?: FilterParams): Promise<Reading[]> => {
-  return requestJsonWithRetry<Reading[]>("get", "readings/", undefined, { params });
+  const data = await requestJsonWithRetry<ApiResponse<"/api/readings/", "get">>(
+    "get",
+    "readings/",
+    undefined,
+    { params },
+  );
+  return data as Reading[];
 };

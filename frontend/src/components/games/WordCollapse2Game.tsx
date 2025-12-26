@@ -214,7 +214,7 @@ const isMobileViewport = () => {
   return window.matchMedia?.("(max-width: 768px)")?.matches ?? window.innerWidth <= 768;
 };
 
-const WordCollapseGame: React.FC<Props> = ({ stream, currentLevel, playableTerms, verbEntries }) => {
+const WordCollapse2Game: React.FC<Props> = ({ stream, currentLevel, playableTerms, verbEntries }) => {
   const { t, i18n } = useTranslation();
 
   const [status, setStatus] = useState<GameStatus>("pre-game");
@@ -225,49 +225,49 @@ const WordCollapseGame: React.FC<Props> = ({ stream, currentLevel, playableTerms
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
 
   const [preferFullscreen, setPreferFullscreen] = useState(() =>
-    loadStoredBool("wordcollapse:preferFullscreen", true),
+    loadStoredBool("wordcollapse2:preferFullscreen", true),
   );
-  const [hintsEnabled, setHintsEnabled] = useState(() => loadStoredBool("wordcollapse:hintsEnabled", false));
-  const [isMusicOn, setIsMusicOn] = useState(() => loadStoredBool("wordcollapse:musicOn", true));
-  const [uniqueOnly, setUniqueOnly] = useState(() => loadStoredBool("wordcollapse:uniqueOnly", false));
+  const [hintsEnabled, setHintsEnabled] = useState(() => loadStoredBool("wordcollapse2:hintsEnabled", false));
+  const [isMusicOn, setIsMusicOn] = useState(() => loadStoredBool("wordcollapse2:musicOn", true));
+  const [uniqueOnly, setUniqueOnly] = useState(() => loadStoredBool("wordcollapse2:uniqueOnly", false));
 
-  const [useGlossary, setUseGlossary] = useState(() => loadStoredBool("wordcollapse:useGlossary", true));
+  const [useGlossary, setUseGlossary] = useState(() => loadStoredBool("wordcollapse2:useGlossary", true));
   const [selectedParts, setSelectedParts] = useState<string[]>(() =>
-    loadStoredStringArray("wordcollapse:selectedParts", []),
+    loadStoredStringArray("wordcollapse2:selectedParts", []),
   );
-  const [useIrregularOnly, setUseIrregularOnly] = useState(() => loadStoredBool("wordcollapse:useIrregularOnly", false));
+  const [useIrregularOnly, setUseIrregularOnly] = useState(() => loadStoredBool("wordcollapse2:useIrregularOnly", false));
 
   const [leftLanguage, setLeftLanguage] = useState<LanguageOption>(() => {
-    const stored = loadStoredString("wordcollapse:leftLanguage", stream);
+    const stored = loadStoredString("wordcollapse2:leftLanguage", stream);
     return isLanguageOption(stored) ? stored : stream;
   });
   const [rightLanguage, setRightLanguage] = useState<LanguageOption>(() => {
     const fallback = defaultRightLanguageForUi(i18n.language);
-    const stored = loadStoredString("wordcollapse:rightLanguage", fallback);
+    const stored = loadStoredString("wordcollapse2:rightLanguage", fallback);
     return isLanguageOption(stored) ? stored : fallback;
   });
-  const [swapSides, setSwapSides] = useState(() => loadStoredBool("wordcollapse:swapSides", false));
+  const [swapSides, setSwapSides] = useState(() => loadStoredBool("wordcollapse2:swapSides", false));
   const [requireTranslations, setRequireTranslations] = useState(() =>
-    loadStoredBool("wordcollapse:requireTranslations", true),
+    loadStoredBool("wordcollapse2:requireTranslations", true),
   );
 
   const [maxLives, setMaxLives] = useState<number>(() => {
-    const stored = clampInt(loadStoredNumber("wordcollapse:maxLives", 5), 3, 20);
+    const stored = clampInt(loadStoredNumber("wordcollapse2:maxLives", 5), 3, 20);
     return isAllowedLives(stored) ? stored : 5;
   });
   const [lives, setLives] = useState<number>(() => {
-    const stored = clampInt(loadStoredNumber("wordcollapse:maxLives", 5), 3, 20);
+    const stored = clampInt(loadStoredNumber("wordcollapse2:maxLives", 5), 3, 20);
     return isAllowedLives(stored) ? stored : 5;
   });
   const [pairCount, setPairCount] = useState(() =>
-    clampInt(loadStoredNumber("wordcollapse:pairCount", 3), 2, 10),
+    clampInt(loadStoredNumber("wordcollapse2:pairCount", 3), 2, 10),
   );
   const [spawnIntervalMs, setSpawnIntervalMs] = useState<SpawnSpeed>(() => {
-    const stored = loadStoredNumber("wordcollapse:spawnIntervalMs", 6000);
+    const stored = loadStoredNumber("wordcollapse2:spawnIntervalMs", 6000);
     return isSpawnSpeed(stored) ? stored : 6000;
   });
   const [fallSpeedPxPerSec, setFallSpeedPxPerSec] = useState<number>(() => {
-    const stored = loadStoredNumber("wordcollapse:fallSpeedPxPerSec", 90);
+    const stored = loadStoredNumber("wordcollapse2:fallSpeedPxPerSec", 90);
     return isFallSpeed(stored) ? stored : 90;
   });
 
@@ -319,64 +319,64 @@ const WordCollapseGame: React.FC<Props> = ({ stream, currentLevel, playableTerms
   }, [stream]);
 
   useEffect(() => {
-    storeBool("wordcollapse:preferFullscreen", preferFullscreen);
+    storeBool("wordcollapse2:preferFullscreen", preferFullscreen);
   }, [preferFullscreen]);
 
   useEffect(() => {
-    storeBool("wordcollapse:hintsEnabled", hintsEnabled);
+    storeBool("wordcollapse2:hintsEnabled", hintsEnabled);
   }, [hintsEnabled]);
 
   useEffect(() => {
-    storeBool("wordcollapse:musicOn", isMusicOn);
+    storeBool("wordcollapse2:musicOn", isMusicOn);
   }, [isMusicOn]);
 
   useEffect(() => {
-    storeBool("wordcollapse:uniqueOnly", uniqueOnly);
+    storeBool("wordcollapse2:uniqueOnly", uniqueOnly);
     uniqueOnlyRef.current = uniqueOnly;
   }, [uniqueOnly]);
 
   useEffect(() => {
-    storeBool("wordcollapse:useGlossary", useGlossary);
+    storeBool("wordcollapse2:useGlossary", useGlossary);
   }, [useGlossary]);
 
   useEffect(() => {
-    storeJson("wordcollapse:selectedParts", selectedParts);
+    storeJson("wordcollapse2:selectedParts", selectedParts);
   }, [selectedParts]);
 
   useEffect(() => {
-    storeBool("wordcollapse:useIrregularOnly", useIrregularOnly);
+    storeBool("wordcollapse2:useIrregularOnly", useIrregularOnly);
   }, [useIrregularOnly]);
 
   useEffect(() => {
-    storeString("wordcollapse:leftLanguage", leftLanguage);
+    storeString("wordcollapse2:leftLanguage", leftLanguage);
   }, [leftLanguage]);
 
   useEffect(() => {
-    storeString("wordcollapse:rightLanguage", rightLanguage);
+    storeString("wordcollapse2:rightLanguage", rightLanguage);
   }, [rightLanguage]);
 
   useEffect(() => {
-    storeBool("wordcollapse:swapSides", swapSides);
+    storeBool("wordcollapse2:swapSides", swapSides);
   }, [swapSides]);
 
   useEffect(() => {
-    storeBool("wordcollapse:requireTranslations", requireTranslations);
+    storeBool("wordcollapse2:requireTranslations", requireTranslations);
   }, [requireTranslations]);
 
   useEffect(() => {
-    storeNumber("wordcollapse:maxLives", maxLives);
+    storeNumber("wordcollapse2:maxLives", maxLives);
   }, [maxLives]);
 
   useEffect(() => {
-    storeNumber("wordcollapse:pairCount", pairCount);
+    storeNumber("wordcollapse2:pairCount", pairCount);
   }, [pairCount]);
 
   useEffect(() => {
-    storeNumber("wordcollapse:spawnIntervalMs", spawnIntervalMs);
+    storeNumber("wordcollapse2:spawnIntervalMs", spawnIntervalMs);
   }, [spawnIntervalMs]);
 
   useEffect(() => {
-    storeNumber("wordcollapse:fallSpeedPxPerSec", fallSpeedPxPerSec);
+    storeNumber("wordcollapse2:fallSpeedPxPerSec", fallSpeedPxPerSec);
   }, [fallSpeedPxPerSec]);
 
   useEffect(() => {
@@ -982,7 +982,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, currentLevel, playableTerms
     if (status !== "running") return;
     const currentBlocks = blocksRef.current;
     const clickedBlock = currentBlocks.find((b) => b.id === blockId);
-    if (!clickedBlock || clickedBlock.isMatched || clickedBlock.isFalling) return;
+    if (!clickedBlock || clickedBlock.isMatched) return;
 
     if (clickedBlock.role === "bonus") {
       if (clickedBlock.bonusType === "freeze") {
@@ -1134,7 +1134,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, currentLevel, playableTerms
     <div className="collapse-game">
       <div className="collapse-launcher">
         <div className="collapse-launcher-text">
-          <h3>{t("games.tabWordCollapse")}</h3>
+          <h3>{t("games.tabWordCollapse2")}</h3>
           <p className="muted small">
             {t("games.wordCollapseHint", "Игра откроется во всплывающем окне — соединяйте левый и правый блок одной пары.")}
           </p>
@@ -1160,7 +1160,7 @@ const WordCollapseGame: React.FC<Props> = ({ stream, currentLevel, playableTerms
           <div className="collapse-modal-window" ref={modalWindowRef} tabIndex={-1}>
             <div className="collapse-game-header">
               <div className="collapse-modal-title">
-                <h3>{t("games.tabWordCollapse")}</h3>
+                <h3>{t("games.tabWordCollapse2")}</h3>
                 <div className="collapse-game-scores">
                   <span className="score lives">
                     {t("games.wordCollapseLivesLabel", "Жизни")}: {lives}/{maxLives}
@@ -1527,4 +1527,4 @@ const WordCollapseGame: React.FC<Props> = ({ stream, currentLevel, playableTerms
   );
 };
 
-export default WordCollapseGame;
+export default WordCollapse2Game;

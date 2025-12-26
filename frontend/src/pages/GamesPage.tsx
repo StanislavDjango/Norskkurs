@@ -8,6 +8,7 @@ import FjordExpeditionGame from "../components/games/FjordExpeditionGame";
 import MemoryPairsGame from "../components/games/MemoryPairsGame";
 import SentenceScrambleGame from "../components/games/SentenceScrambleGame";
 import WordCollapseGame from "../components/games/WordCollapseGame";
+import WordCollapse2Game from "../components/games/WordCollapse2Game";
 import WordTowerGame from "../components/games/WordTowerGame";
 import type { Expression, GlossaryTerm, Level, Stream, VerbEntry } from "../types";
 
@@ -36,6 +37,7 @@ type GameId =
   | "sentenceScramble"
   | "wordTower"
   | "wordCollapse"
+  | "wordCollapse2"
   | "memoryPairs";
 
 const GamesPage: React.FC<Props> = ({
@@ -136,7 +138,16 @@ const GamesPage: React.FC<Props> = ({
           }`}
           onClick={() => setActiveGame("wordCollapse")}
         >
-          WordCollaps
+          {t("games.tabWordCollapse")}
+        </button>
+        <button
+          type="button"
+          className={`pill ${
+            activeGame === "wordCollapse2" ? "pill--active" : ""
+          }`}
+          onClick={() => setActiveGame("wordCollapse2")}
+        >
+          {t("games.tabWordCollapse2")}
         </button>
         <button
           type="button"
@@ -198,6 +209,15 @@ const GamesPage: React.FC<Props> = ({
 
       {activeGame === "wordCollapse" && (
         <WordCollapseGame
+          stream={stream}
+          currentLevel={currentLevel}
+          playableTerms={playableTerms}
+          verbEntries={verbEntries}
+        />
+      )}
+
+      {activeGame === "wordCollapse2" && (
+        <WordCollapse2Game
           stream={stream}
           currentLevel={currentLevel}
           playableTerms={playableTerms}
