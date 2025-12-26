@@ -14,6 +14,15 @@ if (sentryDsn) {
   });
 }
 
+const shouldRunSentryTest =
+  import.meta.env.VITE_SENTRY_TEST === "1" &&
+  new URLSearchParams(window.location.search).get("sentry_test") === "1";
+if (shouldRunSentryTest) {
+  const error = new Error("GlitchTip test error (frontend)");
+  Sentry.captureException(error);
+  console.error(error);
+}
+
 ReactDOM.createRoot(document.getElementById("app") as HTMLElement).render(
   <React.StrictMode>
     <App />
