@@ -1,4 +1,7 @@
+import io
+
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from exams.models import GlossaryTerm, UserLexeme
 from rest_framework import status
@@ -14,6 +17,8 @@ class UserLexemeApiTests(APITestCase):
         self.client.force_authenticate(self.user)
         self.list_url = reverse("user-lexemes-list")
         self.toggle_url = reverse("user-lexemes-toggle-favorite")
+        self.export_url = reverse("user-lexemes-export-csv")
+        self.import_url = reverse("user-lexemes-import-csv")
         self.glossary = GlossaryTerm.objects.create(
             term="hei",
             translation_en="hi",
@@ -89,3 +94,37 @@ class UserLexemeApiTests(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(len(resp.data["results"]), 1)
         self.assertEqual(resp.data["results"][0]["text"], "mine")
+
+    def test_export_csv_returns_rows(self):
+        UserLexeme.objects.create(
+            user=self.user,
+            source="custom",
+            kind="word",
+            text="export me",
+            translation_en="export",
+            concept_key="export|||",
+        )
+        resp = self.client.get(self.export_url)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        content = resp.content.decode("utf-8")
+        self.assertIn("text", content.splitlines()[0])
+        self.assertIn("export me", content)
+
+    def test_import_csv_creates_custom(self):
+        csv_content = io.StringIO()
+        csv_content.write(
+            "source;kind;text;translation_en;translation_nb;translation_nn;"
+            "translation_ru;notes;example;tags;language;level;glossary_term\n"
+        )
+        csv_content.write(
+            "custom;word;imported;hello;;;;note;example;tag1,tag2;english;A1;\n"
+        )
+        upload = SimpleUploadedFile(
+            "lexemes.csv",
+            csv_content.getvalue().encode("utf-8"),
+            content_type="text/csv",
+        )
+        resp = self.client.post(self.import_url, {"file": upload}, format="multipart")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.data["created"], 1)
+        self.assertEqual(UserLexeme.objects.filter(user=self.user).count(), 1)

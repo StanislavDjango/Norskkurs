@@ -1,14 +1,17 @@
 ﻿from __future__ import annotations
 
 import datetime
+import io
 from typing import Any, Dict, Optional
 
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.db import models, transaction
+from django.http import HttpResponse
 from rest_framework import mixins, status, viewsets
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -47,6 +50,12 @@ from .serializers import (
     TestListSerializer,
     UserLexemeSerializer,
     VerbEntrySerializer,
+)
+from .utils.user_lexeme_csv import (
+    ImportStats,
+    export_user_lexemes_to_file,
+    parse_user_lexeme_rows,
+    parse_user_lexeme_tags,
 )
 
 
@@ -703,6 +712,156 @@ class UserLexemeViewSet(viewsets.ModelViewSet):
             update_fields=["times_reviewed", "times_correct", "last_reviewed_at"]
         )
         return Response(self.get_serializer(lexeme).data)
+
+    @action(detail=False, methods=["get"], url_path="export_csv")
+    def export_csv(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        filename = f"user-lexemes-{request.user.id}.csv"
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        export_user_lexemes_to_file(response, queryset)
+        return response
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="import_csv",
+        parser_classes=[MultiPartParser],
+    )
+    def import_csv(self, request):
+        uploaded = request.FILES.get("file")
+        if not uploaded:
+            return Response(
+                {"detail": "CSV file required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        raw = uploaded.read()
+        try:
+            content = raw.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            content = raw.decode("utf-8", errors="ignore")
+        rows = parse_user_lexeme_rows(content)
+        if not rows:
+            return Response(
+                {"detail": "CSV file is empty."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        update = str(request.data.get("update") or "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "y",
+        }
+        stats = ImportStats(created=0, updated=0, skipped=0)
+
+        for row in rows:
+            text = (row.get("text") or "").strip()
+            translation_en = (row.get("translation_en") or "").strip()
+            translation_nb = (row.get("translation_nb") or "").strip()
+            translation_nn = (row.get("translation_nn") or "").strip()
+            translation_ru = (row.get("translation_ru") or "").strip()
+            notes = (row.get("notes") or "").strip()
+            example = (row.get("example") or "").strip()
+            tags = parse_user_lexeme_tags(row.get("tags") or "")
+
+            base_translation = (row.get("translation") or "").strip()
+            if base_translation and not translation_en:
+                translation_en = base_translation
+
+            kind = (row.get("kind") or UserLexeme.Kind.WORD).strip().lower()
+            if kind not in UserLexeme.Kind.values:
+                kind = UserLexeme.Kind.WORD
+
+            source = (row.get("source") or UserLexeme.Source.CUSTOM).strip().lower()
+            if source not in UserLexeme.Source.values:
+                source = UserLexeme.Source.CUSTOM
+
+            glossary_term_id = (row.get("glossary_term") or "").strip()
+            glossary_term = None
+            if glossary_term_id and source == UserLexeme.Source.GLOSSARY:
+                try:
+                    glossary_term = GlossaryTerm.objects.get(id=int(glossary_term_id))
+                except (ValueError, GlossaryTerm.DoesNotExist):
+                    glossary_term = None
+
+            if source == UserLexeme.Source.GLOSSARY and not glossary_term:
+                source = UserLexeme.Source.CUSTOM
+
+            if source == UserLexeme.Source.CUSTOM and not any(
+                [translation_en, translation_nb, translation_nn, translation_ru]
+            ):
+                stats.skipped += 1
+                continue
+
+            payload = {
+                "source": source,
+                "kind": kind,
+                "glossary_term": glossary_term.id if glossary_term else None,
+                "text": text,
+                "translation_en": translation_en,
+                "translation_nb": translation_nb,
+                "translation_nn": translation_nn,
+                "translation_ru": translation_ru,
+                "notes": notes,
+                "example": example,
+                "tags": tags,
+                "language": (row.get("language") or "").strip().lower(),
+                "level": (row.get("level") or "").strip().upper(),
+                "is_archived": False,
+            }
+
+            existing = None
+            if source == UserLexeme.Source.GLOSSARY and glossary_term:
+                existing = (
+                    UserLexeme.objects.filter(
+                        user=request.user,
+                        source=source,
+                        glossary_term=glossary_term,
+                    )
+                    .order_by("-id")
+                    .first()
+                )
+            else:
+                concept_key = UserLexeme.build_concept_key(
+                    translation_en=translation_en,
+                    translation_nb=translation_nb,
+                    translation_nn=translation_nn,
+                    translation_ru=translation_ru,
+                )
+                existing_filter = UserLexeme.objects.filter(
+                    user=request.user,
+                    source=source,
+                    kind=kind,
+                    concept_key=concept_key,
+                )
+                if text:
+                    existing_filter = existing_filter.filter(text=text)
+                existing = existing_filter.order_by("-id").first()
+
+            if existing and not update:
+                stats.skipped += 1
+                continue
+
+            serializer = self.get_serializer(
+                existing, data=payload, partial=bool(existing)
+            )
+            if serializer.is_valid():
+                serializer.save()
+                if existing:
+                    stats.updated += 1
+                else:
+                    stats.created += 1
+            else:
+                stats.skipped += 1
+
+        return Response(
+            {
+                "created": stats.created,
+                "updated": stats.updated,
+                "skipped": stats.skipped,
+            }
+        )
 
     def _normalize_concept_key(self, value: str) -> str:
         if not value:

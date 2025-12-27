@@ -20,6 +20,7 @@ import type {
   LexemeSource,
   LexemeKind,
   PaginatedResponse,
+  UserLexemeImportResult,
 } from "./types";
 import type { paths } from "./api-schema";
 
@@ -175,6 +176,28 @@ const requestJsonWithRetry = async <T>(
       const backoff = 350 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 150);
       await sleep(backoff);
     }
+  }
+};
+
+const requestBlob = async (
+  url: string,
+  config?: RequestConfig,
+): Promise<{ blob: Blob; filename: string }> => {
+  try {
+    const res = await api.get(url, { responseType: "blob", ...(config || {}) });
+    publishOffline(false);
+    const disposition = res.headers?.["content-disposition"] as string | undefined;
+    let filename = "user-lexemes.csv";
+    if (disposition) {
+      const match = disposition.match(/filename=\"?([^\";]+)\"?/i);
+      if (match?.[1]) {
+        filename = match[1];
+      }
+    }
+    return { blob: res.data, filename };
+  } catch (err) {
+    publishErrorOnce(err, "get", url, undefined, config);
+    throw err;
   }
 };
 
@@ -426,6 +449,24 @@ export const toggleUserLexeme = async (payload: {
   kind?: LexemeKind;
 }): Promise<{ is_favorite: boolean; lexeme?: UserLexeme }> => {
   return requestJson("post", "user-lexemes/toggle_favorite/", payload);
+};
+
+export const exportUserLexemesCsv = async (
+  params?: UserLexemeListParams,
+): Promise<{ blob: Blob; filename: string }> => {
+  return requestBlob("user-lexemes/export_csv/", { params });
+};
+
+export const importUserLexemesCsv = async (
+  file: File,
+  options?: { update?: boolean },
+): Promise<UserLexemeImportResult> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (options?.update) {
+    formData.append("update", "true");
+  }
+  return requestJson<UserLexemeImportResult>("post", "user-lexemes/import_csv/", formData);
 };
 
 export const fetchReadings = async (params?: FilterParams): Promise<Reading[]> => {

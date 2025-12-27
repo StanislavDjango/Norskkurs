@@ -331,6 +331,74 @@ h2 {
   margin: 0 auto 12px;
 }
 
+.reading-quick-lookup {
+  position: fixed;
+  z-index: 1205;
+  max-width: min(82vw, 280px);
+  min-width: 160px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.96);
+  color: #f8fafc;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  display: grid;
+  gap: 6px;
+  transform: translate(-50%, 0);
+  backdrop-filter: blur(8px);
+}
+
+.reading-quick-lookup--above {
+  transform: translate(-50%, -100%);
+}
+
+.reading-quick-lookup__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.reading-quick-lookup__word {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.reading-quick-lookup__body {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+
+.reading-quick-lookup__translation {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.reading-quick-lookup__label {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+  font-weight: 700;
+}
+
+.reading-quick-lookup .vocab-bookmark {
+  color: rgba(226, 232, 240, 0.85);
+  margin-right: 0;
+}
+
+.reading-quick-lookup .vocab-bookmark.active {
+  color: #fbbf24;
+}
+
+.reading-quick-lookup .muted {
+  color: rgba(226, 232, 240, 0.8);
+}
+
 .readings-search.readings-search--modal {
   margin-top: 0;
   margin-bottom: 8px;
@@ -837,6 +905,29 @@ h2 {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+.mywords-import {
+  cursor: pointer;
+}
+
+.mywords-import input {
+  display: none;
+}
+
+.mywords-transfer-hint {
+  margin: 8px 0 0;
+}
+
+.mywords-transfer-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.mywords-import-error {
+  color: #b91c1c;
 }
 
 .mywords-refresh {
@@ -2881,6 +2972,11 @@ h2 {
   padding: 4px 8px;
   font-size: 0.8rem;
   font-weight: 700;
+}
+
+.badge.badge--date {
+  background: #f1f5f9;
+  color: #475569;
 }
 
 .mode {

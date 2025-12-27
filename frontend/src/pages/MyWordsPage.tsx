@@ -1,7 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { Level, ProfileInfo, Stream, UserLexeme } from "../types";
+import type {
+  Level,
+  ProfileInfo,
+  Stream,
+  UserLexeme,
+  UserLexemeImportResult,
+} from "../types";
 
 type Props = {
   auth: ProfileInfo | null;
@@ -23,6 +29,11 @@ type Props = {
   onDelete: (id: number) => Promise<void>;
   onToggleFavorite: (key: string, meta?: Partial<UserLexeme>) => void | Promise<void>;
   onReview: (id: number, correct: boolean) => Promise<UserLexeme | null>;
+  onExportCsv: () => Promise<{ blob: Blob; filename: string }>;
+  onImportCsv: (
+    file: File,
+    options?: { update?: boolean },
+  ) => Promise<UserLexemeImportResult>;
 };
 
 type Draft = {
@@ -61,6 +72,8 @@ const MyWordsPage: React.FC<Props> = ({
   onDelete,
   onToggleFavorite,
   onReview,
+  onExportCsv,
+  onImportCsv,
 }) => {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<Draft>(emptyDraft);
@@ -76,6 +89,11 @@ const MyWordsPage: React.FC<Props> = ({
   const [isTraining, setIsTraining] = useState(false);
   const [trainingIndex, setTrainingIndex] = useState(0);
   const [trainingShowAnswer, setTrainingShowAnswer] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [importResult, setImportResult] = useState<UserLexemeImportResult | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const availableTags = useMemo(() => {
     const set = new Set<string>();
@@ -229,6 +247,45 @@ const MyWordsPage: React.FC<Props> = ({
     setTrainingIndex((index) => (index + 1 >= trainingPool.length ? 0 : index + 1));
   };
 
+  const handleExportCsv = async () => {
+    setExporting(true);
+    setImportError(null);
+    try {
+      const { blob, filename } = await onExportCsv();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename || "user-lexemes.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    } catch {
+      setImportError(t("myWords.exportError"));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportError(null);
+    setImportResult(null);
+    try {
+      const result = await onImportCsv(file);
+      setImportResult(result);
+    } catch {
+      setImportError(t("myWords.importError"));
+    } finally {
+      setImporting(false);
+      if (event.target) {
+        event.target.value = "";
+      }
+    }
+  };
+
   const formatReviewDate = (value?: string | null) => {
     if (!value) return t("myWords.neverReviewed");
     const parsed = new Date(value);
@@ -260,8 +317,37 @@ const MyWordsPage: React.FC<Props> = ({
             <button type="button" className="pill mywords-refresh" onClick={onRefresh} disabled={loading}>
               {loading ? t("loading") : t("myWords.refresh")}
             </button>
+            <button
+              type="button"
+              className="pill ghost"
+              onClick={handleExportCsv}
+              disabled={exporting}
+            >
+              {exporting ? t("myWords.exporting") : t("myWords.exportCsv")}
+            </button>
+            <label className={`pill ghost mywords-import ${importing ? "is-loading" : ""}`}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                onChange={handleImportFile}
+                disabled={importing}
+              />
+              {importing ? t("myWords.importing") : t("myWords.importCsv")}
+            </label>
           </div>
         </div>
+        <p className="muted small mywords-transfer-hint">{t("myWords.importHint")}</p>
+        {(importResult || importError) && (
+          <div className="mywords-transfer-status">
+            {importResult && (
+              <p className="muted small mywords-import-result">
+                {t("myWords.importSummary", importResult)}
+              </p>
+            )}
+            {importError && <p className="muted small mywords-import-error">{importError}</p>}
+          </div>
+        )}
         <div className="mywords-hero-stats">
           <div className="mywords-stat">
             <span>{t("myWords.statsTotal")}</span>

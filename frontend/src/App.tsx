@@ -24,6 +24,8 @@ import {
   deleteUserLexeme,
   toggleUserLexeme,
   reviewUserLexeme,
+  exportUserLexemesCsv,
+  importUserLexemesCsv,
 } from "./api";
 import type {
   Exercise,
@@ -35,6 +37,7 @@ import type {
   Stream,
   Level,
   UserLexeme,
+  UserLexemeImportResult,
 } from "./types";
 import { buildConceptKeyFromTerm, normalizeVocabId } from "./utils/lexemes";
 const ReadingsPage = React.lazy(() => import("./pages/ReadingsPage"));
@@ -582,6 +585,25 @@ const App = () => {
     }
   };
 
+  const handleExportLexemesCsv = async () => {
+    if (!auth?.is_authenticated) {
+      throw new Error("Authentication required");
+    }
+    return exportUserLexemesCsv();
+  };
+
+  const handleImportLexemesCsv = async (
+    file: File,
+    options?: { update?: boolean },
+  ): Promise<UserLexemeImportResult> => {
+    if (!auth?.is_authenticated) {
+      throw new Error("Authentication required");
+    }
+    const result = await importUserLexemesCsv(file, options);
+    await handleRefreshLexemes();
+    return result;
+  };
+
   const handleProfileSave = async () => {
     const newName = profile.name.trim();
     setProfileAuthError(null);
@@ -913,6 +935,8 @@ const App = () => {
             onDelete={handleDeleteLexeme}
             onToggleFavorite={toggleVocabFavorite}
             onReview={handleReviewLexeme}
+            onExportCsv={handleExportLexemesCsv}
+            onImportCsv={handleImportLexemesCsv}
           />
         );
       case "games":

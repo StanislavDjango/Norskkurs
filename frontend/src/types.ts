@@ -233,6 +233,12 @@ export interface UserLexeme {
   updated_at: string;
 }
 
+export type UserLexemeImportResult = {
+  created: number;
+  updated: number;
+  skipped: number;
+};
+
 export interface Reading {
   id: number;
   title: string;
@@ -249,4 +255,5 @@ export interface Reading {
   translation_nn: string;
   translation_ru: string;
   tags: string[];
+  created_at: string;
 }

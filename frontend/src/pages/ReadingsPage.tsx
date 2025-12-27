@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { fetchGlossary, fetchReadings } from "../api";
 import type { GlossaryTerm, Level, Reading, Stream } from "../types";
-import { buildConceptKey } from "../utils/lexemes";
+import { buildConceptKey, buildConceptKeyFromTerm, normalizeVocabId } from "../utils/lexemes";
 
 type ReadingLookupRow = {
   id: string;
@@ -14,6 +14,18 @@ type ReadingLookupRow = {
   russian: string;
   glossaryIds: number[];
   glossaryIdByStream: Partial<Record<Stream, number>>;
+};
+
+type QuickLookupStatus = "loading" | "found" | "not_found" | "invalid" | "error";
+
+type QuickLookupState = {
+  query: string;
+  status: QuickLookupStatus;
+  position: { top: number; left: number };
+  placement: "above" | "below";
+  term?: GlossaryTerm;
+  translation?: string;
+  conceptKey?: string;
 };
 
 type Props = {
@@ -49,7 +61,7 @@ const ReadingsPage: React.FC<Props> = ({
   onOpenMyWords,
   streamLabel,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [readings, setReadings] = useState<Reading[]>([]);
   const [openTranslations, setOpenTranslations] = useState<Set<number>>(new Set());
@@ -58,10 +70,16 @@ const ReadingsPage: React.FC<Props> = ({
   const [activeReading, setActiveReading] = useState<Reading | null>(null);
   const [readingTag, setReadingTag] = useState<string>("all");
   const [readingTitleFilter, setReadingTitleFilter] = useState<string>("all");
+  const [readingSort, setReadingSort] = useState<"newest" | "oldest">("newest");
 
   const [readingLookup, setReadingLookup] = useState("");
   const [readingLookupResults, setReadingLookupResults] = useState<ReadingLookupRow[]>([]);
   const [readingLookupLoading, setReadingLookupLoading] = useState(false);
+  const [quickLookup, setQuickLookup] = useState<QuickLookupState | null>(null);
+  const quickLookupRef = useRef<HTMLDivElement | null>(null);
+  const quickLookupCache = useRef<Map<string, GlossaryTerm | null>>(new Map());
+  const quickLookupRequest = useRef(0);
+  const activeReadingDate = activeReading ? formatReadingDate(activeReading.created_at) : "";
 
   useEffect(() => {
     const readingParams = {
@@ -85,6 +103,30 @@ const ReadingsPage: React.FC<Props> = ({
   }, [stream, currentLevel]);
 
   useEffect(() => {
+    setQuickLookup(null);
+  }, [activeReading, currentLevel, stream]);
+
+  useEffect(() => {
+    if (!quickLookup) return;
+    const handlePointer = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (target && quickLookupRef.current?.contains(target)) {
+        return;
+      }
+      setQuickLookup(null);
+    };
+    const handleScroll = () => setQuickLookup(null);
+    window.addEventListener("mousedown", handlePointer);
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", handleScroll);
+    return () => {
+      window.removeEventListener("mousedown", handlePointer);
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, [quickLookup]);
+
+  useEffect(() => {
     const query = readingLookup.trim();
     if (!query) {
       setReadingLookupResults([]);
@@ -95,10 +137,10 @@ const ReadingsPage: React.FC<Props> = ({
     let cancelled = false;
     const handle = setTimeout(() => {
       if (cancelled) return;
-      setReadingLookupLoading(true);
-      fetchGlossary({ q: query })
-        .then((data) => {
-          if (cancelled) return;
+    setReadingLookupLoading(true);
+    fetchGlossary({ q: query })
+      .then((data) => {
+        if (cancelled) return;
           setReadingLookupResults(buildReadingLookupRows(data));
         })
         .catch(() => {
@@ -169,8 +211,145 @@ const ReadingsPage: React.FC<Props> = ({
       }
     }
 
-    return result;
-  }, [readings, readingTag, readingTitleFilter]);
+    const sorted = [...result].sort((a, b) => {
+      const aTime = getReadingTimestamp(a.created_at);
+      const bTime = getReadingTimestamp(b.created_at);
+      if (aTime === bTime) {
+        return a.id - b.id;
+      }
+      return readingSort === "newest" ? bTime - aTime : aTime - bTime;
+    });
+
+    return sorted;
+  }, [readings, readingTag, readingTitleFilter, readingSort]);
+
+  const handleSelectionLookup = (
+    event: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>,
+  ) => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) {
+      setQuickLookup(null);
+      return;
+    }
+    const container = event.currentTarget;
+    if (!selection.anchorNode || !selection.focusNode) {
+      return;
+    }
+    if (!container.contains(selection.anchorNode) || !container.contains(selection.focusNode)) {
+      return;
+    }
+    const raw = selection.toString();
+    const cleaned = normalizeSelection(raw);
+    if (!cleaned) {
+      setQuickLookup(null);
+      return;
+    }
+    const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+    if (!range) {
+      return;
+    }
+    const rect = range.getBoundingClientRect();
+    const position = resolveQuickLookupPosition(rect);
+    const tokens = cleaned.split(/\s+/).filter(Boolean);
+    if (tokens.length !== 1) {
+      setQuickLookup({
+        query: cleaned,
+        status: "invalid",
+        position,
+        placement: position.placement,
+      });
+      return;
+    }
+    const word = tokens[0];
+    const normalizedWord = normalizeLookupWord(word);
+    const cacheKey = `${stream}|${normalizedWord}`;
+    const cached = quickLookupCache.current.get(cacheKey);
+    if (cached !== undefined) {
+      setQuickLookup(buildQuickLookupState(word, cached, position, i18n.language, stream));
+      return;
+    }
+    const requestId = ++quickLookupRequest.current;
+    setQuickLookup({
+      query: word,
+      status: "loading",
+      position,
+      placement: position.placement,
+    });
+    fetchGlossary({ q: word, stream })
+      .then((data) => {
+        if (requestId !== quickLookupRequest.current) return;
+        const match = selectGlossaryMatch(word, stream, data);
+        quickLookupCache.current.set(cacheKey, match);
+        setQuickLookup(buildQuickLookupState(word, match, position, i18n.language, stream));
+      })
+      .catch(() => {
+        if (requestId !== quickLookupRequest.current) return;
+        quickLookupCache.current.set(cacheKey, null);
+        setQuickLookup({
+          query: word,
+          status: "error",
+          position,
+          placement: position.placement,
+        });
+      });
+  };
+
+  const renderQuickLookup = () => {
+    if (!quickLookup) return null;
+    const languageKey = (i18n.language || "en").split("-")[0];
+    const label = languageKey === "ru" ? "RU" : languageKey === "en" ? "EN" : "NO";
+    const isFavorite =
+      quickLookup.conceptKey && vocabFavorites.includes(normalizeVocabId(quickLookup.conceptKey));
+    return (
+      <div
+        ref={quickLookupRef}
+        className={`reading-quick-lookup reading-quick-lookup--${quickLookup.placement}`}
+        style={{ top: quickLookup.position.top, left: quickLookup.position.left }}
+      >
+        <div className="reading-quick-lookup__header">
+          <span className="reading-quick-lookup__word">{quickLookup.query}</span>
+          {quickLookup.status === "found" && quickLookup.term && quickLookup.conceptKey && (
+            <button
+              type="button"
+              className={`vocab-bookmark ${isFavorite ? "active" : ""}`}
+              onClick={() =>
+                onToggleVocabFavorite(quickLookup.conceptKey!, {
+                  glossary_term: quickLookup.term!.id,
+                  text: quickLookup.term!.term,
+                  translation_en: quickLookup.term!.translation_en,
+                  translation_nb: quickLookup.term!.translation_nb,
+                  translation_nn: quickLookup.term!.translation_nn,
+                  translation_ru: quickLookup.term!.translation_ru,
+                  language: quickLookup.term!.stream,
+                  level: quickLookup.term!.level,
+                })
+              }
+              aria-label={isFavorite ? t("removeFavorite") : t("addFavorite")}
+            >
+              ★
+            </button>
+          )}
+        </div>
+        <div className="reading-quick-lookup__body">
+          {quickLookup.status === "loading" && (
+            <span className="muted small">{t("readings.lookupLoading")}</span>
+          )}
+          {quickLookup.status === "invalid" && (
+            <span className="muted small">{t("readings.lookupSingleWord")}</span>
+          )}
+          {(quickLookup.status === "not_found" || quickLookup.status === "error") && (
+            <span className="muted small">{t("readings.lookupNotFound")}</span>
+          )}
+          {quickLookup.status === "found" && quickLookup.translation && (
+            <span className="reading-quick-lookup__translation">
+              <span className="reading-quick-lookup__label">{label}</span>
+              {quickLookup.translation}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const renderReadingLookup = (variant: "toolbar" | "modal") => (
     <div
@@ -282,6 +461,14 @@ const ReadingsPage: React.FC<Props> = ({
                 ))}
               </select>
             )}
+            <select
+              className="glossary-tag-select readings-toolbar-control"
+              value={readingSort}
+              onChange={(e) => setReadingSort(e.target.value as "newest" | "oldest")}
+            >
+              <option value="newest">{t("readings.sortNewest")}</option>
+              <option value="oldest">{t("readings.sortOldest")}</option>
+            </select>
             <button type="button" className="readings-toolbar-control" onClick={onOpenMyWords}>
               {t("readings.myWordsButton")}
             </button>
@@ -324,6 +511,7 @@ const ReadingsPage: React.FC<Props> = ({
             if (!primaryBody) {
               return null;
             }
+            const createdAtLabel = formatReadingDate(item.created_at);
 
             const translations: {
               code: "en" | "nb" | "nn" | "ru";
@@ -365,9 +553,12 @@ const ReadingsPage: React.FC<Props> = ({
                 <div className="card-meta">
                   <span className="badge">{streamLabel(stream)}</span>
                   <span className="badge">{currentLevel}</span>
+                  {createdAtLabel && (
+                    <span className="badge badge--date">{createdAtLabel}</span>
+                  )}
                 </div>
                 <h3>{primaryTitle}</h3>
-                <div className="reading-excerpt">
+                <div className="reading-excerpt" onMouseUp={handleSelectionLookup} onTouchEnd={handleSelectionLookup}>
                   {primaryBody.split(/\n+/).map((para: string, idx: number) => (
                     <p key={idx}>{para}</p>
                   ))}
@@ -435,6 +626,7 @@ const ReadingsPage: React.FC<Props> = ({
               <div>
                 <p className="muted small">
                   {streamLabel(activeReading.stream)} · {activeReading.level}
+                  {activeReadingDate ? ` · ${activeReadingDate}` : ""}
                 </p>
                 <h3>{activeReading.title}</h3>
               </div>
@@ -444,7 +636,7 @@ const ReadingsPage: React.FC<Props> = ({
             </header>
             <div className="reading-modal__body">
               {renderReadingLookup("modal")}
-              <div className="reading-modal__text">
+              <div className="reading-modal__text" onMouseUp={handleSelectionLookup} onTouchEnd={handleSelectionLookup}>
                 {(() => {
                   const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
                     bokmaal: "nb",
@@ -549,6 +741,7 @@ const ReadingsPage: React.FC<Props> = ({
           </div>
         </div>
       )}
+      {renderQuickLookup()}
     </>
   );
 };
@@ -650,6 +843,123 @@ function appendVariant(current: string, value: string): string {
     return current;
   }
   return `${current} / ${value}`;
+}
+
+type GlossaryLocale = "en" | "nb" | "nn" | "ru";
+
+function normalizeSelection(value: string): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  return trimmed.replace(/^[^\p{L}\p{M}]+|[^\p{L}\p{M}]+$/gu, "");
+}
+
+function normalizeLookupWord(value: string): string {
+  return (value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase();
+}
+
+function selectGlossaryMatch(
+  query: string,
+  stream: Stream,
+  terms: GlossaryTerm[],
+): GlossaryTerm | null {
+  if (terms.length === 0) return null;
+  const normalized = normalizeLookupWord(query);
+  const exactStream = terms.find(
+    (term) => term.stream === stream && normalizeLookupWord(term.term) === normalized,
+  );
+  if (exactStream) return exactStream;
+  const exactTerm = terms.find((term) => normalizeLookupWord(term.term) === normalized);
+  if (exactTerm) return exactTerm;
+  const exactTranslation = terms.find((term) =>
+    [
+      term.translation_en,
+      term.translation_nb,
+      term.translation_nn,
+      term.translation_ru,
+      term.translation,
+    ].some((value) => normalizeLookupWord(value || "") === normalized),
+  );
+  return exactTranslation || terms[0] || null;
+}
+
+function resolveGlossaryLocale(language: string, stream: Stream): GlossaryLocale {
+  if (language === "ru") return "ru";
+  if (language === "en") return "en";
+  if (language === "nb") return stream === "nynorsk" ? "nn" : "nb";
+  return "en";
+}
+
+function getGlossaryTranslation(term: GlossaryTerm, locale: GlossaryLocale): string {
+  if (locale === "ru") return term.translation_ru || term.translation || "";
+  if (locale === "en") return term.translation_en || term.translation || "";
+  if (locale === "nn") return term.translation_nn || term.translation_nb || term.translation || "";
+  return term.translation_nb || term.translation_nn || term.translation || "";
+}
+
+function resolveQuickLookupPosition(rect: DOMRect): {
+  top: number;
+  left: number;
+  placement: "above" | "below";
+} {
+  const padding = 14;
+  const center = rect.left + rect.width / 2;
+  const left = clamp(center, padding, window.innerWidth - padding);
+  const preferBelow = window.innerHeight - rect.bottom > 160;
+  const placement = preferBelow ? "below" : "above";
+  const top = placement === "below" ? rect.bottom + 8 : rect.top - 8;
+  return { top: Math.max(padding, top), left, placement };
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+function buildQuickLookupState(
+  query: string,
+  term: GlossaryTerm | null,
+  position: { top: number; left: number; placement: "above" | "below" },
+  language: string,
+  stream: Stream,
+): QuickLookupState {
+  if (!term) {
+    return {
+      query,
+      status: "not_found",
+      position,
+      placement: position.placement,
+    };
+  }
+  const languageKey = (language || "en").split("-")[0];
+  const locale = resolveGlossaryLocale(languageKey, stream);
+  const translation = getGlossaryTranslation(term, locale);
+  const conceptKey = normalizeVocabId(buildConceptKeyFromTerm(term));
+  return {
+    query,
+    status: translation ? "found" : "not_found",
+    position,
+    placement: position.placement,
+    term,
+    translation: translation || undefined,
+    conceptKey,
+  };
+}
+
+function formatReadingDate(value?: string | null): string {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const day = String(parsed.getDate()).padStart(2, "0");
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const year = String(parsed.getFullYear());
+  return `${day}.${month}.${year}`;
+}
+
+function getReadingTimestamp(value?: string | null): number {
+  if (!value) return 0;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 0;
+  return parsed.getTime();
 }
 
 export default ReadingsPage;
