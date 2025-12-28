@@ -1380,6 +1380,70 @@ h2 {
   margin-top: 10px;
 }
 
+.expedition-review {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.35);
+  display: grid;
+  gap: 10px;
+}
+
+.expedition-review-title {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.expedition-review-list {
+  display: grid;
+  gap: 8px;
+}
+
+.expedition-review-item {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(248, 250, 252, 0.85);
+}
+
+.expedition-review-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.expedition-review-prompt {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.expedition-review-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+
+.expedition-review-answer {
+  margin-top: 4px;
+  color: #0f172a;
+}
+
+.expedition-review-label {
+  margin-right: 6px;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.expedition-review-empty {
+  margin-top: 10px;
+}
+
 @keyframes expedition-glow {
   0% {
     transform: scale(1);

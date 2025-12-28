@@ -36,6 +36,13 @@ type ExpeditionQuestion = {
   options: string[];
 };
 
+type MistakeEntry = {
+  id: string;
+  prompt: string;
+  correct: string;
+  picked: string;
+};
+
 const shuffle = <T,>(arr: T[]) => {
   const next = [...arr];
   for (let i = next.length - 1; i > 0; i -= 1) {
@@ -118,6 +125,7 @@ const FjordExpeditionSagaGame: React.FC<Props> = ({
 
   const [answerResult, setAnswerResult] = useState<"hit" | "miss" | null>(null);
   const [locked, setLocked] = useState(false);
+  const [mistakes, setMistakes] = useState<MistakeEntry[]>([]);
 
   const baseStops = useMemo(
     () => [
@@ -280,6 +288,31 @@ const FjordExpeditionSagaGame: React.FC<Props> = ({
     return clamp(Math.round((hits / total) * 100), 0, 100);
   }, [hits, misses]);
 
+  const mistakeSummary = useMemo(() => {
+    const map = new Map<
+      string,
+      { prompt: string; correct: string; answers: string[]; count: number }
+    >();
+    mistakes.forEach((entry) => {
+      const key = `${entry.prompt}||${entry.correct}`;
+      const existing = map.get(key);
+      if (existing) {
+        existing.count += 1;
+        if (entry.picked && !existing.answers.includes(entry.picked)) {
+          existing.answers.push(entry.picked);
+        }
+      } else {
+        map.set(key, {
+          prompt: entry.prompt,
+          correct: entry.correct,
+          answers: entry.picked ? [entry.picked] : [],
+          count: 1,
+        });
+      }
+    });
+    return Array.from(map.values());
+  }, [mistakes]);
+
   const startExpedition = useCallback(() => {
     if (!canStart) return;
 
@@ -293,6 +326,7 @@ const FjordExpeditionSagaGame: React.FC<Props> = ({
     setCampMisses(0);
     setAnswerResult(null);
     setLocked(false);
+    setMistakes([]);
     setLives(startingLives);
 
     const firstCamp = buildCamp(filteredTerms);
@@ -323,6 +357,15 @@ const FjordExpeditionSagaGame: React.FC<Props> = ({
         setMisses((v) => v + 1);
         setCampMisses((v) => v + 1);
         setLives((prev) => Math.max(0, prev - 1));
+        setMistakes((prev) => [
+          ...prev,
+          {
+            id: `${currentQuestion.id}-${Date.now()}`,
+            prompt: currentQuestion.prompt,
+            correct: currentQuestion.correct,
+            picked: value,
+          },
+        ]);
       }
 
       window.setTimeout(() => {
@@ -380,6 +423,7 @@ const FjordExpeditionSagaGame: React.FC<Props> = ({
     setAnswerResult(null);
     setLocked(false);
     setIsSettingsOpen(false);
+    setMistakes([]);
   }, []);
 
   return (
@@ -628,6 +672,34 @@ const FjordExpeditionSagaGame: React.FC<Props> = ({
           <p className="muted small">
             {t("games.expeditionOverSummary", { score, correct: hits, incorrect: misses, camps: campIndex + 1 })}
           </p>
+          {mistakeSummary.length > 0 ? (
+            <div className="expedition-review">
+              <div className="expedition-review-title">{t("games.expeditionMistakesTitle")}</div>
+              <div className="expedition-review-list">
+                {mistakeSummary.map((entry) => (
+                  <div key={`${entry.prompt}-${entry.correct}`} className="expedition-review-item">
+                    <div className="expedition-review-row">
+                      <span className="expedition-review-prompt">{entry.prompt}</span>
+                      {entry.count > 1 && <span className="expedition-review-count">×{entry.count}</span>}
+                    </div>
+                    <div className="expedition-review-answer">
+                      <span className="expedition-review-label">{t("games.expeditionMistakeCorrect")}</span>
+                      {entry.correct}
+                    </div>
+                    {entry.answers.length > 0 && (
+                      <div className="muted small">
+                        {t("games.expeditionMistakeYourAnswer", { answer: entry.answers.join(", ") })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="muted small expedition-review-empty">
+              {t("games.expeditionMistakesEmpty")}
+            </p>
+          )}
           <div className="inline-actions">
             <button type="button" className="ghost" onClick={startExpedition} disabled={!canStart}>
               {t("games.expeditionPlayAgain")}
