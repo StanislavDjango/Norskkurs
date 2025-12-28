@@ -5,6 +5,7 @@ import { fetchExpressions, fetchGlossary, fetchVerbs } from "../api";
 import FallingWordsGame from "../components/games/FallingWordsGame";
 import CafeDialoguesGame from "../components/games/CafeDialoguesGame";
 import FjordExpeditionGame from "../components/games/FjordExpeditionGame";
+import FjordExpeditionSagaGame from "../components/games/FjordExpeditionSagaGame";
 import MemoryPairsGame from "../components/games/MemoryPairsGame";
 import SentenceScrambleGame from "../components/games/SentenceScrambleGame";
 import WordCollapseGame from "../components/games/WordCollapseGame";
@@ -34,6 +35,7 @@ type GameId =
   | "fallingWords"
   | "cafeDialogues"
   | "fjordExpedition"
+  | "fjordExpeditionSaga"
   | "sentenceScramble"
   | "wordTower"
   | "wordCollapse"
@@ -125,6 +127,15 @@ const GamesPage: React.FC<Props> = ({
         <button
           type="button"
           className={`pill ${
+            activeGame === "fjordExpeditionSaga" ? "pill--active" : ""
+          }`}
+          onClick={() => setActiveGame("fjordExpeditionSaga")}
+        >
+          {t("games.tabFjordExpeditionSaga")}
+        </button>
+        <button
+          type="button"
+          className={`pill ${
             activeGame === "wordTower" ? "pill--active" : ""
           }`}
           onClick={() => setActiveGame("wordTower")}
@@ -189,6 +200,17 @@ const GamesPage: React.FC<Props> = ({
 
       {activeGame === "fjordExpedition" && (
         <FjordExpeditionGame
+          stream={stream}
+          currentLevel={currentLevel}
+          playableTerms={playableTerms}
+          verbEntries={verbEntries}
+          vocabFavorites={vocabFavorites}
+          onToggleVocabFavorite={onToggleVocabFavorite}
+        />
+      )}
+
+      {activeGame === "fjordExpeditionSaga" && (
+        <FjordExpeditionSagaGame
           stream={stream}
           currentLevel={currentLevel}
           playableTerms={playableTerms}

@@ -253,6 +253,7 @@ const resources = {
         tabCafeDialogues: "Cafe dialogues",
         tabSentenceScramble: "Sentence scramble",
         tabFjordExpedition: "Fjord expedition",
+        tabFjordExpeditionSaga: "Fjord expedition: Saga",
         tabWordTower: "Word tower",
         tabWordCollapse: "WordCollaps",
         tabWordCollapse2: "WordCollaps 2",
@@ -339,6 +340,34 @@ const resources = {
         expeditionStop3: "Fjord crossing",
         expeditionStop4: "Mountain pass",
         expeditionStop5: "Cabin",
+        expeditionLengthLabel: "Journey length",
+        expeditionStopGeneric: "Camp {{index}}",
+        expeditionSagaTitle: "Fjord expedition: Stormbound saga",
+        expeditionSagaSubtitle:
+          "Sail into the stormy fjord, decode the signs, and keep the crew together.",
+        expeditionSagaSubtitleRunning: "Choose the right translation to carry the story forward.",
+        expeditionSagaIntro:
+          "Prologue: A midnight letter sends you north to find a lost chart and a silent lighthouse.",
+        expeditionSagaChapter1:
+          "Chapter I — Whispering Harbor: the oars speak, and the water remembers every name.",
+        expeditionSagaChapter2:
+          "Chapter II — Fogbound Sound: a hidden inlet reveals the first rune-stones.",
+        expeditionSagaChapter3:
+          "Chapter III — Ice Gate: the current narrows, and every choice echoes between cliffs.",
+        expeditionSagaChapter4:
+          "Chapter IV — Thunder Pass: the storm breaks, but the map begins to speak.",
+        expeditionSagaChapter5:
+          "Chapter V — Northern Beacon: the lighthouse wakes as the last word is found.",
+        expeditionSagaChapterExtra:
+          "Chapter {{current}} — The fjord keeps testing you as the route unfolds.",
+        expeditionSagaOutro:
+          "Epilogue: The fjord quiets, and your logbook holds the route for the next expedition.",
+        expeditionSagaStop1: "Whispering Harbor",
+        expeditionSagaStop2: "Fogbound Sound",
+        expeditionSagaStop3: "Ice Gate",
+        expeditionSagaStop4: "Thunder Pass",
+        expeditionSagaStop5: "Northern Beacon",
+        expeditionSagaStopGeneric: "Chapter {{index}}",
         towerTitle: "Word tower",
         towerSubtitle: "Click the falling words to flip them into translations before they reach the bottom.",
         towerHintClickWhatFalls: "Falls: {{falls}} → on click: {{turnsInto}}. Click a card to flip it.",
@@ -769,6 +798,7 @@ nb: {
         tabCafeDialogues: "Kafé-dialoger",
         tabSentenceScramble: "Setningsmiks",
         tabFjordExpedition: "Fjord-ekspedisjon",
+        tabFjordExpeditionSaga: "Fjord-ekspedisjon: Saga",
         tabWordTower: "Ord-tårn",
         tabWordCollapse: "WordCollaps",
         tabWordCollapse2: "WordCollaps 2",
@@ -856,6 +886,34 @@ nb: {
         expeditionStop3: "Fjordkryssing",
         expeditionStop4: "Fjellpass",
         expeditionStop5: "Hytte",
+        expeditionLengthLabel: "Lengde på ekspedisjonen",
+        expeditionStopGeneric: "Leir {{index}}",
+        expeditionSagaTitle: "Fjord-ekspedisjon: Stormsaga",
+        expeditionSagaSubtitle:
+          "Seil inn i den stormfulle fjorden, tolk tegnene og hold mannskapet samlet.",
+        expeditionSagaSubtitleRunning: "Velg riktig oversettelse for å føre historien videre.",
+        expeditionSagaIntro:
+          "Prolog: Et nattlig brev sender deg nordover etter et tapt kart og et stille fyr.",
+        expeditionSagaChapter1:
+          "Kapittel I — Hviskende havn: Årene snakker, og vannet husker hvert navn.",
+        expeditionSagaChapter2:
+          "Kapittel II — Tåkefjord: En skjult vik avslører de første runesteinene.",
+        expeditionSagaChapter3:
+          "Kapittel III — Isporten: Strømmen smalner, og hvert valg gir ekko mellom klippene.",
+        expeditionSagaChapter4:
+          "Kapittel IV — Tordenpasset: Stormen bryter løs, men kartet begynner å snakke.",
+        expeditionSagaChapter5:
+          "Kapittel V — Nordens fyr: Lyset våkner idet det siste ordet blir funnet.",
+        expeditionSagaChapterExtra:
+          "Kapittel {{current}} — Fjorden tester dere videre mens ruten åpner seg.",
+        expeditionSagaOutro:
+          "Epilog: Fjorden faller til ro, og loggboken bærer ruten for neste ferd.",
+        expeditionSagaStop1: "Hviskehavn",
+        expeditionSagaStop2: "Tåkefjord",
+        expeditionSagaStop3: "Isporten",
+        expeditionSagaStop4: "Tordenpasset",
+        expeditionSagaStop5: "Nordens fyr",
+        expeditionSagaStopGeneric: "Kapittel {{index}}",
         towerTitle: "Ord-tårn",
         towerSubtitle: "Klikk på ordene som faller for å snu dem til oversettelse før de treffer bunnen.",
         towerHintClickWhatFalls: "Faller: {{falls}} → ved klikk: {{turnsInto}}. Klikk på et kort for å snu det.",
@@ -1282,6 +1340,7 @@ ru: {
         tabCafeDialogues: "Диалоги в кафе",
         tabSentenceScramble: "Собери фразу",
         tabFjordExpedition: "Экспедиция по фьорду",
+        tabFjordExpeditionSaga: "Экспедиция по фьорду: Сага",
         tabWordTower: "Башня слов",
         tabWordCollapse: "WordCollaps",
         tabWordCollapse2: "WordCollaps 2",
@@ -1374,6 +1433,34 @@ ru: {
         expeditionStop3: "Переправа",
         expeditionStop4: "Перевал",
         expeditionStop5: "Хижина",
+        expeditionLengthLabel: "Длина экспедиции",
+        expeditionStopGeneric: "Лагерь {{index}}",
+        expeditionSagaTitle: "Экспедиция по фьорду: Штормовая сага",
+        expeditionSagaSubtitle:
+          "Войдите в штормовой фьорд, расшифруйте знаки и удержите команду вместе.",
+        expeditionSagaSubtitleRunning: "Выбирайте правильный перевод, чтобы вести историю дальше.",
+        expeditionSagaIntro:
+          "Пролог: Ночное письмо отправляет вас на север за потерянной картой и молчаливым маяком.",
+        expeditionSagaChapter1:
+          "Глава I — Причал шепчущих вёсел: говорят, вода помнит каждое имя.",
+        expeditionSagaChapter2:
+          "Глава II — Туманный залив: скрытая бухта открывает первые рунические камни.",
+        expeditionSagaChapter3:
+          "Глава III — Ледяные врата: течение сжимается, и каждый выбор отзывается эхом.",
+        expeditionSagaChapter4:
+          "Глава IV — Грозовой перевал: буря рушится, но карта начинает говорить.",
+        expeditionSagaChapter5:
+          "Глава V — Северный маяк: свет просыпается, когда найдено последнее слово.",
+        expeditionSagaChapterExtra:
+          "Глава {{current}} — Фьорд продолжает испытывать вас по мере продвижения.",
+        expeditionSagaOutro:
+          "Эпилог: фьорд стихает, а ваш журнал хранит маршрут для следующей экспедиции.",
+        expeditionSagaStop1: "Причал шёпота",
+        expeditionSagaStop2: "Туманный залив",
+        expeditionSagaStop3: "Ледяные врата",
+        expeditionSagaStop4: "Грозовой перевал",
+        expeditionSagaStop5: "Северный маяк",
+        expeditionSagaStopGeneric: "Глава {{index}}",
         towerTitle: "Башня слов",
         towerSubtitle: "Кликайте по падающим словам — они переворачиваются в перевод. Не успели кликнуть — теряете жизни.",
         towerHintClickWhatFalls:

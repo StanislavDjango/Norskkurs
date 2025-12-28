@@ -85,7 +85,7 @@ const buildVocabIdFromTerm = (term: GlossaryTerm): string => {
 
 const DEFAULT_LIVES = 20;
 
-const FjordExpeditionGame: React.FC<Props> = ({
+const FjordExpeditionSagaGame: React.FC<Props> = ({
   stream,
   playableTerms,
   verbEntries,
@@ -121,19 +121,40 @@ const FjordExpeditionGame: React.FC<Props> = ({
 
   const baseStops = useMemo(
     () => [
-      t("games.expeditionStop1"),
-      t("games.expeditionStop2"),
-      t("games.expeditionStop3"),
-      t("games.expeditionStop4"),
-      t("games.expeditionStop5"),
+      t("games.expeditionSagaStop1"),
+      t("games.expeditionSagaStop2"),
+      t("games.expeditionSagaStop3"),
+      t("games.expeditionSagaStop4"),
+      t("games.expeditionSagaStop5"),
     ],
     [t],
   );
   const stops = useMemo(() => {
     return buildStopLabels(baseStops, journeyLength, (index) =>
-      t("games.expeditionStopGeneric", { index }),
+      t("games.expeditionSagaStopGeneric", { index }),
     );
   }, [baseStops, journeyLength, t]);
+  const sagaChapters = useMemo(
+    () => [
+      t("games.expeditionSagaChapter1"),
+      t("games.expeditionSagaChapter2"),
+      t("games.expeditionSagaChapter3"),
+      t("games.expeditionSagaChapter4"),
+      t("games.expeditionSagaChapter5"),
+    ],
+    [t],
+  );
+  const storyLine = useMemo(() => {
+    if (status === "over") return t("games.expeditionSagaOutro");
+    if (status === "idle") return t("games.expeditionSagaIntro");
+    if (campIndex < sagaChapters.length) {
+      return sagaChapters[campIndex] || "";
+    }
+    return t("games.expeditionSagaChapterExtra", {
+      current: campIndex + 1,
+      total: journeyLength,
+    });
+  }, [campIndex, journeyLength, sagaChapters, status, t]);
 
   const optionsCount = useMemo(() => {
     return difficulty === "verySlow" ? 3 : difficulty === "turbo" ? 5 : 4;
@@ -365,10 +386,13 @@ const FjordExpeditionGame: React.FC<Props> = ({
     <div className="expedition-game">
       <div className="expedition-header">
         <div>
-          <h3>{t("games.expeditionTitle")}</h3>
+          <h3>{t("games.expeditionSagaTitle")}</h3>
           <p className="muted small">
-            {status === "idle" ? t("games.expeditionSubtitle") : t("games.expeditionSubtitleRunning")}
+            {status === "idle"
+              ? t("games.expeditionSagaSubtitle")
+              : t("games.expeditionSagaSubtitleRunning")}
           </p>
+          {storyLine && <p className="muted small">{storyLine}</p>}
         </div>
 
         <div className="falling-game-controls">
@@ -618,7 +642,7 @@ const FjordExpeditionGame: React.FC<Props> = ({
   );
 };
 
-export default FjordExpeditionGame;
+export default FjordExpeditionSagaGame;
 
 function buildStopLabels(
   baseStops: string[],
