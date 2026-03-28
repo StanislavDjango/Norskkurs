@@ -2,7 +2,7 @@ PYTHON ?= python
 NPM ?= npm
 COMPOSE ?= docker compose
 
-.PHONY: up down restart ps logs logs-backend logs-frontend dev-up dev-down dev-restart dev-logs dev-frontend backend-test frontend-build install-backend install-frontend lint-backend format-backend lint-frontend format-frontend
+.PHONY: up down restart ps logs logs-backend logs-frontend dev-up dev-down dev-restart dev-logs dev-frontend backend-test frontend-build install-backend install-frontend lint-backend format-backend lint-frontend format-frontend api-schema
 
 up:
 	$(COMPOSE) up -d
@@ -51,6 +51,9 @@ format-backend:
 
 frontend-build:
 	cd frontend && $(NPM) run build
+
+api-schema:
+	bash scripts/generate_frontend_api_schema.sh
 
 install-backend:
 	$(PYTHON) -m pip install -r backend/requirements.txt

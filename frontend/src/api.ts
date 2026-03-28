@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { ZodType } from "zod";
 import type {
   AnswerPayload,
   Exercise,
@@ -25,6 +26,15 @@ import type {
   UserLexemeImportResult,
 } from "./types";
 import type { components, paths } from "./api-schema";
+import {
+  paginatedUserLexemesSchema,
+  profileInfoSchema,
+  readingSchema,
+  readingsSchema,
+  testDetailSchema,
+  testsSchema,
+  userLexemeSchema,
+} from "./runtimeSchemas";
 
 import { getApiErrorMessage, getApiErrorStatus } from "./apiError";
 import { publishApiError, publishOffline } from "./apiStatus";
@@ -251,6 +261,25 @@ const normalizeReading = (reading: SchemaReading): Reading => ({
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+const parseValidated = <T>(
+  parser: ZodType<T>,
+  data: unknown,
+  label: string,
+): T => {
+  const result = parser.safeParse(data);
+  if (result.success) {
+    return result.data;
+  }
+
+  const issues = result.error.issues
+    .slice(0, 3)
+    .map((issue) => `${issue.path.join(".") || "<root>"}: ${issue.message}`)
+    .join("; ");
+  const message = `${label} validation failed${issues ? `: ${issues}` : ""}`;
+  logError("API runtime validation failed", { label, issues: result.error.issues });
+  throw new Error(message);
+};
+
 const isIdempotentMethod = (method?: string) => {
   const normalized = (method || "get").toLowerCase();
   return normalized === "get" || normalized === "head" || normalized === "options";
@@ -394,7 +423,7 @@ export const fetchTests = async (params?: FilterParams): Promise<Test[]> => {
     undefined,
     { params },
   );
-  return data.map(normalizeTest);
+  return parseValidated(testsSchema, data.map(normalizeTest), "tests");
 };
 
 export const fetchTestDetail = async (
@@ -407,7 +436,7 @@ export const fetchTestDetail = async (
     undefined,
     { params },
   );
-  return normalizeTestDetail(data);
+  return parseValidated(testDetailSchema, normalizeTestDetail(data), "test detail");
 };
 
 export const submitTest = async (
@@ -422,7 +451,10 @@ export const submitTest = async (
 };
 
 export const fetchProfile = async (): Promise<ProfileInfo> => {
-  return requestJsonWithRetry<ProfileInfo>("get", "profile/me/", undefined, { silentStatuses: [401, 403] });
+  const data = await requestJsonWithRetry<ProfileInfo>("get", "profile/me/", undefined, {
+    silentStatuses: [401, 403],
+  });
+  return parseValidated(profileInfoSchema, data, "profile");
 };
 
 export const logoutProfile = async (): Promise<void> => {
@@ -440,7 +472,8 @@ export const updateProfile = async (payload: {
   vocab_favorites?: string[];
   expression_favorites?: number[];
 }): Promise<ProfileInfo> => {
-  return requestJson<ProfileInfo>("post", "profile/update/", payload);
+  const data = await requestJson<ProfileInfo>("post", "profile/update/", payload);
+  return parseValidated(profileInfoSchema, data, "profile update");
 };
 
 export const registerProfile = async (payload: {
@@ -448,14 +481,16 @@ export const registerProfile = async (payload: {
   password: string;
   name?: string;
 }): Promise<ProfileInfo> => {
-  return requestJson<ProfileInfo>("post", "profile/register/", payload);
+  const data = await requestJson<ProfileInfo>("post", "profile/register/", payload);
+  return parseValidated(profileInfoSchema, data, "profile register");
 };
 
 export const loginProfile = async (payload: {
   identifier: string;
   password: string;
 }): Promise<ProfileInfo> => {
-  return requestJson<ProfileInfo>("post", "profile/login/", payload);
+  const data = await requestJson<ProfileInfo>("post", "profile/login/", payload);
+  return parseValidated(profileInfoSchema, data, "profile login");
 };
 
 export const updateStreamLevel = async (payload: {
@@ -463,7 +498,8 @@ export const updateStreamLevel = async (payload: {
   stream?: Stream;
   level?: Level;
 }): Promise<ProfileInfo> => {
-  return requestJson<ProfileInfo>("post", "profile/stream/", payload);
+  const data = await requestJson<ProfileInfo>("post", "profile/stream/", payload);
+  return parseValidated(profileInfoSchema, data, "profile stream");
 };
 
 export const fetchProfileProgress = async (params: {
@@ -573,12 +609,16 @@ export const fetchUserLexemes = async (
       results: data.map(normalizeUserLexeme),
     };
   }
-  return {
-    count: data.count,
-    next: data.next ?? null,
-    previous: data.previous ?? null,
-    results: data.results.map(normalizeUserLexeme),
-  };
+  return parseValidated(
+    paginatedUserLexemesSchema,
+    {
+      count: data.count,
+      next: data.next ?? null,
+      previous: data.previous ?? null,
+      results: data.results.map(normalizeUserLexeme),
+    },
+    "user lexemes",
+  );
 };
 
 export const reviewUserLexeme = async (id: number, correct: boolean): Promise<UserLexeme> => {
@@ -587,21 +627,21 @@ export const reviewUserLexeme = async (id: number, correct: boolean): Promise<Us
     `user-lexemes/${id}/review/`,
     { correct },
   );
-  return normalizeUserLexeme(data);
+  return parseValidated(userLexemeSchema, normalizeUserLexeme(data), "user lexeme review");
 };
 
 export const createUserLexeme = async (
   payload: Partial<UserLexeme> & {
     text?: string;
     translation_en?: string;
-      translation_ru?: string;
-      translation_nb?: string;
-      translation_nn?: string;
-      language?: FlexibleLexemeLanguage;
-      level?: FlexibleLexemeLevel;
-      tags?: string[];
-      source?: LexemeSource;
-      kind?: LexemeKind;
+    translation_ru?: string;
+    translation_nb?: string;
+    translation_nn?: string;
+    language?: FlexibleLexemeLanguage;
+    level?: FlexibleLexemeLevel;
+    tags?: string[];
+    source?: LexemeSource;
+    kind?: LexemeKind;
   },
 ): Promise<UserLexeme> => {
   const data = await requestJson<ApiResponse<"/api/user-lexemes/", "post">>(
@@ -609,7 +649,7 @@ export const createUserLexeme = async (
     "user-lexemes/",
     payload,
   );
-  return normalizeUserLexeme(data);
+  return parseValidated(userLexemeSchema, normalizeUserLexeme(data), "user lexeme create");
 };
 
 export const updateUserLexeme = async (id: number, payload: Partial<UserLexeme>): Promise<UserLexeme> => {
@@ -618,7 +658,7 @@ export const updateUserLexeme = async (id: number, payload: Partial<UserLexeme>)
     `user-lexemes/${id}/`,
     payload,
   );
-  return normalizeUserLexeme(data);
+  return parseValidated(userLexemeSchema, normalizeUserLexeme(data), "user lexeme update");
 };
 
 export const deleteUserLexeme = async (id: number): Promise<void> => {
@@ -667,7 +707,7 @@ export const fetchReadings = async (params?: FilterParams): Promise<Reading[]> =
     undefined,
     { params },
   );
-  return data.map(normalizeReading);
+  return parseValidated(readingsSchema, data.map(normalizeReading), "readings");
 };
 
 export const __testables = {
@@ -678,4 +718,10 @@ export const __testables = {
   normalizeTest,
   normalizeTestDetail,
   normalizeUserLexeme,
+  parseValidated,
+  profileInfoSchema,
+  readingSchema,
+  testDetailSchema,
+  testsSchema,
+  userLexemeSchema,
 };

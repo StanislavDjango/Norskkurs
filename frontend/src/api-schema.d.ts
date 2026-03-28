@@ -3,833 +3,1504 @@
  * Do not make direct changes to the file.
  */
 
-
 export interface paths {
-  "/api/exercises/": {
-    get: operations["exercises_list"];
-  };
-  "/api/exercises/{id}/": {
-    get: operations["exercises_retrieve"];
-  };
-  "/api/expressions/": {
-    get: operations["expressions_list"];
-  };
-  "/api/glossary/": {
-    get: operations["glossary_list"];
-  };
-  "/api/homework/": {
-    get: operations["homework_list"];
-  };
-  "/api/homework/{id}/": {
-    get: operations["homework_retrieve"];
-  };
-  "/api/materials/": {
-    get: operations["materials_list"];
-  };
-  "/api/materials/{id}/": {
-    get: operations["materials_retrieve"];
-  };
-  "/api/profile/login/": {
-    post: operations["profile_login_create"];
-  };
-  "/api/profile/logout/": {
-    post: operations["profile_logout_create"];
-  };
-  "/api/profile/me/": {
-    get: operations["profile_me_retrieve"];
-  };
-  "/api/profile/progress/": {
-    get: operations["profile_progress_retrieve"];
-  };
-  "/api/profile/register/": {
-    post: operations["profile_register_create"];
-  };
-  "/api/profile/stream/": {
-    post: operations["profile_stream_create"];
-  };
-  "/api/profile/update/": {
-    post: operations["profile_update_create"];
-  };
-  "/api/readings/": {
-    get: operations["readings_list"];
-  };
-  "/api/readings/{slug}/": {
-    get: operations["readings_retrieve"];
-  };
-  "/api/schema/": {
-    /**
-     * @description OpenApi3 schema for this API. Format can be selected via content negotiation.
-     *
-     * - YAML: application/vnd.oai.openapi
-     * - JSON: application/vnd.oai.openapi+json
-     */
-    get: operations["schema_retrieve"];
-  };
-  "/api/tests/": {
-    get: operations["tests_list"];
-  };
-  "/api/tests/{slug}/": {
-    get: operations["tests_retrieve"];
-  };
-  "/api/tests/{slug}/submit/": {
-    post: operations["tests_submit_create"];
-  };
-  "/api/user-lexemes/": {
-    get: operations["user_lexemes_list"];
-    post: operations["user_lexemes_create"];
-  };
-  "/api/user-lexemes/{id}/": {
-    get: operations["user_lexemes_retrieve"];
-    put: operations["user_lexemes_update"];
-    delete: operations["user_lexemes_destroy"];
-    patch: operations["user_lexemes_partial_update"];
-  };
-  "/api/user-lexemes/{id}/review/": {
-    post: operations["user_lexemes_review_create"];
-  };
-  "/api/user-lexemes/toggle/": {
-    post: operations["user_lexemes_toggle_create"];
-  };
-  "/api/user-lexemes/toggle_favorite/": {
-    post: operations["user_lexemes_toggle_favorite_create"];
-  };
-  "/api/verbs/": {
-    get: operations["verbs_list"];
-  };
+    "/api/exercises/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["exercises_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exercises/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["exercises_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/expressions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["expressions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/glossary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["glossary_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/homework/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["homework_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/homework/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["homework_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["materials_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/materials/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["materials_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/profile/login/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["profile_login_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/profile/logout/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["profile_logout_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/profile/me/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["profile_me_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/profile/progress/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["profile_progress_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/profile/register/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["profile_register_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/profile/stream/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["profile_stream_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/profile/update/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["profile_update_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/readings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["readings_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/readings/{slug}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["readings_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/schema/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description OpenApi3 schema for this API. Format can be selected via content negotiation.
+         *
+         *     - YAML: application/vnd.oai.openapi
+         *     - JSON: application/vnd.oai.openapi+json
+         */
+        get: operations["schema_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tests/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tests_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tests/{slug}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tests_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tests/{slug}/submit/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tests_submit_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user-lexemes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["user_lexemes_list"];
+        put?: never;
+        post: operations["user_lexemes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user-lexemes/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["user_lexemes_retrieve"];
+        put: operations["user_lexemes_update"];
+        post?: never;
+        delete: operations["user_lexemes_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["user_lexemes_partial_update"];
+        trace?: never;
+    };
+    "/api/user-lexemes/{id}/review/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["user_lexemes_review_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user-lexemes/export_csv/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["user_lexemes_export_csv_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user-lexemes/import_csv/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["user_lexemes_import_csv_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user-lexemes/toggle/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["user_lexemes_toggle_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user-lexemes/toggle_favorite/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["user_lexemes_toggle_favorite_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/verbs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["verbs_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
-
 export type webhooks = Record<string, never>;
-
 export interface components {
-  schemas: {
-    /** @enum {unknown} */
-    BlankEnum: "";
-    Exercise: {
-      id: number;
-      title: string;
-      stream?: components["schemas"]["StreamEnum"];
-      level?: components["schemas"]["LevelEnum"];
-      kind?: components["schemas"]["ExerciseKindEnum"];
-      prompt?: string;
-      data?: unknown;
-      tags?: unknown;
-      estimated_minutes?: number;
-      /** Format: email */
-      assigned_to_email?: string | null;
-      /** Format: date-time */
-      created_at: string;
+    schemas: {
+        /** @enum {unknown} */
+        BlankEnum: "";
+        Exercise: {
+            readonly id: number;
+            title: string;
+            stream?: components["schemas"]["StreamEnum"];
+            level?: components["schemas"]["LevelEnum"];
+            kind?: components["schemas"]["ExerciseKindEnum"];
+            prompt?: string;
+            data?: unknown;
+            tags?: unknown;
+            estimated_minutes?: number;
+            /** Format: email */
+            assigned_to_email?: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `quiz` - Quiz
+         *     * `dictation` - Dictation
+         *     * `flashcard` - Flashcard
+         * @enum {string}
+         */
+        ExerciseKindEnum: "quiz" | "dictation" | "flashcard";
+        Expression: {
+            readonly id: number;
+            phrase: string;
+            meaning_en?: string;
+            meaning_nb?: string;
+            meaning_nn?: string;
+            meaning_ru?: string;
+            example?: string;
+            stream?: components["schemas"]["StreamEnum"];
+            tags?: unknown;
+        };
+        GlossaryTerm: {
+            readonly id: number;
+            term: string;
+            translation?: string;
+            translation_en?: string;
+            translation_ru?: string;
+            translation_nn?: string;
+            translation_nb?: string;
+            explanation?: string;
+            /** @default bokmaal */
+            stream: components["schemas"]["StreamEnum"];
+            /** @default A1 */
+            level: components["schemas"]["LevelEnum"];
+            tags?: unknown;
+        };
+        Homework: {
+            readonly id: number;
+            title: string;
+            stream?: components["schemas"]["StreamEnum"];
+            level?: components["schemas"]["LevelEnum"];
+            /** Format: date-time */
+            due_date?: string | null;
+            instructions: string;
+            attachments?: unknown;
+            readonly status: components["schemas"]["StatusEnum"];
+            /** Format: email */
+            assigned_to_email?: string | null;
+            student_submission?: string;
+            readonly feedback: string;
+            readonly teacher: number | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `bokmaal` - Bokmal
+         *     * `nynorsk` - Nynorsk
+         *     * `english` - English
+         * @enum {string}
+         */
+        LanguageEnum: "bokmaal" | "nynorsk" | "english";
+        /**
+         * @description * `A1` - A1 - Beginner
+         *     * `A2` - A2 - Elementary
+         *     * `B1` - B1 - Intermediate
+         *     * `B2` - B2 - Upper-intermediate
+         * @enum {string}
+         */
+        LevelEnum: "A1" | "A2" | "B1" | "B2";
+        Material: {
+            readonly id: number;
+            title: string;
+            stream?: components["schemas"]["StreamEnum"];
+            level?: components["schemas"]["LevelEnum"];
+            material_type?: components["schemas"]["MaterialTypeEnum"];
+            body?: string;
+            /** Format: uri */
+            url?: string;
+            tags?: unknown;
+            readonly is_published: boolean;
+            /** Format: email */
+            assigned_to_email?: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `text` - Text
+         *     * `video` - Video
+         *     * `audio` - Audio
+         * @enum {string}
+         */
+        MaterialTypeEnum: "text" | "video" | "audio";
+        Option: {
+            readonly id: number;
+            text: string;
+            order?: number;
+        };
+        PaginatedUserLexemeList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["UserLexeme"][];
+        };
+        /**
+         * @description * `verb` - Verb
+         *     * `noun` - Noun
+         *     * `adjective` - Adjective
+         *     * `adverb` - Adverb
+         *     * `pronoun` - Pronoun
+         *     * `numeral` - Numeral
+         *     * `preposition` - Preposition
+         *     * `conjunction` - Conjunction
+         *     * `interjection` - Interjection
+         * @enum {string}
+         */
+        PartOfSpeechEnum: "verb" | "noun" | "adjective" | "adverb" | "pronoun" | "numeral" | "preposition" | "conjunction" | "interjection";
+        PatchedUserLexeme: {
+            readonly id?: number;
+            source?: components["schemas"]["SourceEnum"];
+            kind?: components["schemas"]["UserLexemeKindEnum"];
+            glossary_term?: number | null;
+            concept_key?: string;
+            text?: string;
+            translation_en?: string;
+            translation_ru?: string;
+            translation_nb?: string;
+            translation_nn?: string;
+            example?: string;
+            notes?: string;
+            tags?: unknown;
+            language?: components["schemas"]["LanguageEnum"] | components["schemas"]["BlankEnum"];
+            level?: components["schemas"]["LevelEnum"] | components["schemas"]["BlankEnum"];
+            readonly times_reviewed?: number;
+            readonly times_correct?: number;
+            /** Format: date-time */
+            readonly last_reviewed_at?: string | null;
+            is_archived?: boolean;
+            /** Format: date-time */
+            readonly created_at?: string;
+            /** Format: date-time */
+            readonly updated_at?: string;
+        };
+        Question: {
+            readonly id: number;
+            text: string;
+            question_type?: components["schemas"]["QuestionTypeEnum"];
+            order?: number;
+            readonly options: components["schemas"]["Option"][];
+        };
+        /**
+         * @description * `single` - Single choice
+         *     * `fill` - Fill in the blank
+         * @enum {string}
+         */
+        QuestionTypeEnum: "single" | "fill";
+        Reading: {
+            readonly id: number;
+            title: string;
+            title_en?: string;
+            title_nb?: string;
+            title_nn?: string;
+            title_ru?: string;
+            slug: string;
+            stream?: components["schemas"]["StreamEnum"];
+            level?: components["schemas"]["LevelEnum"];
+            body: string;
+            translation_en?: string;
+            translation_nb?: string;
+            translation_nn?: string;
+            translation_ru?: string;
+            tags?: unknown;
+            readonly is_published: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `glossary` - Glossary
+         *     * `custom` - Custom
+         * @enum {string}
+         */
+        SourceEnum: "glossary" | "custom";
+        /**
+         * @description * `draft` - Draft
+         *     * `published` - Published
+         *     * `closed` - Closed
+         * @enum {string}
+         */
+        StatusEnum: "draft" | "published" | "closed";
+        /**
+         * @description * `bokmaal` - Bokmal
+         *     * `nynorsk` - Nynorsk
+         *     * `english` - English
+         * @enum {string}
+         */
+        StreamEnum: "bokmaal" | "nynorsk" | "english";
+        TestDetail: {
+            readonly id: number;
+            title: string;
+            slug: string;
+            description?: string;
+            level: components["schemas"]["LevelEnum"];
+            /**
+             * @description Content stream: Bokmal, Nynorsk or English
+             *
+             *     * `bokmaal` - Bokmal
+             *     * `nynorsk` - Nynorsk
+             *     * `english` - English
+             */
+            stream?: components["schemas"]["StreamEnum"];
+            estimated_minutes?: number;
+            readonly question_count: number;
+            readonly question_mode: string;
+            readonly is_restricted: boolean;
+            readonly questions: components["schemas"]["Question"][];
+        };
+        TestList: {
+            readonly id: number;
+            title: string;
+            slug: string;
+            description?: string;
+            level: components["schemas"]["LevelEnum"];
+            /**
+             * @description Content stream: Bokmal, Nynorsk or English
+             *
+             *     * `bokmaal` - Bokmal
+             *     * `nynorsk` - Nynorsk
+             *     * `english` - English
+             */
+            stream?: components["schemas"]["StreamEnum"];
+            estimated_minutes?: number;
+            readonly question_count: number;
+            readonly question_mode: string;
+            readonly is_restricted: boolean;
+        };
+        UserLexeme: {
+            readonly id: number;
+            source?: components["schemas"]["SourceEnum"];
+            kind?: components["schemas"]["UserLexemeKindEnum"];
+            glossary_term?: number | null;
+            concept_key?: string;
+            text?: string;
+            translation_en?: string;
+            translation_ru?: string;
+            translation_nb?: string;
+            translation_nn?: string;
+            example?: string;
+            notes?: string;
+            tags?: unknown;
+            language?: components["schemas"]["LanguageEnum"] | components["schemas"]["BlankEnum"];
+            level?: components["schemas"]["LevelEnum"] | components["schemas"]["BlankEnum"];
+            readonly times_reviewed: number;
+            readonly times_correct: number;
+            /** Format: date-time */
+            readonly last_reviewed_at: string | null;
+            is_archived?: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        /**
+         * @description * `word` - Word
+         *     * `sentence` - Sentence
+         * @enum {string}
+         */
+        UserLexemeKindEnum: "word" | "sentence";
+        VerbEntry: {
+            readonly id: number;
+            verb: string;
+            stream?: components["schemas"]["StreamEnum"];
+            part_of_speech?: components["schemas"]["PartOfSpeechEnum"];
+            infinitive: string;
+            present: string;
+            past: string;
+            perfect: string;
+            examples_infinitive?: string;
+            examples_present?: string;
+            examples_past?: string;
+            examples_perfect?: string;
+            translation_en?: string;
+            translation_ru?: string;
+            translation_nb?: string;
+            tags?: unknown;
+        };
     };
-    /**
-     * @description * `quiz` - Quiz
-     * * `dictation` - Dictation
-     * * `flashcard` - Flashcard
-     * @enum {string}
-     */
-    ExerciseKindEnum: "quiz" | "dictation" | "flashcard";
-    Expression: {
-      id: number;
-      phrase: string;
-      meaning_en?: string;
-      meaning_nb?: string;
-      meaning_nn?: string;
-      meaning_ru?: string;
-      example?: string;
-      stream?: components["schemas"]["StreamEnum"];
-      tags?: unknown;
-    };
-    GlossaryTerm: {
-      id: number;
-      term: string;
-      translation?: string;
-      translation_en?: string;
-      translation_ru?: string;
-      translation_nn?: string;
-      translation_nb?: string;
-      explanation?: string;
-      /** @default bokmaal */
-      stream?: components["schemas"]["StreamEnum"];
-      /** @default A1 */
-      level?: components["schemas"]["LevelEnum"];
-      tags?: unknown;
-    };
-    Homework: {
-      id: number;
-      title: string;
-      stream?: components["schemas"]["StreamEnum"];
-      level?: components["schemas"]["LevelEnum"];
-      /** Format: date-time */
-      due_date?: string | null;
-      instructions: string;
-      attachments?: unknown;
-      status: components["schemas"]["StatusEnum"];
-      /** Format: email */
-      assigned_to_email?: string | null;
-      student_submission?: string;
-      feedback: string;
-      teacher: number | null;
-      /** Format: date-time */
-      created_at: string;
-    };
-    /**
-     * @description * `bokmaal` - Bokmal
-     * * `nynorsk` - Nynorsk
-     * * `english` - English
-     * @enum {string}
-     */
-    LanguageEnum: "bokmaal" | "nynorsk" | "english";
-    /**
-     * @description * `A1` - A1 - Beginner
-     * * `A2` - A2 - Elementary
-     * * `B1` - B1 - Intermediate
-     * * `B2` - B2 - Upper-intermediate
-     * @enum {string}
-     */
-    LevelEnum: "A1" | "A2" | "B1" | "B2";
-    Material: {
-      id: number;
-      title: string;
-      stream?: components["schemas"]["StreamEnum"];
-      level?: components["schemas"]["LevelEnum"];
-      material_type?: components["schemas"]["MaterialTypeEnum"];
-      body?: string;
-      /** Format: uri */
-      url?: string;
-      tags?: unknown;
-      is_published: boolean;
-      /** Format: email */
-      assigned_to_email?: string | null;
-      /** Format: date-time */
-      created_at: string;
-    };
-    /**
-     * @description * `text` - Text
-     * * `video` - Video
-     * * `audio` - Audio
-     * @enum {string}
-     */
-    MaterialTypeEnum: "text" | "video" | "audio";
-    Option: {
-      id: number;
-      text: string;
-      order?: number;
-    };
-    PaginatedUserLexemeList: {
-      /** @example 123 */
-      count: number;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=4
-       */
-      next?: string | null;
-      /**
-       * Format: uri
-       * @example http://api.example.org/accounts/?page=2
-       */
-      previous?: string | null;
-      results: components["schemas"]["UserLexeme"][];
-    };
-    /**
-     * @description * `verb` - Verb
-     * * `noun` - Noun
-     * * `adjective` - Adjective
-     * * `adverb` - Adverb
-     * * `pronoun` - Pronoun
-     * * `numeral` - Numeral
-     * * `preposition` - Preposition
-     * * `conjunction` - Conjunction
-     * * `interjection` - Interjection
-     * @enum {string}
-     */
-    PartOfSpeechEnum: "verb" | "noun" | "adjective" | "adverb" | "pronoun" | "numeral" | "preposition" | "conjunction" | "interjection";
-    PatchedUserLexeme: {
-      id?: number;
-      source?: components["schemas"]["SourceEnum"];
-      kind?: components["schemas"]["UserLexemeKindEnum"];
-      glossary_term?: number | null;
-      concept_key?: string;
-      text?: string;
-      translation_en?: string;
-      translation_ru?: string;
-      translation_nb?: string;
-      translation_nn?: string;
-      example?: string;
-      notes?: string;
-      tags?: unknown;
-      language?: components["schemas"]["LanguageEnum"] | components["schemas"]["BlankEnum"];
-      level?: components["schemas"]["LevelEnum"] | components["schemas"]["BlankEnum"];
-      times_reviewed?: number;
-      times_correct?: number;
-      /** Format: date-time */
-      last_reviewed_at?: string | null;
-      is_archived?: boolean;
-      /** Format: date-time */
-      created_at?: string;
-      /** Format: date-time */
-      updated_at?: string;
-    };
-    Question: {
-      id: number;
-      text: string;
-      question_type?: components["schemas"]["QuestionTypeEnum"];
-      order?: number;
-      options: readonly components["schemas"]["Option"][];
-    };
-    /**
-     * @description * `single` - Single choice
-     * * `fill` - Fill in the blank
-     * @enum {string}
-     */
-    QuestionTypeEnum: "single" | "fill";
-    Reading: {
-      id: number;
-      title: string;
-      title_en?: string;
-      title_nb?: string;
-      title_nn?: string;
-      title_ru?: string;
-      slug: string;
-      stream?: components["schemas"]["StreamEnum"];
-      level?: components["schemas"]["LevelEnum"];
-      body: string;
-      translation_en?: string;
-      translation_nb?: string;
-      translation_nn?: string;
-      translation_ru?: string;
-      tags?: unknown;
-      is_published: boolean;
-      /** Format: date-time */
-      created_at: string;
-    };
-    /**
-     * @description * `glossary` - Glossary
-     * * `custom` - Custom
-     * @enum {string}
-     */
-    SourceEnum: "glossary" | "custom";
-    /**
-     * @description * `draft` - Draft
-     * * `published` - Published
-     * * `closed` - Closed
-     * @enum {string}
-     */
-    StatusEnum: "draft" | "published" | "closed";
-    /**
-     * @description * `bokmaal` - Bokmal
-     * * `nynorsk` - Nynorsk
-     * * `english` - English
-     * @enum {string}
-     */
-    StreamEnum: "bokmaal" | "nynorsk" | "english";
-    TestDetail: {
-      id: number;
-      title: string;
-      slug: string;
-      description?: string;
-      level: components["schemas"]["LevelEnum"];
-      /**
-       * @description Content stream: Bokmal, Nynorsk or English
-       *
-       * * `bokmaal` - Bokmal
-       * * `nynorsk` - Nynorsk
-       * * `english` - English
-       */
-      stream?: components["schemas"]["StreamEnum"];
-      estimated_minutes?: number;
-      question_count: number;
-      question_mode: string;
-      is_restricted: boolean;
-      questions: readonly components["schemas"]["Question"][];
-    };
-    TestList: {
-      id: number;
-      title: string;
-      slug: string;
-      description?: string;
-      level: components["schemas"]["LevelEnum"];
-      /**
-       * @description Content stream: Bokmal, Nynorsk or English
-       *
-       * * `bokmaal` - Bokmal
-       * * `nynorsk` - Nynorsk
-       * * `english` - English
-       */
-      stream?: components["schemas"]["StreamEnum"];
-      estimated_minutes?: number;
-      question_count: number;
-      question_mode: string;
-      is_restricted: boolean;
-    };
-    UserLexeme: {
-      id: number;
-      source?: components["schemas"]["SourceEnum"];
-      kind?: components["schemas"]["UserLexemeKindEnum"];
-      glossary_term?: number | null;
-      concept_key?: string;
-      text?: string;
-      translation_en?: string;
-      translation_ru?: string;
-      translation_nb?: string;
-      translation_nn?: string;
-      example?: string;
-      notes?: string;
-      tags?: unknown;
-      language?: components["schemas"]["LanguageEnum"] | components["schemas"]["BlankEnum"];
-      level?: components["schemas"]["LevelEnum"] | components["schemas"]["BlankEnum"];
-      times_reviewed: number;
-      times_correct: number;
-      /** Format: date-time */
-      last_reviewed_at: string | null;
-      is_archived?: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    /**
-     * @description * `word` - Word
-     * * `sentence` - Sentence
-     * @enum {string}
-     */
-    UserLexemeKindEnum: "word" | "sentence";
-    VerbEntry: {
-      id: number;
-      verb: string;
-      stream?: components["schemas"]["StreamEnum"];
-      part_of_speech?: components["schemas"]["PartOfSpeechEnum"];
-      infinitive: string;
-      present: string;
-      past: string;
-      perfect: string;
-      examples_infinitive?: string;
-      examples_present?: string;
-      examples_past?: string;
-      examples_perfect?: string;
-      translation_en?: string;
-      translation_ru?: string;
-      translation_nb?: string;
-      tags?: unknown;
-    };
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
-
 export type $defs = Record<string, never>;
-
-export type external = Record<string, never>;
-
 export interface operations {
-
-  exercises_list: {
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Exercise"][];
+    exercises_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-    };
-  };
-  exercises_retrieve: {
-    parameters: {
-      path: {
-        /** @description A unique integer value identifying this exercise. */
-        id: number;
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Exercise"];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Exercise"][];
+                };
+            };
         };
-      };
     };
-  };
-  expressions_list: {
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Expression"][];
+    exercises_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this exercise. */
+                id: number;
+            };
+            cookie?: never;
         };
-      };
-    };
-  };
-  glossary_list: {
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["GlossaryTerm"][];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Exercise"];
+                };
+            };
         };
-      };
     };
-  };
-  homework_list: {
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Homework"][];
+    expressions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-    };
-  };
-  homework_retrieve: {
-    parameters: {
-      path: {
-        /** @description A unique integer value identifying this homework. */
-        id: number;
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Homework"];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Expression"][];
+                };
+            };
         };
-      };
     };
-  };
-  materials_list: {
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Material"][];
+    glossary_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-    };
-  };
-  materials_retrieve: {
-    parameters: {
-      path: {
-        /** @description A unique integer value identifying this material. */
-        id: number;
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Material"];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GlossaryTerm"][];
+                };
+            };
         };
-      };
     };
-  };
-  profile_login_create: {
-    responses: {
-      /** @description No response body */
-      200: {
-        content: never;
-      };
-    };
-  };
-  profile_logout_create: {
-    responses: {
-      /** @description No response body */
-      200: {
-        content: never;
-      };
-    };
-  };
-  profile_me_retrieve: {
-    responses: {
-      /** @description No response body */
-      200: {
-        content: never;
-      };
-    };
-  };
-  profile_progress_retrieve: {
-    responses: {
-      /** @description No response body */
-      200: {
-        content: never;
-      };
-    };
-  };
-  profile_register_create: {
-    responses: {
-      /** @description No response body */
-      200: {
-        content: never;
-      };
-    };
-  };
-  profile_stream_create: {
-    responses: {
-      /** @description No response body */
-      200: {
-        content: never;
-      };
-    };
-  };
-  profile_update_create: {
-    responses: {
-      /** @description No response body */
-      200: {
-        content: never;
-      };
-    };
-  };
-  readings_list: {
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Reading"][];
+    homework_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-    };
-  };
-  readings_retrieve: {
-    parameters: {
-      path: {
-        slug: string;
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["Reading"];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Homework"][];
+                };
+            };
         };
-      };
     };
-  };
-  /**
-   * @description OpenApi3 schema for this API. Format can be selected via content negotiation.
-   *
-   * - YAML: application/vnd.oai.openapi
-   * - JSON: application/vnd.oai.openapi+json
-   */
-  schema_retrieve: {
-    parameters: {
-      query?: {
-        format?: "json" | "yaml";
-        lang?: "en";
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/vnd.oai.openapi": {
-            [key: string]: unknown;
-          };
-          "application/yaml": {
-            [key: string]: unknown;
-          };
-          "application/vnd.oai.openapi+json": {
-            [key: string]: unknown;
-          };
-          "application/json": {
-            [key: string]: unknown;
-          };
+    homework_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this homework. */
+                id: number;
+            };
+            cookie?: never;
         };
-      };
-    };
-  };
-  tests_list: {
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["TestList"][];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Homework"];
+                };
+            };
         };
-      };
     };
-  };
-  tests_retrieve: {
-    parameters: {
-      path: {
-        slug: string;
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["TestDetail"];
+    materials_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-    };
-  };
-  tests_submit_create: {
-    parameters: {
-      path: {
-        slug: string;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["TestList"];
-        "application/x-www-form-urlencoded": components["schemas"]["TestList"];
-        "multipart/form-data": components["schemas"]["TestList"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["TestList"];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Material"][];
+                };
+            };
         };
-      };
     };
-  };
-  user_lexemes_list: {
-    parameters: {
-      query?: {
-        /** @description A page number within the paginated result set. */
-        page?: number;
-        /** @description Number of results to return per page. */
-        page_size?: number;
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["PaginatedUserLexemeList"];
+    materials_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this material. */
+                id: number;
+            };
+            cookie?: never;
         };
-      };
-    };
-  };
-  user_lexemes_create: {
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["UserLexeme"];
-        "application/x-www-form-urlencoded": components["schemas"]["UserLexeme"];
-        "multipart/form-data": components["schemas"]["UserLexeme"];
-      };
-    };
-    responses: {
-      201: {
-        content: {
-          "application/json": components["schemas"]["UserLexeme"];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Material"];
+                };
+            };
         };
-      };
     };
-  };
-  user_lexemes_retrieve: {
-    parameters: {
-      path: {
-        id: string;
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["UserLexeme"];
+    profile_login_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-    };
-  };
-  user_lexemes_update: {
-    parameters: {
-      path: {
-        id: string;
-      };
-    };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["UserLexeme"];
-        "application/x-www-form-urlencoded": components["schemas"]["UserLexeme"];
-        "multipart/form-data": components["schemas"]["UserLexeme"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["UserLexeme"];
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
-      };
     };
-  };
-  user_lexemes_destroy: {
-    parameters: {
-      path: {
-        id: string;
-      };
-    };
-    responses: {
-      /** @description No response body */
-      204: {
-        content: never;
-      };
-    };
-  };
-  user_lexemes_partial_update: {
-    parameters: {
-      path: {
-        id: string;
-      };
-    };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["PatchedUserLexeme"];
-        "application/x-www-form-urlencoded": components["schemas"]["PatchedUserLexeme"];
-        "multipart/form-data": components["schemas"]["PatchedUserLexeme"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["UserLexeme"];
+    profile_logout_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-    };
-  };
-  user_lexemes_review_create: {
-    parameters: {
-      path: {
-        id: string;
-      };
-    };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["UserLexeme"];
-        "application/x-www-form-urlencoded": components["schemas"]["UserLexeme"];
-        "multipart/form-data": components["schemas"]["UserLexeme"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["UserLexeme"];
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
-      };
     };
-  };
-  user_lexemes_toggle_create: {
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["UserLexeme"];
-        "application/x-www-form-urlencoded": components["schemas"]["UserLexeme"];
-        "multipart/form-data": components["schemas"]["UserLexeme"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["UserLexeme"];
+    profile_me_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-    };
-  };
-  user_lexemes_toggle_favorite_create: {
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["UserLexeme"];
-        "application/x-www-form-urlencoded": components["schemas"]["UserLexeme"];
-        "multipart/form-data": components["schemas"]["UserLexeme"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["UserLexeme"];
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
-      };
     };
-  };
-  verbs_list: {
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["VerbEntry"][];
+    profile_progress_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
     };
-  };
+    profile_register_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    profile_stream_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    profile_update_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    readings_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reading"][];
+                };
+            };
+        };
+    };
+    readings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reading"];
+                };
+            };
+        };
+    };
+    schema_retrieve: {
+        parameters: {
+            query?: {
+                format?: "json" | "yaml";
+                lang?: "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.oai.openapi": {
+                        [key: string]: unknown;
+                    };
+                    "application/yaml": {
+                        [key: string]: unknown;
+                    };
+                    "application/vnd.oai.openapi+json": {
+                        [key: string]: unknown;
+                    };
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tests_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestList"][];
+                };
+            };
+        };
+    };
+    tests_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestDetail"];
+                };
+            };
+        };
+    };
+    tests_submit_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestList"];
+                "application/x-www-form-urlencoded": components["schemas"]["TestList"];
+                "multipart/form-data": components["schemas"]["TestList"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestList"];
+                };
+            };
+        };
+    };
+    user_lexemes_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedUserLexemeList"];
+                };
+            };
+        };
+    };
+    user_lexemes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UserLexeme"];
+                "application/x-www-form-urlencoded": components["schemas"]["UserLexeme"];
+                "multipart/form-data": components["schemas"]["UserLexeme"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserLexeme"];
+                };
+            };
+        };
+    };
+    user_lexemes_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserLexeme"];
+                };
+            };
+        };
+    };
+    user_lexemes_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UserLexeme"];
+                "application/x-www-form-urlencoded": components["schemas"]["UserLexeme"];
+                "multipart/form-data": components["schemas"]["UserLexeme"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserLexeme"];
+                };
+            };
+        };
+    };
+    user_lexemes_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    user_lexemes_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedUserLexeme"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedUserLexeme"];
+                "multipart/form-data": components["schemas"]["PatchedUserLexeme"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserLexeme"];
+                };
+            };
+        };
+    };
+    user_lexemes_review_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UserLexeme"];
+                "application/x-www-form-urlencoded": components["schemas"]["UserLexeme"];
+                "multipart/form-data": components["schemas"]["UserLexeme"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserLexeme"];
+                };
+            };
+        };
+    };
+    user_lexemes_export_csv_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserLexeme"];
+                };
+            };
+        };
+    };
+    user_lexemes_import_csv_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["UserLexeme"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserLexeme"];
+                };
+            };
+        };
+    };
+    user_lexemes_toggle_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UserLexeme"];
+                "application/x-www-form-urlencoded": components["schemas"]["UserLexeme"];
+                "multipart/form-data": components["schemas"]["UserLexeme"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserLexeme"];
+                };
+            };
+        };
+    };
+    user_lexemes_toggle_favorite_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UserLexeme"];
+                "application/x-www-form-urlencoded": components["schemas"]["UserLexeme"];
+                "multipart/form-data": components["schemas"]["UserLexeme"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserLexeme"];
+                };
+            };
+        };
+    };
+    verbs_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerbEntry"][];
+                };
+            };
+        };
+    };
 }
