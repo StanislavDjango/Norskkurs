@@ -112,6 +112,74 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
 
+class ProfileInfoSerializer(serializers.Serializer):
+    is_teacher = serializers.BooleanField()
+    is_authenticated = serializers.BooleanField()
+    username = serializers.CharField(allow_blank=True)
+    display_name = serializers.CharField(allow_blank=True)
+    stream = serializers.ChoiceField(choices=Test.Stream.choices)
+    level = serializers.ChoiceField(choices=Test.Level.choices)
+    allow_stream_change = serializers.BooleanField()
+    first_name = serializers.CharField(allow_blank=True)
+    last_name = serializers.CharField(allow_blank=True)
+    middle_name = serializers.CharField(allow_blank=True)
+    date_of_birth = serializers.DateField(allow_null=True)
+    learning_language = serializers.CharField(allow_blank=True)
+    native_language = serializers.CharField(allow_blank=True)
+    vocab_favorites = serializers.ListField(
+        child=serializers.CharField(), required=False
+    )
+    expression_favorites = serializers.ListField(
+        child=serializers.IntegerField(), required=False
+    )
+
+
+class ProfileProgressLevelSerializer(serializers.Serializer):
+    level = serializers.ChoiceField(choices=Test.Level.choices)
+    tests = serializers.IntegerField()
+    avg_percent = serializers.FloatField()
+
+
+class ProfileProgressLastSubmissionSerializer(serializers.Serializer):
+    test_title = serializers.CharField()
+    level = serializers.ChoiceField(choices=Test.Level.choices)
+    stream = serializers.ChoiceField(choices=Test.Stream.choices)
+    percent = serializers.FloatField()
+    created_at = serializers.DateTimeField()
+
+
+class ProfileProgressSerializer(serializers.Serializer):
+    email = serializers.EmailField(allow_blank=True)
+    tests_taken = serializers.IntegerField()
+    last_submission = ProfileProgressLastSubmissionSerializer(
+        allow_null=True, required=False
+    )
+    by_level = ProfileProgressLevelSerializer(many=True)
+
+
+class ProfileUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(required=False, allow_blank=True)
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+    middle_name = serializers.CharField(required=False, allow_blank=True)
+    date_of_birth = serializers.DateField(required=False, allow_null=True)
+    learning_language = serializers.CharField(required=False, allow_blank=True)
+    native_language = serializers.CharField(required=False, allow_blank=True)
+    vocab_favorites = serializers.ListField(
+        child=serializers.CharField(), required=False
+    )
+    expression_favorites = serializers.ListField(
+        child=serializers.IntegerField(), required=False
+    )
+
+
+class ProfileStreamUpdateSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    student_email = serializers.EmailField(required=False)
+    stream = serializers.ChoiceField(choices=Test.Stream.choices, required=False)
+    level = serializers.ChoiceField(choices=Test.Level.choices, required=False)
+
+
 class StudentProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentProfile

@@ -8,6 +8,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from ..models import UserLexeme
 from ..serializers import UserLexemeSerializer
 from ..services.lexeme_service import (
     build_user_lexeme_queryset,
@@ -21,6 +22,7 @@ from .common import CsrfExemptSessionAuthentication, UserLexemePagination
 class UserLexemeViewSet(viewsets.ModelViewSet):
     authentication_classes = (BasicAuthentication, CsrfExemptSessionAuthentication)
     permission_classes = (IsAuthenticated,)
+    queryset = UserLexeme.objects.all()
     serializer_class = UserLexemeSerializer
     pagination_class = UserLexemePagination
 

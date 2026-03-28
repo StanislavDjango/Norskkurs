@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 from django.contrib.auth import get_user_model, login, logout
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from ..serializers import (
     LoginSerializer,
+    ProfileInfoSerializer,
+    ProfileProgressSerializer,
+    ProfileStreamUpdateSerializer,
+    ProfileUpdateSerializer,
     RegistrationSerializer,
     StudentProfileSerializer,
 )
@@ -22,8 +27,41 @@ from ..services.profile_service import (
 from .common import CsrfExemptSessionAuthentication
 
 
+@extend_schema_view(
+    me=extend_schema(responses=ProfileInfoSerializer),
+    logout=extend_schema(responses={204: None}),
+    stream=extend_schema(
+        request=ProfileStreamUpdateSerializer,
+        responses=StudentProfileSerializer,
+    ),
+    update_profile=extend_schema(
+        request=ProfileUpdateSerializer,
+        responses=ProfileInfoSerializer,
+    ),
+    register=extend_schema(
+        request=RegistrationSerializer,
+        responses={201: ProfileInfoSerializer},
+    ),
+    login=extend_schema(
+        request=LoginSerializer,
+        responses=ProfileInfoSerializer,
+    ),
+    progress=extend_schema(responses=ProfileProgressSerializer),
+)
 class ProfileViewSet(viewsets.ViewSet):
     authentication_classes = (CsrfExemptSessionAuthentication,)
+    serializer_class = ProfileInfoSerializer
+
+    def get_serializer_class(self):
+        if self.action == "stream":
+            return StudentProfileSerializer
+        if self.action == "register":
+            return RegistrationSerializer
+        if self.action == "login":
+            return LoginSerializer
+        if self.action == "update_profile":
+            return ProfileUpdateSerializer
+        return self.serializer_class
 
     @action(detail=False, methods=["get"])
     def me(self, request):

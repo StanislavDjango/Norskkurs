@@ -124,6 +124,9 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Norskkurs API",
     "DESCRIPTION": "Placement tests and learning content API.",
     "VERSION": "1.0.0",
+    "ENUM_NAME_OVERRIDES": {
+        "StreamLanguageEnum": "exams.models.Test.Stream",
+    },
 }
 
 SENTRY_DSN = env("SENTRY_DSN", default="")

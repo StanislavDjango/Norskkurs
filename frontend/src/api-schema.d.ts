@@ -483,7 +483,7 @@ export interface components {
         Exercise: {
             readonly id: number;
             title: string;
-            stream?: components["schemas"]["StreamEnum"];
+            stream?: components["schemas"]["StreamLanguageEnum"];
             level?: components["schemas"]["LevelEnum"];
             kind?: components["schemas"]["ExerciseKindEnum"];
             prompt?: string;
@@ -510,7 +510,7 @@ export interface components {
             meaning_nn?: string;
             meaning_ru?: string;
             example?: string;
-            stream?: components["schemas"]["StreamEnum"];
+            stream?: components["schemas"]["StreamLanguageEnum"];
             tags?: unknown;
         };
         GlossaryTerm: {
@@ -523,7 +523,7 @@ export interface components {
             translation_nb?: string;
             explanation?: string;
             /** @default bokmaal */
-            stream: components["schemas"]["StreamEnum"];
+            stream: components["schemas"]["StreamLanguageEnum"];
             /** @default A1 */
             level: components["schemas"]["LevelEnum"];
             tags?: unknown;
@@ -531,7 +531,7 @@ export interface components {
         Homework: {
             readonly id: number;
             title: string;
-            stream?: components["schemas"]["StreamEnum"];
+            stream?: components["schemas"]["StreamLanguageEnum"];
             level?: components["schemas"]["LevelEnum"];
             /** Format: date-time */
             due_date?: string | null;
@@ -547,13 +547,6 @@ export interface components {
             readonly created_at: string;
         };
         /**
-         * @description * `bokmaal` - Bokmal
-         *     * `nynorsk` - Nynorsk
-         *     * `english` - English
-         * @enum {string}
-         */
-        LanguageEnum: "bokmaal" | "nynorsk" | "english";
-        /**
          * @description * `A1` - A1 - Beginner
          *     * `A2` - A2 - Elementary
          *     * `B1` - B1 - Intermediate
@@ -561,10 +554,14 @@ export interface components {
          * @enum {string}
          */
         LevelEnum: "A1" | "A2" | "B1" | "B2";
+        Login: {
+            identifier: string;
+            password: string;
+        };
         Material: {
             readonly id: number;
             title: string;
-            stream?: components["schemas"]["StreamEnum"];
+            stream?: components["schemas"]["StreamLanguageEnum"];
             level?: components["schemas"]["LevelEnum"];
             material_type?: components["schemas"]["MaterialTypeEnum"];
             body?: string;
@@ -631,7 +628,7 @@ export interface components {
             example?: string;
             notes?: string;
             tags?: unknown;
-            language?: components["schemas"]["LanguageEnum"] | components["schemas"]["BlankEnum"];
+            language?: components["schemas"]["StreamLanguageEnum"] | components["schemas"]["BlankEnum"];
             level?: components["schemas"]["LevelEnum"] | components["schemas"]["BlankEnum"];
             readonly times_reviewed?: number;
             readonly times_correct?: number;
@@ -642,6 +639,66 @@ export interface components {
             readonly created_at?: string;
             /** Format: date-time */
             readonly updated_at?: string;
+        };
+        ProfileInfo: {
+            is_teacher: boolean;
+            is_authenticated: boolean;
+            username: string;
+            display_name: string;
+            stream: components["schemas"]["StreamLanguageEnum"];
+            level: components["schemas"]["LevelEnum"];
+            allow_stream_change: boolean;
+            first_name: string;
+            last_name: string;
+            middle_name: string;
+            /** Format: date */
+            date_of_birth: string | null;
+            learning_language: string;
+            native_language: string;
+            vocab_favorites?: string[];
+            expression_favorites?: number[];
+        };
+        ProfileProgress: {
+            /** Format: email */
+            email: string;
+            tests_taken: number;
+            last_submission?: components["schemas"]["ProfileProgressLastSubmission"] | null;
+            by_level: components["schemas"]["ProfileProgressLevel"][];
+        };
+        ProfileProgressLastSubmission: {
+            test_title: string;
+            level: components["schemas"]["LevelEnum"];
+            stream: components["schemas"]["StreamLanguageEnum"];
+            /** Format: double */
+            percent: number;
+            /** Format: date-time */
+            created_at: string;
+        };
+        ProfileProgressLevel: {
+            level: components["schemas"]["LevelEnum"];
+            tests: number;
+            /** Format: double */
+            avg_percent: number;
+        };
+        ProfileStreamUpdate: {
+            /** Format: email */
+            email: string;
+            /** Format: email */
+            student_email?: string;
+            stream?: components["schemas"]["StreamLanguageEnum"];
+            level?: components["schemas"]["LevelEnum"];
+        };
+        ProfileUpdate: {
+            name?: string;
+            first_name?: string;
+            last_name?: string;
+            middle_name?: string;
+            /** Format: date */
+            date_of_birth?: string | null;
+            learning_language?: string;
+            native_language?: string;
+            vocab_favorites?: string[];
+            expression_favorites?: number[];
         };
         Question: {
             readonly id: number;
@@ -664,7 +721,7 @@ export interface components {
             title_nn?: string;
             title_ru?: string;
             slug: string;
-            stream?: components["schemas"]["StreamEnum"];
+            stream?: components["schemas"]["StreamLanguageEnum"];
             level?: components["schemas"]["LevelEnum"];
             body: string;
             translation_en?: string;
@@ -675,6 +732,12 @@ export interface components {
             readonly is_published: boolean;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        Registration: {
+            /** Format: email */
+            email: string;
+            password: string;
+            name?: string;
         };
         /**
          * @description * `glossary` - Glossary
@@ -695,7 +758,15 @@ export interface components {
          *     * `english` - English
          * @enum {string}
          */
-        StreamEnum: "bokmaal" | "nynorsk" | "english";
+        StreamLanguageEnum: "bokmaal" | "nynorsk" | "english";
+        StudentProfile: {
+            /** Format: email */
+            email: string;
+            stream?: components["schemas"]["StreamLanguageEnum"];
+            level?: components["schemas"]["LevelEnum"];
+            allow_stream_change?: boolean;
+            readonly teacher: number | null;
+        };
         TestDetail: {
             readonly id: number;
             title: string;
@@ -709,7 +780,7 @@ export interface components {
              *     * `nynorsk` - Nynorsk
              *     * `english` - English
              */
-            stream?: components["schemas"]["StreamEnum"];
+            stream?: components["schemas"]["StreamLanguageEnum"];
             estimated_minutes?: number;
             readonly question_count: number;
             readonly question_mode: string;
@@ -729,7 +800,7 @@ export interface components {
              *     * `nynorsk` - Nynorsk
              *     * `english` - English
              */
-            stream?: components["schemas"]["StreamEnum"];
+            stream?: components["schemas"]["StreamLanguageEnum"];
             estimated_minutes?: number;
             readonly question_count: number;
             readonly question_mode: string;
@@ -749,7 +820,7 @@ export interface components {
             example?: string;
             notes?: string;
             tags?: unknown;
-            language?: components["schemas"]["LanguageEnum"] | components["schemas"]["BlankEnum"];
+            language?: components["schemas"]["StreamLanguageEnum"] | components["schemas"]["BlankEnum"];
             level?: components["schemas"]["LevelEnum"] | components["schemas"]["BlankEnum"];
             readonly times_reviewed: number;
             readonly times_correct: number;
@@ -770,7 +841,7 @@ export interface components {
         VerbEntry: {
             readonly id: number;
             verb: string;
-            stream?: components["schemas"]["StreamEnum"];
+            stream?: components["schemas"]["StreamLanguageEnum"];
             part_of_speech?: components["schemas"]["PartOfSpeechEnum"];
             infinitive: string;
             present: string;
@@ -962,14 +1033,21 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Login"];
+                "application/x-www-form-urlencoded": components["schemas"]["Login"];
+                "multipart/form-data": components["schemas"]["Login"];
+            };
+        };
         responses: {
-            /** @description No response body */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProfileInfo"];
+                };
             };
         };
     };
@@ -980,10 +1058,16 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileInfo"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProfileInfo"];
+                "multipart/form-data": components["schemas"]["ProfileInfo"];
+            };
+        };
         responses: {
             /** @description No response body */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1000,12 +1084,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No response body */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProfileInfo"];
+                };
             };
         };
     };
@@ -1018,12 +1103,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No response body */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProfileProgress"];
+                };
             };
         };
     };
@@ -1034,14 +1120,21 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Registration"];
+                "application/x-www-form-urlencoded": components["schemas"]["Registration"];
+                "multipart/form-data": components["schemas"]["Registration"];
+            };
+        };
         responses: {
-            /** @description No response body */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProfileInfo"];
+                };
             };
         };
     };
@@ -1052,14 +1145,21 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileStreamUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProfileStreamUpdate"];
+                "multipart/form-data": components["schemas"]["ProfileStreamUpdate"];
+            };
+        };
         responses: {
-            /** @description No response body */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["StudentProfile"];
+                };
             };
         };
     };
@@ -1070,14 +1170,21 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ProfileUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProfileUpdate"];
+                "multipart/form-data": components["schemas"]["ProfileUpdate"];
+            };
+        };
         responses: {
-            /** @description No response body */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ProfileInfo"];
+                };
             };
         };
     };
@@ -1275,7 +1382,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                /** @description A unique integer value identifying this user lexeme. */
+                id: number;
             };
             cookie?: never;
         };
@@ -1296,7 +1404,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                /** @description A unique integer value identifying this user lexeme. */
+                id: number;
             };
             cookie?: never;
         };
@@ -1323,7 +1432,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                /** @description A unique integer value identifying this user lexeme. */
+                id: number;
             };
             cookie?: never;
         };
@@ -1343,7 +1453,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                /** @description A unique integer value identifying this user lexeme. */
+                id: number;
             };
             cookie?: never;
         };
@@ -1370,7 +1481,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                /** @description A unique integer value identifying this user lexeme. */
+                id: number;
             };
             cookie?: never;
         };

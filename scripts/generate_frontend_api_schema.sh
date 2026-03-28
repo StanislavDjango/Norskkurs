@@ -25,9 +25,9 @@ generate_with_docker() {
 
   echo "Generating OpenAPI schema from running Docker backend..."
   docker compose -f "$ROOT_DIR/docker-compose.yml" exec -T backend sh -lc '
-    python manage.py spectacular --file /tmp/openapi-schema.json --format openapi-json 1>&2 &&
-    cat /tmp/openapi-schema.json &&
-    rm -f /tmp/openapi-schema.json /app/-
+    python manage.py spectacular --file /app/.generated-openapi-schema.json --format openapi-json 1>&2 &&
+    cat /app/.generated-openapi-schema.json &&
+    rm -f /app/.generated-openapi-schema.json /app/-
   ' >"$SCHEMA_JSON_PATH"
 }
 
