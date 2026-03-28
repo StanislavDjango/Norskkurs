@@ -11,7 +11,7 @@ import {
   toggleUserLexeme,
   updateUserLexeme,
 } from "../api";
-import type { Level, ProfileInfo, Stream, UserLexeme, UserLexemeImportResult } from "../types";
+import type { OptionalLevel, ProfileInfo, Stream, UserLexeme, UserLexemeImportResult } from "../types";
 import { buildConceptKeyFromTerm, normalizeVocabId } from "../utils/lexemes";
 
 type Params = {
@@ -289,7 +289,7 @@ export const useLexemes = ({
 
   const toggleVocabFavorite = async (
     id: string,
-    meta?: Partial<UserLexeme> & { level?: Level | "" | string },
+    meta?: Partial<UserLexeme> & { level?: OptionalLevel },
   ) => {
     const normalized = normalizeVocabId(id);
     if (auth?.is_authenticated) {

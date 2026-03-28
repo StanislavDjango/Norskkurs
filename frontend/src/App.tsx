@@ -7,7 +7,7 @@ import Footer from "./components/Footer";
 import Header from "./components/Header";
 import SectionContent from "./components/SectionContent";
 import SnowOverlay from "./components/SnowOverlay";
-import type { Stream } from "./types";
+import type { Level, Stream } from "./types";
 import { useAuthProfile } from "./hooks/useAuthProfile";
 import { useLearningContent } from "./hooks/useLearningContent";
 import { useLexemes } from "./hooks/useLexemes";
@@ -79,7 +79,7 @@ const App = () => {
     currentLevel,
   });
 
-  const levelLabel = (level: string) => t(`levelLabel.${level}`);
+  const levelLabel = (level: Level) => t(`levelLabel.${level}`);
   const streamLabel = (value: Stream) => {
     const labels: Record<Stream, string> = {
       bokmaal: t("streamLabels.bokmaal"),
@@ -172,7 +172,7 @@ const App = () => {
         isTeacher={isTeacher}
         onLogout={handleLogout}
         currentLang={i18n.language}
-        changeLanguage={(language: string) => i18n.changeLanguage(language)}
+        changeLanguage={(language) => i18n.changeLanguage(language)}
         stream={stream}
         level={currentLevel}
         onChangeStream={handleStreamChange}

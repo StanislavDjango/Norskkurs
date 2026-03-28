@@ -1,37 +1,15 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
+import { getApiErrorMessage } from "../apiError";
 import type { ProfileInfo } from "../types";
 import type { AuthFormState } from "../app/types";
 
 export const extractAuthErrorMessage = (
-  error: any,
+  error: unknown,
   fallback: string,
 ): string => {
-  const responseData = error?.response?.data;
-  if (responseData) {
-    if (typeof responseData === "string") {
-      return responseData;
-    }
-    if (typeof responseData.detail === "string") {
-      return responseData.detail;
-    }
-    if (typeof responseData === "object") {
-      const parts: string[] = [];
-      Object.entries(responseData).forEach(([field, value]) => {
-        if (Array.isArray(value)) {
-          parts.push(`${field}: ${value.join(" ")}`);
-        }
-      });
-      if (parts.length > 0) {
-        return parts.join(" ");
-      }
-    }
-  }
-  if (typeof error?.message === "string" && error.message) {
-    return error.message;
-  }
-  return fallback;
+  return getApiErrorMessage(error, fallback);
 };
 
 type Props = {

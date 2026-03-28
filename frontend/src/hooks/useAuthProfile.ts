@@ -16,18 +16,24 @@ import { normalizeVocabId } from "../utils/lexemes";
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
+const isStream = (value: string): value is Stream =>
+  value === "bokmaal" || value === "nynorsk" || value === "english";
+
+const isLevel = (value: string): value is Level =>
+  value === "A1" || value === "A2" || value === "B1" || value === "B2";
+
 export const useAuthProfile = (t: Translate) => {
   const [profile, setProfile] = useState(initialProfileDraft);
   const [auth, setAuth] = useState<ProfileInfo | null>(null);
   const [studentEmail, setStudentEmail] = useState("");
   const [isTeacher, setIsTeacher] = useState(false);
   const [stream, setStream] = useState<Stream>(() => {
-    const stored = localStorage.getItem("norskkurs_stream") as Stream | null;
-    return stored || "bokmaal";
+    const stored = localStorage.getItem("norskkurs_stream");
+    return stored && isStream(stored) ? stored : "bokmaal";
   });
   const [currentLevel, setCurrentLevel] = useState<Level>(() => {
-    const stored = localStorage.getItem("norskkurs_level") as Level | null;
-    return stored || "A1";
+    const stored = localStorage.getItem("norskkurs_level");
+    return stored && isLevel(stored) ? stored : "A1";
   });
   const [expressionFavorites, setExpressionFavorites] = useState<number[]>(() => {
     try {
@@ -220,7 +226,7 @@ export const useAuthProfile = (t: Translate) => {
       setAuth(updated);
       setProfile((prev) => mergeProfileDraftFromInfo(prev, updated));
       setProfileSaveSuccess(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setProfileAuthError(
         extractAuthErrorMessage(error, t("auth.genericError")),
       );
@@ -241,7 +247,7 @@ export const useAuthProfile = (t: Translate) => {
         name: profileAuthForm.name.trim(),
       });
       handleAuthSuccess(data, profileAuthForm.email.trim());
-    } catch (error: any) {
+    } catch (error: unknown) {
       setProfileAuthError(
         extractAuthErrorMessage(error, t("auth.genericError")),
       );
@@ -263,7 +269,7 @@ export const useAuthProfile = (t: Translate) => {
         password: profileAuthForm.password,
       });
       handleAuthSuccess(data, profileAuthForm.email.trim());
-    } catch (error: any) {
+    } catch (error: unknown) {
       setProfileAuthError(
         extractAuthErrorMessage(error, t("auth.genericError")),
       );

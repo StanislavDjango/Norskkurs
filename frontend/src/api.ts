@@ -13,6 +13,8 @@ import type {
   SubmissionResponse,
   Test,
   TestDetail,
+  OptionalLevel,
+  OptionalStream,
   VerbEntry,
   Expression,
   Level,
@@ -22,8 +24,9 @@ import type {
   PaginatedResponse,
   UserLexemeImportResult,
 } from "./types";
-import type { paths } from "./api-schema";
+import type { components, paths } from "./api-schema";
 
+import { getApiErrorMessage, getApiErrorStatus } from "./apiError";
 import { publishApiError, publishOffline } from "./apiStatus";
 import { error as logError } from "./logger";
 
@@ -33,11 +36,14 @@ const api = axios.create({
 });
 
 type FilterParams = { student_email?: string; stream?: Stream; level?: Level };
+type FlexibleLexemeLevel = OptionalLevel;
+type FlexibleLexemeLanguage = OptionalStream;
 
 // OpenAPI response helpers for typing API calls.
 type ApiPaths = paths;
 type ApiPath = keyof ApiPaths;
 type ApiMethod<Path extends ApiPath> = keyof ApiPaths[Path];
+type SchemaComponents = components["schemas"];
 type ApiContent<Content> = Content extends { "application/json": infer Json }
   ? Json
   : Content extends { "application/vnd.oai.openapi+json": infer Json }
@@ -52,6 +58,197 @@ type ApiResponse<Path extends ApiPath, Method extends ApiMethod<Path>> =
       : never
     : never;
 
+type SchemaTest = SchemaComponents["TestList"];
+type SchemaTestDetail = SchemaComponents["TestDetail"];
+type SchemaQuestion = SchemaComponents["Question"];
+type SchemaOption = SchemaComponents["Option"];
+type SchemaMaterial = SchemaComponents["Material"];
+type SchemaHomework = SchemaComponents["Homework"];
+type SchemaExercise = SchemaComponents["Exercise"];
+type SchemaVerbEntry = SchemaComponents["VerbEntry"];
+type SchemaExpression = SchemaComponents["Expression"];
+type SchemaGlossaryTerm = SchemaComponents["GlossaryTerm"];
+type SchemaUserLexeme = SchemaComponents["UserLexeme"];
+type SchemaReading = SchemaComponents["Reading"];
+
+const asStringArray = (value: unknown): string[] =>
+  Array.isArray(value) ? value.map((item) => String(item)).filter(Boolean) : [];
+
+const asQuestionType = (value: unknown): TestDetail["questions"][number]["question_type"] =>
+  value === "fill" ? "fill" : "single";
+
+const asQuestionMode = (value: unknown): Test["question_mode"] =>
+  value === "fill" || value === "mixed" ? value : "single";
+
+const asStream = (value: unknown): Stream =>
+  value === "nynorsk" || value === "english" ? value : "bokmaal";
+
+const asLevel = (value: unknown): Level =>
+  value === "A2" || value === "B1" || value === "B2" ? value : "A1";
+
+const asLexemeKind = (value: unknown): LexemeKind =>
+  value === "sentence" ? "sentence" : "word";
+
+const asLexemeSource = (value: unknown): LexemeSource =>
+  value === "custom" ? "custom" : "glossary";
+
+const normalizeOption = (option: SchemaOption): TestDetail["questions"][number]["options"][number] => ({
+  id: option.id,
+  text: option.text,
+  order: option.order ?? 0,
+});
+
+const normalizeQuestion = (question: SchemaQuestion): TestDetail["questions"][number] => ({
+  id: question.id,
+  text: question.text,
+  question_type: asQuestionType(question.question_type),
+  order: question.order ?? 0,
+  options: question.options.map(normalizeOption),
+});
+
+const normalizeTest = (test: SchemaTest): Test => ({
+  id: test.id,
+  title: test.title,
+  slug: test.slug,
+  description: test.description ?? "",
+  level: asLevel(test.level),
+  stream: asStream(test.stream),
+  estimated_minutes: test.estimated_minutes ?? 0,
+  question_count: test.question_count,
+  question_mode: asQuestionMode(test.question_mode),
+  is_restricted: test.is_restricted,
+});
+
+const normalizeTestDetail = (test: SchemaTestDetail): TestDetail => ({
+  ...normalizeTest(test),
+  questions: test.questions.map(normalizeQuestion),
+});
+
+const normalizeMaterial = (material: SchemaMaterial): Material => ({
+  id: material.id,
+  title: material.title,
+  stream: asStream(material.stream),
+  level: asLevel(material.level),
+  material_type: material.material_type ?? "text",
+  body: material.body ?? "",
+  url: material.url ?? "",
+  tags: asStringArray(material.tags),
+  assigned_to_email: material.assigned_to_email ?? null,
+});
+
+const normalizeHomework = (homework: SchemaHomework): Homework => ({
+  id: homework.id,
+  title: homework.title,
+  stream: asStream(homework.stream),
+  level: asLevel(homework.level),
+  due_date: homework.due_date ?? null,
+  instructions: homework.instructions,
+  attachments: asStringArray(homework.attachments),
+  status: homework.status,
+  assigned_to_email: homework.assigned_to_email ?? null,
+  student_submission: homework.student_submission ?? "",
+  feedback: homework.feedback ?? "",
+});
+
+const normalizeExercise = (exercise: SchemaExercise): Exercise => ({
+  id: exercise.id,
+  title: exercise.title,
+  stream: asStream(exercise.stream),
+  level: asLevel(exercise.level),
+  kind: exercise.kind ?? "quiz",
+  prompt: exercise.prompt ?? "",
+  tags: asStringArray(exercise.tags),
+  estimated_minutes: exercise.estimated_minutes ?? 0,
+});
+
+const normalizeVerbEntry = (entry: SchemaVerbEntry): VerbEntry => ({
+  id: entry.id,
+  verb: entry.verb,
+  stream: asStream(entry.stream),
+  part_of_speech: entry.part_of_speech ?? "",
+  infinitive: entry.infinitive,
+  present: entry.present,
+  past: entry.past,
+  perfect: entry.perfect,
+  examples_infinitive: entry.examples_infinitive ?? "",
+  examples_present: entry.examples_present ?? "",
+  examples_past: entry.examples_past ?? "",
+  examples_perfect: entry.examples_perfect ?? "",
+  translation_en: entry.translation_en ?? "",
+  translation_ru: entry.translation_ru ?? "",
+  translation_nb: entry.translation_nb ?? "",
+  tags: asStringArray(entry.tags),
+});
+
+const normalizeExpression = (expression: SchemaExpression): Expression => ({
+  id: expression.id,
+  phrase: expression.phrase,
+  meaning_en: expression.meaning_en ?? "",
+  meaning_nb: expression.meaning_nb ?? "",
+  meaning_nn: expression.meaning_nn ?? "",
+  meaning_ru: expression.meaning_ru ?? "",
+  example: expression.example ?? "",
+  stream: asStream(expression.stream),
+  tags: asStringArray(expression.tags),
+});
+
+const normalizeGlossaryTerm = (term: SchemaGlossaryTerm): GlossaryTerm => ({
+  id: term.id,
+  term: term.term,
+  translation: term.translation ?? "",
+  translation_en: term.translation_en ?? "",
+  translation_ru: term.translation_ru ?? "",
+  translation_nn: term.translation_nn ?? "",
+  translation_nb: term.translation_nb ?? "",
+  explanation: term.explanation ?? "",
+  stream: asStream(term.stream),
+  level: asLevel(term.level),
+  tags: asStringArray(term.tags),
+});
+
+const normalizeUserLexeme = (lexeme: SchemaUserLexeme): UserLexeme => ({
+  id: lexeme.id,
+  source: asLexemeSource(lexeme.source),
+  kind: asLexemeKind(lexeme.kind),
+  glossary_term: lexeme.glossary_term ?? null,
+  concept_key: lexeme.concept_key ?? "",
+  text: lexeme.text ?? "",
+  translation_en: lexeme.translation_en ?? "",
+  translation_ru: lexeme.translation_ru ?? "",
+  translation_nb: lexeme.translation_nb ?? "",
+  translation_nn: lexeme.translation_nn ?? "",
+  example: lexeme.example ?? "",
+  notes: lexeme.notes ?? "",
+  tags: asStringArray(lexeme.tags),
+  language: lexeme.language ?? "",
+  level: lexeme.level ?? "",
+  times_reviewed: lexeme.times_reviewed,
+  times_correct: lexeme.times_correct,
+  last_reviewed_at: lexeme.last_reviewed_at ?? null,
+  is_archived: lexeme.is_archived ?? false,
+  created_at: lexeme.created_at,
+  updated_at: lexeme.updated_at,
+});
+
+const normalizeReading = (reading: SchemaReading): Reading => ({
+  id: reading.id,
+  title: reading.title,
+  title_en: reading.title_en ?? "",
+  title_nb: reading.title_nb ?? "",
+  title_nn: reading.title_nn ?? "",
+  title_ru: reading.title_ru ?? "",
+  slug: reading.slug,
+  stream: asStream(reading.stream),
+  level: asLevel(reading.level),
+  body: reading.body,
+  translation_en: reading.translation_en ?? "",
+  translation_nb: reading.translation_nb ?? "",
+  translation_nn: reading.translation_nn ?? "",
+  translation_ru: reading.translation_ru ?? "",
+  tags: asStringArray(reading.tags),
+  created_at: reading.created_at,
+});
+
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const isIdempotentMethod = (method?: string) => {
@@ -59,38 +256,27 @@ const isIdempotentMethod = (method?: string) => {
   return normalized === "get" || normalized === "head" || normalized === "options";
 };
 
-const shouldRetryError = (error: any) => {
-  const status = error?.response?.status;
+const shouldRetryError = (error: unknown) => {
+  const status = getApiErrorStatus(error);
   if (typeof status === "number") return status === 429 || status >= 500;
   return true;
 };
 
-const normalizeApiErrorMessage = (error: any): string => {
-  const responseData = error?.response?.data;
-  if (responseData) {
-    if (typeof responseData === "string") return responseData;
-    if (typeof responseData.detail === "string") return responseData.detail;
-    if (typeof responseData.error === "string") return responseData.error;
-  }
-  if (error?.message) return String(error.message);
-  return "API error";
-};
-
 const publishErrorOnce = (
-  error: any,
+  error: unknown,
   method?: string,
   url?: string,
   retry?: () => Promise<unknown>,
   opts?: { silent?: boolean; silentStatuses?: number[]; reportAllErrors?: boolean },
 ) => {
-  const status = error?.response?.status;
+  const status = getApiErrorStatus(error);
   if (opts?.silent) return;
   if (typeof status === "number" && opts?.silentStatuses?.includes(status)) return;
   if (!opts?.reportAllErrors) {
     if (typeof status === "number" && status >= 400 && status < 500 && status !== 429) return;
   }
-  const message = normalizeApiErrorMessage(error);
-  if (!error?.response) publishOffline(true);
+  const message = getApiErrorMessage(error);
+  if (typeof status !== "number") publishOffline(true);
   logError("API error", { method, url, status, message, error });
   publishApiError({
     at: Date.now(),
@@ -137,7 +323,7 @@ const requestJson = async <T>(
 ): Promise<T> => {
   try {
     return await rawRequestJson<T>(method, url, payload, config);
-  } catch (err) {
+  } catch (err: unknown) {
     publishErrorOnce(
       err,
       method,
@@ -161,7 +347,7 @@ const requestJsonWithRetry = async <T>(
   while (true) {
     try {
       return await rawRequestJson<T>(method, url, payload, config);
-    } catch (err) {
+    } catch (err: unknown) {
       attempt += 1;
       if (!retryable || attempt > retries || !shouldRetryError(err)) {
         publishErrorOnce(
@@ -195,7 +381,7 @@ const requestBlob = async (
       }
     }
     return { blob: res.data, filename };
-  } catch (err) {
+  } catch (err: unknown) {
     publishErrorOnce(err, "get", url, undefined, config);
     throw err;
   }
@@ -208,7 +394,7 @@ export const fetchTests = async (params?: FilterParams): Promise<Test[]> => {
     undefined,
     { params },
   );
-  return data as Test[];
+  return data.map(normalizeTest);
 };
 
 export const fetchTestDetail = async (
@@ -221,7 +407,7 @@ export const fetchTestDetail = async (
     undefined,
     { params },
   );
-  return data as TestDetail;
+  return normalizeTestDetail(data);
 };
 
 export const submitTest = async (
@@ -293,7 +479,7 @@ export const fetchMaterials = async (params?: FilterParams): Promise<Material[]>
     undefined,
     { params },
   );
-  return data as Material[];
+  return data.map(normalizeMaterial);
 };
 
 export const fetchHomework = async (params?: FilterParams): Promise<Homework[]> => {
@@ -303,7 +489,7 @@ export const fetchHomework = async (params?: FilterParams): Promise<Homework[]> 
     undefined,
     { params },
   );
-  return data as Homework[];
+  return data.map(normalizeHomework);
 };
 
 export const fetchExercises = async (params?: FilterParams): Promise<Exercise[]> => {
@@ -313,7 +499,7 @@ export const fetchExercises = async (params?: FilterParams): Promise<Exercise[]>
     undefined,
     { params },
   );
-  return data as Exercise[];
+  return data.map(normalizeExercise);
 };
 
 type VerbFilterParams = FilterParams & {
@@ -328,7 +514,7 @@ export const fetchVerbs = async (params?: VerbFilterParams): Promise<VerbEntry[]
     undefined,
     { params },
   );
-  return data as VerbEntry[];
+  return data.map(normalizeVerbEntry);
 };
 
 export const fetchExpressions = async (params?: FilterParams): Promise<Expression[]> => {
@@ -338,7 +524,7 @@ export const fetchExpressions = async (params?: FilterParams): Promise<Expressio
     undefined,
     { params },
   );
-  return data as Expression[];
+  return data.map(normalizeExpression);
 };
 
 export const fetchGlossary = async (params?: GlossarySearchParams): Promise<GlossaryTerm[]> => {
@@ -348,14 +534,14 @@ export const fetchGlossary = async (params?: GlossarySearchParams): Promise<Glos
     undefined,
     { params },
   );
-  return data as GlossaryTerm[];
+  return data.map(normalizeGlossaryTerm);
 };
 
 type UserLexemeListParams = {
   source?: LexemeSource;
   kind?: LexemeKind;
-  level?: Level | string;
-  language?: Stream | string;
+  level?: FlexibleLexemeLevel;
+  language?: FlexibleLexemeLanguage;
   q?: string;
   tag?: string;
   archived?: boolean;
@@ -384,10 +570,15 @@ export const fetchUserLexemes = async (
       count: data.length,
       next: null,
       previous: null,
-      results: data,
+      results: data.map(normalizeUserLexeme),
     };
   }
-  return data as PaginatedResponse<UserLexeme>;
+  return {
+    count: data.count,
+    next: data.next ?? null,
+    previous: data.previous ?? null,
+    results: data.results.map(normalizeUserLexeme),
+  };
 };
 
 export const reviewUserLexeme = async (id: number, correct: boolean): Promise<UserLexeme> => {
@@ -396,21 +587,21 @@ export const reviewUserLexeme = async (id: number, correct: boolean): Promise<Us
     `user-lexemes/${id}/review/`,
     { correct },
   );
-  return data as UserLexeme;
+  return normalizeUserLexeme(data);
 };
 
 export const createUserLexeme = async (
   payload: Partial<UserLexeme> & {
     text?: string;
     translation_en?: string;
-    translation_ru?: string;
-    translation_nb?: string;
-    translation_nn?: string;
-    language?: Stream | string;
-    level?: Level | string;
-    tags?: string[];
-    source?: LexemeSource;
-    kind?: LexemeKind;
+      translation_ru?: string;
+      translation_nb?: string;
+      translation_nn?: string;
+      language?: FlexibleLexemeLanguage;
+      level?: FlexibleLexemeLevel;
+      tags?: string[];
+      source?: LexemeSource;
+      kind?: LexemeKind;
   },
 ): Promise<UserLexeme> => {
   const data = await requestJson<ApiResponse<"/api/user-lexemes/", "post">>(
@@ -418,7 +609,7 @@ export const createUserLexeme = async (
     "user-lexemes/",
     payload,
   );
-  return data as UserLexeme;
+  return normalizeUserLexeme(data);
 };
 
 export const updateUserLexeme = async (id: number, payload: Partial<UserLexeme>): Promise<UserLexeme> => {
@@ -427,7 +618,7 @@ export const updateUserLexeme = async (id: number, payload: Partial<UserLexeme>)
     `user-lexemes/${id}/`,
     payload,
   );
-  return data as UserLexeme;
+  return normalizeUserLexeme(data);
 };
 
 export const deleteUserLexeme = async (id: number): Promise<void> => {
@@ -444,8 +635,8 @@ export const toggleUserLexeme = async (payload: {
   translation_nb?: string;
   translation_nn?: string;
   text?: string;
-  language?: Stream | string;
-  level?: Level | string;
+  language?: FlexibleLexemeLanguage;
+  level?: FlexibleLexemeLevel;
   kind?: LexemeKind;
 }): Promise<{ is_favorite: boolean; lexeme?: UserLexeme }> => {
   return requestJson("post", "user-lexemes/toggle_favorite/", payload);
@@ -476,5 +667,15 @@ export const fetchReadings = async (params?: FilterParams): Promise<Reading[]> =
     undefined,
     { params },
   );
-  return data as Reading[];
+  return data.map(normalizeReading);
+};
+
+export const __testables = {
+  normalizeGlossaryTerm,
+  normalizeMaterial,
+  normalizeQuestion,
+  normalizeReading,
+  normalizeTest,
+  normalizeTestDetail,
+  normalizeUserLexeme,
 };

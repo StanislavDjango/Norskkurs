@@ -38,7 +38,7 @@ type Props = {
   materials: Material[];
   exercises: Exercise[];
   homework: Homework[];
-  levelLabel: (level: string) => string;
+  levelLabel: (level: Level) => string;
   expressions: Expression[];
   expressionFavorites: number[];
   expressionView: "all" | "favorites";

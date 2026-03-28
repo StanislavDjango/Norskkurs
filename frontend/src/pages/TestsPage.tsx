@@ -11,7 +11,7 @@ type Props = {
   currentLevel: Level;
   studentEmail: string;
   setStudentEmail: (email: string) => void;
-  levelLabel: (level: string) => string;
+  levelLabel: (level: Level) => string;
   profile: { name: string; email: string };
   setProfile: React.Dispatch<React.SetStateAction<{ name: string; email: string }>>;
 };

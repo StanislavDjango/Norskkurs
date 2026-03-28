@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type {
-  Level,
+  LexemeKind,
+  LexemeSource,
+  OptionalLevel,
+  OptionalStream,
   ProfileInfo,
-  Stream,
   UserLexeme,
   UserLexemeImportResult,
 } from "../types";
@@ -21,8 +23,8 @@ type Props = {
       translation_nb?: string;
       translation_nn?: string;
       translation_ru?: string;
-      level?: Level | string;
-      language?: Stream | string;
+      level?: OptionalLevel;
+      language?: OptionalStream;
     },
   ) => Promise<UserLexeme | null>;
   onUpdate: (id: number, payload: Partial<UserLexeme>) => Promise<UserLexeme | null>;
@@ -37,16 +39,37 @@ type Props = {
 };
 
 type Draft = {
-  kind: "word" | "sentence";
+  kind: LexemeKind;
   text: string;
   translation_en: string;
   translation_nb: string;
   translation_nn: string;
   translation_ru: string;
-  language: Stream | "" | string;
-  level: Level | "" | string;
+  language: OptionalStream;
+  level: OptionalLevel;
   notes: string;
   tags: string;
+};
+
+type FilterKind = "" | LexemeKind;
+type FilterSource = "" | LexemeSource;
+type FilterLevel = OptionalLevel;
+type FilterLanguage = OptionalStream;
+
+const isFilterKind = (value: string): value is FilterKind => {
+  return value === "" || value === "word" || value === "sentence";
+};
+
+const isFilterSource = (value: string): value is FilterSource => {
+  return value === "" || value === "glossary" || value === "custom";
+};
+
+const isFilterLevel = (value: string): value is FilterLevel => {
+  return value === "" || value === "A1" || value === "A2" || value === "B1" || value === "B2";
+};
+
+const isFilterLanguage = (value: string): value is FilterLanguage => {
+  return value === "" || value === "bokmaal" || value === "nynorsk" || value === "english";
 };
 
 const emptyDraft: Draft = {
@@ -77,10 +100,10 @@ const MyWordsPage: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<Draft>(emptyDraft);
-  const [filterKind, setFilterKind] = useState<"" | "word" | "sentence">("");
-  const [filterSource, setFilterSource] = useState<"" | "glossary" | "custom">("");
-  const [filterLevel, setFilterLevel] = useState<Level | "" | string>("");
-  const [filterLanguage, setFilterLanguage] = useState<Stream | "" | string>("");
+  const [filterKind, setFilterKind] = useState<FilterKind>("");
+  const [filterSource, setFilterSource] = useState<FilterSource>("");
+  const [filterLevel, setFilterLevel] = useState<FilterLevel>("");
+  const [filterLanguage, setFilterLanguage] = useState<FilterLanguage>("");
   const [filterTag, setFilterTag] = useState<string>("");
   const [sortMode, setSortMode] = useState<"added" | "stale">("added");
   const [search, setSearch] = useState("");
@@ -388,7 +411,12 @@ const MyWordsPage: React.FC<Props> = ({
               <span className="muted small">{t("language")}</span>
               <select
                 value={draft.language}
-                onChange={(e) => setDraft((prev) => ({ ...prev, language: e.target.value }))}
+                onChange={(e) => {
+                  const nextValue = e.target.value;
+                  if (isFilterLanguage(nextValue)) {
+                    setDraft((prev) => ({ ...prev, language: nextValue }));
+                  }
+                }}
               >
                 <option value="">{t("myWords.languageOptional")}</option>
                 <option value="bokmaal">{t("streamLabels.bokmaal")}</option>
@@ -445,7 +473,12 @@ const MyWordsPage: React.FC<Props> = ({
               <span className="muted small">{t("level")}</span>
               <select
                 value={draft.level}
-                onChange={(e) => setDraft((prev) => ({ ...prev, level: e.target.value }))}
+                onChange={(e) => {
+                  const nextValue = e.target.value;
+                  if (isFilterLevel(nextValue)) {
+                    setDraft((prev) => ({ ...prev, level: nextValue }));
+                  }
+                }}
               >
                 <option value="">{t("myWords.levelOptional")}</option>
                 <option value="A1">{t("levelLabel.A1")}</option>
@@ -494,23 +527,55 @@ const MyWordsPage: React.FC<Props> = ({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <select value={filterKind} onChange={(e) => setFilterKind(e.target.value as any)}>
+            <select
+              value={filterKind}
+              onChange={(e) => {
+                const nextValue = e.target.value;
+                if (isFilterKind(nextValue)) {
+                  setFilterKind(nextValue);
+                }
+              }}
+            >
               <option value="">{t("all")}</option>
               <option value="word">{t("myWords.kindWord")}</option>
               <option value="sentence">{t("myWords.kindSentence")}</option>
             </select>
-            <select value={filterSource} onChange={(e) => setFilterSource(e.target.value as any)}>
+            <select
+              value={filterSource}
+              onChange={(e) => {
+                const nextValue = e.target.value;
+                if (isFilterSource(nextValue)) {
+                  setFilterSource(nextValue);
+                }
+              }}
+            >
               <option value="">{t("all")}</option>
               <option value="glossary">{t("myWords.sourceGlossary")}</option>
               <option value="custom">{t("myWords.sourceCustom")}</option>
             </select>
-            <select value={filterLanguage} onChange={(e) => setFilterLanguage(e.target.value)}>
+            <select
+              value={filterLanguage}
+              onChange={(e) => {
+                const nextValue = e.target.value;
+                if (isFilterLanguage(nextValue)) {
+                  setFilterLanguage(nextValue);
+                }
+              }}
+            >
               <option value="">{t("language")}</option>
               <option value="bokmaal">{t("streamLabels.bokmaal")}</option>
               <option value="nynorsk">{t("streamLabels.nynorsk")}</option>
               <option value="english">{t("streamLabels.english")}</option>
             </select>
-            <select value={filterLevel} onChange={(e) => setFilterLevel(e.target.value)}>
+            <select
+              value={filterLevel}
+              onChange={(e) => {
+                const nextValue = e.target.value;
+                if (isFilterLevel(nextValue)) {
+                  setFilterLevel(nextValue);
+                }
+              }}
+            >
               <option value="">{t("level")}</option>
               <option value="A1">A1</option>
               <option value="A2">A2</option>
@@ -666,7 +731,12 @@ const MyWordsPage: React.FC<Props> = ({
                           <span className="muted small">{t("language")}</span>
                           <select
                             value={editingDraft.language}
-                            onChange={(e) => setEditingDraft((prev) => ({ ...prev, language: e.target.value }))}
+                            onChange={(e) => {
+                              const nextValue = e.target.value;
+                              if (isFilterLanguage(nextValue)) {
+                                setEditingDraft((prev) => ({ ...prev, language: nextValue }));
+                              }
+                            }}
                             disabled={lex.source === "glossary"}
                           >
                             <option value="">{t("myWords.languageOptional")}</option>
@@ -723,7 +793,12 @@ const MyWordsPage: React.FC<Props> = ({
                           <span className="muted small">{t("level")}</span>
                           <select
                             value={editingDraft.level}
-                            onChange={(e) => setEditingDraft((prev) => ({ ...prev, level: e.target.value }))}
+                            onChange={(e) => {
+                              const nextValue = e.target.value;
+                              if (isFilterLevel(nextValue)) {
+                                setEditingDraft((prev) => ({ ...prev, level: nextValue }));
+                              }
+                            }}
                             disabled={lex.source === "glossary"}
                           >
                             <option value="">{t("myWords.levelOptional")}</option>

@@ -1,5 +1,7 @@
 export type Level = "A1" | "A2" | "B1" | "B2";
 export type Stream = "bokmaal" | "nynorsk" | "english";
+export type OptionalLevel = Level | "";
+export type OptionalStream = Stream | "";
 
 export type PaginatedResponse<T> = {
   count: number;
@@ -223,8 +225,8 @@ export interface UserLexeme {
   example: string;
   notes: string;
   tags: string[];
-  language: Stream | "" | string;
-  level: Level | "" | string;
+  language: OptionalStream;
+  level: OptionalLevel;
   times_reviewed: number;
   times_correct: number;
   last_reviewed_at?: string | null;

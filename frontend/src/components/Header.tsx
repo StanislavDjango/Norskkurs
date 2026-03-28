@@ -2,12 +2,14 @@
 import { useTranslation } from "react-i18next";
 import type { Level, ProfileInfo, Stream } from "../types";
 
+type UiLanguage = "en" | "nb" | "ru" | string;
+
 type Props = {
   auth: ProfileInfo | null;
   isTeacher: boolean;
   onLogout: () => void;
-  currentLang: string;
-  changeLanguage: (lang: string) => void;
+  currentLang: UiLanguage;
+  changeLanguage: (lang: UiLanguage) => void;
   stream: Stream;
   level: Level;
   onChangeStream: (stream: Stream) => void;
