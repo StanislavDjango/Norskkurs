@@ -1,11 +1,10 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import type { Homework, Level, ProfileInfo, Stream } from "../types";
+import type { Homework, Level, Stream } from "../types";
 
 type Props = {
   homework: Homework[];
-  auth: ProfileInfo | null;
   stream: Stream;
   currentLevel: Level;
   streamLabel: (stream: Stream) => string;
@@ -14,7 +13,6 @@ type Props = {
 
 const HomeworkPage: React.FC<Props> = ({
   homework,
-  auth,
   stream,
   currentLevel,
   streamLabel,
@@ -26,20 +24,8 @@ const HomeworkPage: React.FC<Props> = ({
     <>
       <h2>{t("nav.homework")}</h2>
       <section className="card">
-        <h3>Mobile debug</h3>
         <p className="muted small">
-          This block is rendered by React. If you see it on your phone, JavaScript is running.
-        </p>
-        <p className="muted small">
-          Logged in as:{" "}
-          <strong>{auth?.display_name || auth?.username || "anonymous"}</strong>
-        </p>
-        <p className="muted small">
-          Current stream: <strong>{streamLabel(stream)}</strong>, level:{" "}
-          <strong>{levelLabel(currentLevel)}</strong>
-        </p>
-        <p className="muted small">
-          Render time: <strong>{new Date().toLocaleString()}</strong>
+          {streamLabel(stream)} · {levelLabel(currentLevel)}
         </p>
       </section>
 

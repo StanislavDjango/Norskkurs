@@ -45,6 +45,11 @@
 4. Админка: http://localhost:8000/admin/ (создать суперпользователя: docker compose run --rm backend python manage.py createsuperuser)
 5. Фронтенд: http://localhost:5173 (внутри compose фронт использует http://backend:8000/api/; из хоста — http://localhost:8000/api/)
 
+Для удобной локальной разработки в WSL:
+- `make dev-up`
+- `make dev-down`
+- `make dev-logs`
+
 ---
 
 ## 🛠 Локальная разработка (без Docker)
@@ -60,6 +65,8 @@ Frontend:
 - cd frontend
 - npm install (Node 20+/22+)
 - VITE_API_BASE_URL=http://localhost:8000/api/ npm run dev
+- npm run typecheck
+- npm run build
 
 ---
 
@@ -96,13 +103,12 @@ Jazzmin-админ: управление Tests (A1–B2), Questions, Options, As
 ---
 
 ## 🖼 Скриншоты / Demo
-Добавь скриншоты в папку `docs/screenshots/` и вставь их здесь:
-![Demo placeholder](docs/screenshots/demo.gif)
+Скриншоты и короткие демо можно хранить в `docs/screenshots/`.
 
 ---
 
 ## 🤝 Как внести вклад
-Смотри CONTRIBUTING.md в репозитории. Коротко:
+Смотри [CONTRIBUTING.md](./CONTRIBUTING.md). Коротко:
 - Форк → ветка feature/your-thing → PR в main
 - Описывай коммиты и добавляй тесты для backend (exams)
 
@@ -117,13 +123,13 @@ Jazzmin-админ: управление Tests (A1–B2), Questions, Options, As
 ---
 
 ## 📬 Контакты
-Автор: Stanislav — @StanislavDjango
-Email: put_your_email_here@example.com
+Автор: Stanislav — [@StanislavDjango](https://github.com/StanislavDjango)
+Для вопросов и предложений удобнее всего использовать GitHub Issues.
 
 ---
 
 ## ⚖️ Лицензия
-Укажи лицензию в LICENSE (если ещё нет) — рекомендую MIT.
+Проект распространяется под лицензией MIT. См. [LICENSE](./LICENSE).
 
 Спасибо за репозиторий — он уже содержит хорошую архитектуру; этот README делает его визуально приятнее и понятнее для преподавателей, студентов и разработчиков.
 # Report (recent work)
