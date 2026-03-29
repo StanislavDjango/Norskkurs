@@ -51,6 +51,23 @@ type Props = {
   streamLabel: (value: Stream) => string;
 };
 
+type ReaderTheme = "light" | "dark";
+type ReaderFontSize = "comfortable" | "large";
+type ReaderWidth = "balanced" | "wide";
+
+const getReadingTextVersions = (reading: Reading): Record<"en" | "nb" | "nn" | "ru", string> => ({
+  en: reading.stream === "english" ? reading.body : reading.translation_en,
+  nb: reading.stream === "bokmaal" ? reading.body : reading.translation_nb,
+  nn: reading.stream === "nynorsk" ? reading.body : reading.translation_nn,
+  ru: reading.translation_ru,
+});
+
+const splitReadingParagraphs = (text: string): string[] =>
+  text
+    .split(/\n+/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
 const ReadingsPage: React.FC<Props> = ({
   stream,
   currentLevel,
@@ -68,6 +85,9 @@ const ReadingsPage: React.FC<Props> = ({
   const [readingLocales, setReadingLocales] =
     useState<Record<number, "en" | "nb" | "nn" | "ru">>({});
   const [activeReading, setActiveReading] = useState<Reading | null>(null);
+  const [readerTheme, setReaderTheme] = useState<ReaderTheme>("light");
+  const [readerFontSize, setReaderFontSize] = useState<ReaderFontSize>("comfortable");
+  const [readerWidth, setReaderWidth] = useState<ReaderWidth>("balanced");
   const [readingTag, setReadingTag] = useState<string>("all");
   const [readingTitleFilter, setReadingTitleFilter] = useState<string>("all");
   const [readingSort, setReadingSort] = useState<"newest" | "oldest">("newest");
@@ -81,6 +101,20 @@ const ReadingsPage: React.FC<Props> = ({
   const quickLookupRequest = useRef(0);
   const readingModalBodyRef = useRef<HTMLDivElement | null>(null);
   const activeReadingDate = activeReading ? formatReadingDate(activeReading.created_at) : "";
+
+  const activeReadingPrimaryText = useMemo(() => {
+    if (!activeReading) return "";
+
+    const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
+      bokmaal: "nb",
+      nynorsk: "nn",
+      english: "en",
+    };
+
+    const versions = getReadingTextVersions(activeReading);
+    const primaryLang = primaryLangByStream[stream];
+    return (versions[primaryLang] || "").trim() || activeReading.body;
+  }, [activeReading, stream]);
 
   useEffect(() => {
     const readingParams = {
@@ -636,7 +670,9 @@ const ReadingsPage: React.FC<Props> = ({
       {activeReading && (
         <div className="verb-modal" role="dialog" aria-modal="true">
           <div className="verb-modal__backdrop" onClick={() => setActiveReading(null)} />
-          <div className="verb-modal__card reading-modal-card">
+          <div
+            className={`verb-modal__card reading-modal-card reading-modal-card--${readerTheme} reading-modal-card--${readerFontSize} reading-modal-card--${readerWidth}`}
+          >
             <header className="reading-modal__header">
               <div>
                 <p className="muted small">
@@ -652,49 +688,69 @@ const ReadingsPage: React.FC<Props> = ({
             <div ref={readingModalBodyRef} className="reading-modal__body">
               <div className="reading-modal__toolbar">
                 {renderReadingLookup("modal")}
-              </div>
-              <div
-                className="reading-modal__content"
-                onMouseUp={handleSelectionLookup}
-                onTouchEnd={handleSelectionLookup}
-              >
-                <div className="reading-modal__text">
-                {(() => {
-                  const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
-                    bokmaal: "nb",
-                    nynorsk: "nn",
-                    english: "en",
-                  };
-                  const versions: Record<"en" | "nb" | "nn" | "ru", string> = {
-                    en: activeReading.stream === "english" ? activeReading.body : activeReading.translation_en,
-                    nb: activeReading.stream === "bokmaal" ? activeReading.body : activeReading.translation_nb,
-                    nn: activeReading.stream === "nynorsk" ? activeReading.body : activeReading.translation_nn,
-                    ru: activeReading.translation_ru,
-                  };
-                  const primaryLang = primaryLangByStream[stream];
-                  const primaryBodyText = (versions[primaryLang] || "").trim() || activeReading.body;
-                  return primaryBodyText.split(/\n+/).map((para: string, idx: number) => (
-                    <p key={idx}>{para}</p>
-                  ));
-                })()}
+                <div className="reading-modal__controls" aria-label={t("readings.title")}>
+                  <div className="reading-modal__control-group">
+                    <span>{t("readings.read")}</span>
+                    <button
+                      type="button"
+                      className={readerFontSize === "comfortable" ? "active" : ""}
+                      onClick={() => setReaderFontSize("comfortable")}
+                    >
+                      A
+                    </button>
+                    <button
+                      type="button"
+                      className={readerFontSize === "large" ? "active" : ""}
+                      onClick={() => setReaderFontSize("large")}
+                    >
+                      A+
+                    </button>
+                  </div>
+                  <div className="reading-modal__control-group">
+                    <span>Width</span>
+                    <button
+                      type="button"
+                      className={readerWidth === "balanced" ? "active" : ""}
+                      onClick={() => setReaderWidth("balanced")}
+                    >
+                      Split
+                    </button>
+                    <button
+                      type="button"
+                      className={readerWidth === "wide" ? "active" : ""}
+                      onClick={() => setReaderWidth("wide")}
+                    >
+                      Wide
+                    </button>
+                  </div>
+                  <div className="reading-modal__control-group">
+                    <span>Theme</span>
+                    <button
+                      type="button"
+                      className={readerTheme === "light" ? "active" : ""}
+                      onClick={() => setReaderTheme("light")}
+                    >
+                      Light
+                    </button>
+                    <button
+                      type="button"
+                      className={readerTheme === "dark" ? "active" : ""}
+                      onClick={() => setReaderTheme("dark")}
+                    >
+                      Night
+                    </button>
+                  </div>
                 </div>
-                <aside className="reading-modal__translation reading-translation">
-                {(() => {
+              </div>
+              {(() => {
                   const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
                     bokmaal: "nb",
                     nynorsk: "nn",
                     english: "en",
                   };
 
-                  const versions: Record<"en" | "nb" | "nn" | "ru", string> = {
-                    en: activeReading.stream === "english" ? activeReading.body : activeReading.translation_en,
-                    nb: activeReading.stream === "bokmaal" ? activeReading.body : activeReading.translation_nb,
-                    nn: activeReading.stream === "nynorsk" ? activeReading.body : activeReading.translation_nn,
-                    ru: activeReading.translation_ru,
-                  };
-
+                  const versions = getReadingTextVersions(activeReading);
                   const primaryLang = primaryLangByStream[stream];
-
                   const translations: {
                     code: "en" | "nb" | "nn" | "ru";
                     label: string;
@@ -729,10 +785,18 @@ const ReadingsPage: React.FC<Props> = ({
 
                   const currentEntry = availableTranslations.find((t) => t.code === activeLocale);
                   const currentText = currentEntry?.text || "";
+                  const sourceParagraphs = splitReadingParagraphs(activeReadingPrimaryText);
+                  const translationParagraphs = splitReadingParagraphs(currentText);
+                  const paragraphCount = Math.max(sourceParagraphs.length, translationParagraphs.length);
+                  const syncedParagraphs = Array.from({ length: paragraphCount }, (_, idx) => ({
+                    source: sourceParagraphs[idx] || "",
+                    translation: translationParagraphs[idx] || "",
+                  }));
 
                   return (
-                    <>
-                      <div className="reading-translation-tabs">
+                    <div className="reading-modal__stack">
+                      <aside className="reading-modal__translation reading-translation">
+                        <div className="reading-translation-tabs">
                         {translations.map((entry) => (
                           <button
                             key={entry.code}
@@ -749,17 +813,36 @@ const ReadingsPage: React.FC<Props> = ({
                             {entry.label}
                           </button>
                         ))}
+                        </div>
+                        <div className="muted small reading-modal__translation-body">
+                          {currentText ? (
+                            <p>{t("readings.showTranslation")}</p>
+                          ) : (
+                            <p>{t("readings.translationNotAvailable")}</p>
+                          )}
+                        </div>
+                      </aside>
+                      <div
+                        className="reading-modal__content"
+                        onMouseUp={handleSelectionLookup}
+                        onTouchEnd={handleSelectionLookup}
+                      >
+                        {syncedParagraphs.map((entry, idx) => (
+                          <div key={`${activeReading.id}-${idx}`} className="reading-modal__pair">
+                            <div className="reading-modal__text">
+                              {entry.source ? <p>{entry.source}</p> : <p>&nbsp;</p>}
+                            </div>
+                            <aside className="reading-modal__translation reading-translation">
+                              <div className="reading-modal__translation-body">
+                                {entry.translation ? <p>{entry.translation}</p> : <p>&nbsp;</p>}
+                              </div>
+                            </aside>
+                          </div>
+                        ))}
                       </div>
-                      <div className="muted small reading-modal__translation-body">
-                        {currentText
-                          ? currentText.split(/\n+/).map((para, idx) => <p key={idx}>{para}</p>)
-                          : t("readings.translationNotAvailable")}
-                      </div>
-                    </>
+                    </div>
                   );
                 })()}
-                </aside>
-              </div>
             </div>
           </div>
         </div>

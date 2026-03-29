@@ -409,11 +409,76 @@ h2 {
   backdrop-filter: blur(10px);
 }
 
+.reading-modal__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.reading-modal__control-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(211, 223, 241, 0.9);
+  box-shadow: 0 10px 24px rgba(82, 106, 145, 0.08);
+}
+
+.reading-modal__control-group span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #6b7f99;
+  text-transform: uppercase;
+}
+
+.reading-modal__control-group button {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #3e536d;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.reading-modal__control-group button.active {
+  background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(14, 165, 233, 0.22);
+}
+
+.reading-modal__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 .reading-modal__content {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
-  gap: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   align-items: start;
+}
+
+.reading-modal__pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: stretch;
+}
+
+.reading-modal__pair .reading-translation {
+  position: static;
+  top: auto;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .reading-modal__text {
@@ -422,6 +487,11 @@ h2 {
   font-size: clamp(1.15rem, 1vw + 0.88rem, 1.32rem);
   line-height: 1.95;
   color: #253449;
+  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid rgba(220, 231, 247, 0.78);
+  border-radius: 22px;
+  padding: 22px 24px;
+  box-shadow: 0 12px 24px rgba(60, 84, 118, 0.08);
 }
 
 .reading-modal__text p,
@@ -2886,9 +2956,79 @@ h2 {
 }
 
 .reading-modal__translation-body {
-  font-size: 1rem;
-  line-height: 1.8;
-  color: #506176;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: clamp(1.15rem, 1vw + 0.88rem, 1.32rem);
+  line-height: 1.95;
+  color: #42556d;
+  background: rgba(246, 250, 255, 0.84);
+  border: 1px solid rgba(220, 231, 247, 0.82);
+  border-radius: 22px;
+  padding: 22px 24px;
+  box-shadow: 0 12px 24px rgba(60, 84, 118, 0.06);
+}
+
+.reading-modal-card--wide {
+  width: min(1360px, 97vw);
+}
+
+.reading-modal-card--large .reading-modal__text,
+.reading-modal-card--large .reading-modal__translation-body {
+  font-size: clamp(1.26rem, 1vw + 1rem, 1.5rem);
+  line-height: 2.02;
+}
+
+.reading-modal-card--dark {
+  background:
+    linear-gradient(180deg, rgba(12, 22, 38, 0.96), rgba(19, 31, 52, 0.92)),
+    rgba(14, 24, 40, 0.96);
+  border-color: rgba(73, 96, 129, 0.55);
+  box-shadow: 0 32px 80px rgba(4, 10, 20, 0.45);
+}
+
+.reading-modal-card--dark .reading-modal__header,
+.reading-modal-card--dark .reading-modal__toolbar {
+  background: linear-gradient(180deg, rgba(16, 28, 46, 0.96), rgba(18, 31, 50, 0.88));
+  border-color: rgba(73, 96, 129, 0.45);
+}
+
+.reading-modal-card--dark .reading-modal__header h3,
+.reading-modal-card--dark .reading-modal__text,
+.reading-modal-card--dark .reading-modal__translation-body {
+  color: #e7eef9;
+}
+
+.reading-modal-card--dark .reading-modal__header .muted.small,
+.reading-modal-card--dark .reading-modal__control-group span {
+  color: #94a9c5;
+}
+
+.reading-modal-card--dark .reading-modal__text,
+.reading-modal-card--dark .reading-modal__translation-body {
+  background: rgba(21, 37, 61, 0.8);
+  border-color: rgba(73, 96, 129, 0.42);
+  box-shadow: none;
+}
+
+.reading-modal-card--dark .reading-modal__control-group,
+.reading-modal-card--dark .reading-modal__header button {
+  background: rgba(24, 39, 62, 0.88);
+  border-color: rgba(73, 96, 129, 0.45);
+}
+
+.reading-modal-card--dark .reading-modal__control-group button {
+  color: #d9e5f7;
+}
+
+.reading-modal-card--dark .reading-translation-tabs button {
+  background: rgba(24, 39, 62, 0.72);
+  border-color: rgba(73, 96, 129, 0.45);
+  color: #dbe7f8;
+}
+
+.reading-modal-card--dark .reading-translation-tabs button.active {
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  border-color: #38bdf8;
+  color: #04111f;
 }
 
 .verb-modal__forms {
@@ -4129,9 +4269,28 @@ button.ghost {
     padding: 0 18px 18px;
   }
 
+  .reading-modal__controls {
+    gap: 8px;
+  }
+
+  .reading-modal__control-group {
+    width: 100%;
+    justify-content: space-between;
+    border-radius: 18px;
+  }
+
   .reading-modal__content {
-    grid-template-columns: 1fr;
     gap: 18px;
+  }
+
+  .reading-modal__pair {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .reading-modal__text,
+  .reading-modal__translation-body {
+    padding: 18px;
   }
 
   .reading-translation {
