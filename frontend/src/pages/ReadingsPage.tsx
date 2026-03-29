@@ -688,93 +688,6 @@ const ReadingsPage: React.FC<Props> = ({
               </button>
             </header>
             <div ref={readingModalBodyRef} className="reading-modal__body">
-              <div className="reading-modal__toolbar">
-                {renderReadingLookup("modal")}
-                <div className="reading-modal__controls" aria-label={t("readings.title")}>
-                  <div className="reading-modal__control-group">
-                    <span>Size</span>
-                    <button
-                      type="button"
-                      className={readerFontSize === "compact" ? "active" : ""}
-                      onClick={() => setReaderFontSize("compact")}
-                    >
-                      A-
-                    </button>
-                    <button
-                      type="button"
-                      className={readerFontSize === "comfortable" ? "active" : ""}
-                      onClick={() => setReaderFontSize("comfortable")}
-                    >
-                      A
-                    </button>
-                    <button
-                      type="button"
-                      className={readerFontSize === "large" ? "active" : ""}
-                      onClick={() => setReaderFontSize("large")}
-                    >
-                      A+
-                    </button>
-                    <button
-                      type="button"
-                      className={readerFontSize === "xlarge" ? "active" : ""}
-                      onClick={() => setReaderFontSize("xlarge")}
-                    >
-                      A++
-                    </button>
-                  </div>
-                  <div className="reading-modal__control-group">
-                    <span>Mode</span>
-                    <button
-                      type="button"
-                      className={readerLayout === "paired" ? "active" : ""}
-                      onClick={() => setReaderLayout("paired")}
-                    >
-                      Parallel
-                    </button>
-                    <button
-                      type="button"
-                      className={readerLayout === "line" ? "active" : ""}
-                      onClick={() => setReaderLayout("line")}
-                    >
-                      Line
-                    </button>
-                  </div>
-                  <div className="reading-modal__control-group">
-                    <span>Width</span>
-                    <button
-                      type="button"
-                      className={readerWidth === "balanced" ? "active" : ""}
-                      onClick={() => setReaderWidth("balanced")}
-                    >
-                      Split
-                    </button>
-                    <button
-                      type="button"
-                      className={readerWidth === "wide" ? "active" : ""}
-                      onClick={() => setReaderWidth("wide")}
-                    >
-                      Wide
-                    </button>
-                  </div>
-                  <div className="reading-modal__control-group">
-                    <span>Theme</span>
-                    <button
-                      type="button"
-                      className={readerTheme === "light" ? "active" : ""}
-                      onClick={() => setReaderTheme("light")}
-                    >
-                      Light
-                    </button>
-                    <button
-                      type="button"
-                      className={readerTheme === "dark" ? "active" : ""}
-                      onClick={() => setReaderTheme("dark")}
-                    >
-                      Night
-                    </button>
-                  </div>
-                </div>
-              </div>
               {(() => {
                   const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
                     bokmaal: "nb",
@@ -827,27 +740,117 @@ const ReadingsPage: React.FC<Props> = ({
                   }));
 
                   return (
-                    <div className="reading-modal__stack">
-                      <div className="reading-modal__inline-menu">
-                        <div className="reading-translation-tabs reading-translation-tabs--inline">
-                          {translations.map((entry) => (
+                    <>
+                      <div className="reading-modal__toolbar">
+                        {renderReadingLookup("modal")}
+                        <div className="reading-modal__controls" aria-label={t("readings.title")}>
+                          <div className="reading-modal__control-group">
+                            <span>Size</span>
                             <button
-                              key={entry.code}
                               type="button"
-                              className={activeLocale === entry.code ? "active" : ""}
-                              onClick={() =>
-                                setReadingLocales((prev) => ({
-                                  ...prev,
-                                  [activeReading.id]: entry.code,
-                                }))
-                              }
-                              disabled={!entry.text}
-                              aria-label={`Translation ${entry.label}`}
-                              title={entry.label}
+                              className={readerFontSize === "compact" ? "active" : ""}
+                              onClick={() => setReaderFontSize("compact")}
                             >
-                              {entry.label}
+                              A-
                             </button>
-                          ))}
+                            <button
+                              type="button"
+                              className={readerFontSize === "comfortable" ? "active" : ""}
+                              onClick={() => setReaderFontSize("comfortable")}
+                            >
+                              A
+                            </button>
+                            <button
+                              type="button"
+                              className={readerFontSize === "large" ? "active" : ""}
+                              onClick={() => setReaderFontSize("large")}
+                            >
+                              A+
+                            </button>
+                            <button
+                              type="button"
+                              className={readerFontSize === "xlarge" ? "active" : ""}
+                              onClick={() => setReaderFontSize("xlarge")}
+                            >
+                              A++
+                            </button>
+                          </div>
+                          <div className="reading-modal__control-group">
+                            <span>Mode</span>
+                            <button
+                              type="button"
+                              className={readerLayout === "paired" ? "active" : ""}
+                              onClick={() => setReaderLayout("paired")}
+                            >
+                              Parallel
+                            </button>
+                            <button
+                              type="button"
+                              className={readerLayout === "line" ? "active" : ""}
+                              onClick={() => setReaderLayout("line")}
+                            >
+                              Line
+                            </button>
+                          </div>
+                          <div className="reading-modal__control-group">
+                            <span>Width</span>
+                            <button
+                              type="button"
+                              className={readerWidth === "balanced" ? "active" : ""}
+                              onClick={() => setReaderWidth("balanced")}
+                            >
+                              Split
+                            </button>
+                            <button
+                              type="button"
+                              className={readerWidth === "wide" ? "active" : ""}
+                              onClick={() => setReaderWidth("wide")}
+                            >
+                              Wide
+                            </button>
+                          </div>
+                          <div className="reading-modal__control-group">
+                            <span>Theme</span>
+                            <button
+                              type="button"
+                              className={readerTheme === "light" ? "active" : ""}
+                              onClick={() => setReaderTheme("light")}
+                            >
+                              Light
+                            </button>
+                            <button
+                              type="button"
+                              className={readerTheme === "dark" ? "active" : ""}
+                              onClick={() => setReaderTheme("dark")}
+                            >
+                              Night
+                            </button>
+                          </div>
+                          {translations.length > 0 && (
+                            <div className="reading-modal__control-group reading-modal__control-group--language">
+                              <span>Lang</span>
+                              <div className="reading-translation-tabs reading-translation-tabs--inline">
+                                {translations.map((entry) => (
+                                  <button
+                                    key={entry.code}
+                                    type="button"
+                                    className={activeLocale === entry.code ? "active" : ""}
+                                    onClick={() =>
+                                      setReadingLocales((prev) => ({
+                                        ...prev,
+                                        [activeReading.id]: entry.code,
+                                      }))
+                                    }
+                                    disabled={!entry.text}
+                                    aria-label={`Translation ${entry.label}`}
+                                    title={entry.label}
+                                  >
+                                    {entry.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div
@@ -869,7 +872,7 @@ const ReadingsPage: React.FC<Props> = ({
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </>
                   );
                 })()}
             </div>

@@ -451,40 +451,26 @@ h2 {
   box-shadow: 0 10px 20px rgba(14, 165, 233, 0.22);
 }
 
-.reading-modal__stack {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.reading-modal__inline-menu {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-
 .reading-translation-tabs--inline {
+  display: inline-flex;
+  gap: 6px;
   margin-bottom: 0;
-  gap: 8px;
-  padding: 4px 0;
 }
 
 .reading-translation-tabs--inline button {
-  min-width: 42px;
-  padding: 7px 12px;
+  min-width: 40px;
+  padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(211, 223, 241, 0.92);
-  background: rgba(255, 255, 255, 0.84);
-  color: #31445f;
-  box-shadow: 0 10px 24px rgba(82, 106, 145, 0.08);
-  font-size: 0.78rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #3e536d;
+  box-shadow: none;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.01em;
 }
 
 .reading-translation-tabs--inline button:hover:not(:disabled) {
-  border-color: rgba(14, 165, 233, 0.35);
   color: #0f3d66;
 }
 
@@ -492,7 +478,15 @@ h2 {
   background: linear-gradient(135deg, #0ea5e9, #38bdf8);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 12px 24px rgba(14, 165, 233, 0.22);
+  box-shadow: 0 10px 20px rgba(14, 165, 233, 0.22);
+}
+
+.reading-modal__control-group--language {
+  flex-wrap: nowrap;
+}
+
+.reading-modal__control-group--language .reading-translation-tabs {
+  flex-wrap: nowrap;
 }
 
 .reading-modal__content {
@@ -4366,10 +4360,6 @@ button.ghost {
   }
 
   .reading-modal__controls {
-    gap: 8px;
-  }
-
-  .reading-modal__inline-menu {
     gap: 8px;
   }
 
