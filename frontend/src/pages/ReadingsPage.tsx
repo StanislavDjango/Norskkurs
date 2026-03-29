@@ -90,6 +90,7 @@ const ReadingsPage: React.FC<Props> = ({
   const [readerFontSize, setReaderFontSize] = useState<ReaderFontSize>("comfortable");
   const [readerWidth, setReaderWidth] = useState<ReaderWidth>("balanced");
   const [readerLayout, setReaderLayout] = useState<ReaderLayout>("paired");
+  const [isReaderControlsOpen, setIsReaderControlsOpen] = useState(false);
   const [readingTag, setReadingTag] = useState<string>("all");
   const [readingTitleFilter, setReadingTitleFilter] = useState<string>("all");
   const [readingSort, setReadingSort] = useState<"newest" | "oldest">("newest");
@@ -148,6 +149,7 @@ const ReadingsPage: React.FC<Props> = ({
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    setIsReaderControlsOpen(false);
     window.setTimeout(() => {
       readingModalBodyRef.current?.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
     }, 0);
@@ -743,7 +745,20 @@ const ReadingsPage: React.FC<Props> = ({
                     <>
                       <div className="reading-modal__toolbar">
                         {renderReadingLookup("modal")}
-                        <div className="reading-modal__controls" aria-label={t("readings.title")}>
+                        <button
+                          type="button"
+                          className="reading-modal__controls-toggle"
+                          onClick={() => setIsReaderControlsOpen((prev) => !prev)}
+                          aria-expanded={isReaderControlsOpen}
+                        >
+                          {isReaderControlsOpen
+                            ? t("readings.hideReaderMenu")
+                            : t("readings.openReaderMenu")}
+                        </button>
+                        <div
+                          className={`reading-modal__controls ${isReaderControlsOpen ? "is-open" : ""}`}
+                          aria-label={t("readings.title")}
+                        >
                           <div className="reading-modal__control-group">
                             <span>Size</span>
                             <button

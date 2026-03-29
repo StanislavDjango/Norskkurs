@@ -416,6 +416,19 @@ h2 {
   margin-top: 14px;
 }
 
+.reading-modal__controls-toggle {
+  display: none;
+  margin-top: 14px;
+  border: 1px solid rgba(211, 223, 241, 0.92);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  color: #31445f;
+  box-shadow: 0 10px 24px rgba(82, 106, 145, 0.08);
+  padding: 10px 14px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
 .reading-modal__control-group {
   display: inline-flex;
   align-items: center;
@@ -4371,7 +4384,20 @@ button.ghost {
   }
 
   .reading-modal__controls {
+    display: none;
     gap: 8px;
+    margin-top: 10px;
+  }
+
+  .reading-modal__controls.is-open {
+    display: flex;
+  }
+
+  .reading-modal__controls-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
   }
 
   .reading-modal__control-group {
