@@ -79,6 +79,7 @@ const ReadingsPage: React.FC<Props> = ({
   const quickLookupRef = useRef<HTMLDivElement | null>(null);
   const quickLookupCache = useRef<Map<string, GlossaryTerm | null>>(new Map());
   const quickLookupRequest = useRef(0);
+  const readingModalBodyRef = useRef<HTMLDivElement | null>(null);
   const activeReadingDate = activeReading ? formatReadingDate(activeReading.created_at) : "";
 
   useEffect(() => {
@@ -105,6 +106,20 @@ const ReadingsPage: React.FC<Props> = ({
   useEffect(() => {
     setQuickLookup(null);
   }, [activeReading, currentLevel, stream]);
+
+  useEffect(() => {
+    if (!activeReading) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.setTimeout(() => {
+      readingModalBodyRef.current?.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    }, 0);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [activeReading]);
 
   useEffect(() => {
     if (!quickLookup) return;
@@ -622,7 +637,7 @@ const ReadingsPage: React.FC<Props> = ({
         <div className="verb-modal" role="dialog" aria-modal="true">
           <div className="verb-modal__backdrop" onClick={() => setActiveReading(null)} />
           <div className="verb-modal__card reading-modal-card">
-            <header>
+            <header className="reading-modal__header">
               <div>
                 <p className="muted small">
                   {streamLabel(activeReading.stream)} · {activeReading.level}
@@ -634,9 +649,16 @@ const ReadingsPage: React.FC<Props> = ({
                 ✕
               </button>
             </header>
-            <div className="reading-modal__body">
-              {renderReadingLookup("modal")}
-              <div className="reading-modal__text" onMouseUp={handleSelectionLookup} onTouchEnd={handleSelectionLookup}>
+            <div ref={readingModalBodyRef} className="reading-modal__body">
+              <div className="reading-modal__toolbar">
+                {renderReadingLookup("modal")}
+              </div>
+              <div
+                className="reading-modal__content"
+                onMouseUp={handleSelectionLookup}
+                onTouchEnd={handleSelectionLookup}
+              >
+                <div className="reading-modal__text">
                 {(() => {
                   const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
                     bokmaal: "nb",
@@ -655,8 +677,8 @@ const ReadingsPage: React.FC<Props> = ({
                     <p key={idx}>{para}</p>
                   ));
                 })()}
-              </div>
-              <div className="reading-modal__translation reading-translation">
+                </div>
+                <aside className="reading-modal__translation reading-translation">
                 {(() => {
                   const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
                     bokmaal: "nb",
@@ -736,6 +758,7 @@ const ReadingsPage: React.FC<Props> = ({
                     </>
                   );
                 })()}
+                </aside>
               </div>
             </div>
           </div>
