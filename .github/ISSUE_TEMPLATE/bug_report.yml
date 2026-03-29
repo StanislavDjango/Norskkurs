@@ -1,0 +1,30 @@
+name: Bug report
+description: Сообщить о баге в сайте или инфраструктуре проекта
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Что произошло
+      description: Коротко опишите баг и ожидаемое поведение
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Как воспроизвести
+      description: Шаги воспроизведения
+      placeholder: |
+        1. Открыть ...
+        2. Нажать ...
+        3. Увидеть ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Окружение
+      description: Браузер, устройство, URL, ветка, commit при необходимости
