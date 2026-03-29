@@ -52,8 +52,9 @@ type Props = {
 };
 
 type ReaderTheme = "light" | "dark";
-type ReaderFontSize = "comfortable" | "large";
+type ReaderFontSize = "compact" | "comfortable" | "large" | "xlarge";
 type ReaderWidth = "balanced" | "wide";
+type ReaderLayout = "paired" | "line";
 
 const getReadingTextVersions = (reading: Reading): Record<"en" | "nb" | "nn" | "ru", string> => ({
   en: reading.stream === "english" ? reading.body : reading.translation_en,
@@ -88,6 +89,7 @@ const ReadingsPage: React.FC<Props> = ({
   const [readerTheme, setReaderTheme] = useState<ReaderTheme>("light");
   const [readerFontSize, setReaderFontSize] = useState<ReaderFontSize>("comfortable");
   const [readerWidth, setReaderWidth] = useState<ReaderWidth>("balanced");
+  const [readerLayout, setReaderLayout] = useState<ReaderLayout>("paired");
   const [readingTag, setReadingTag] = useState<string>("all");
   const [readingTitleFilter, setReadingTitleFilter] = useState<string>("all");
   const [readingSort, setReadingSort] = useState<"newest" | "oldest">("newest");
@@ -298,7 +300,7 @@ const ReadingsPage: React.FC<Props> = ({
       return;
     }
     const rect = range.getBoundingClientRect();
-    const position = resolveQuickLookupPosition(rect);
+    const position = resolveQuickLookupPosition(rect, container.getBoundingClientRect());
     const tokens = cleaned.split(/\s+/).filter(Boolean);
     if (tokens.length !== 1) {
       setQuickLookup({
@@ -690,7 +692,14 @@ const ReadingsPage: React.FC<Props> = ({
                 {renderReadingLookup("modal")}
                 <div className="reading-modal__controls" aria-label={t("readings.title")}>
                   <div className="reading-modal__control-group">
-                    <span>{t("readings.read")}</span>
+                    <span>Size</span>
+                    <button
+                      type="button"
+                      className={readerFontSize === "compact" ? "active" : ""}
+                      onClick={() => setReaderFontSize("compact")}
+                    >
+                      A-
+                    </button>
                     <button
                       type="button"
                       className={readerFontSize === "comfortable" ? "active" : ""}
@@ -704,6 +713,30 @@ const ReadingsPage: React.FC<Props> = ({
                       onClick={() => setReaderFontSize("large")}
                     >
                       A+
+                    </button>
+                    <button
+                      type="button"
+                      className={readerFontSize === "xlarge" ? "active" : ""}
+                      onClick={() => setReaderFontSize("xlarge")}
+                    >
+                      A++
+                    </button>
+                  </div>
+                  <div className="reading-modal__control-group">
+                    <span>Mode</span>
+                    <button
+                      type="button"
+                      className={readerLayout === "paired" ? "active" : ""}
+                      onClick={() => setReaderLayout("paired")}
+                    >
+                      Parallel
+                    </button>
+                    <button
+                      type="button"
+                      className={readerLayout === "line" ? "active" : ""}
+                      onClick={() => setReaderLayout("line")}
+                    >
+                      Line
                     </button>
                   </div>
                   <div className="reading-modal__control-group">
@@ -795,38 +828,34 @@ const ReadingsPage: React.FC<Props> = ({
 
                   return (
                     <div className="reading-modal__stack">
-                      <aside className="reading-modal__translation reading-translation">
-                        <div className="reading-translation-tabs">
-                        {translations.map((entry) => (
-                          <button
-                            key={entry.code}
-                            type="button"
-                            className={activeLocale === entry.code ? "active" : ""}
-                            onClick={() =>
-                              setReadingLocales((prev) => ({
-                                ...prev,
-                                [activeReading.id]: entry.code,
-                              }))
-                            }
-                            disabled={!entry.text}
-                          >
-                            {entry.label}
-                          </button>
-                        ))}
+                      <div className="reading-modal__inline-menu">
+                        <div className="reading-translation-tabs reading-translation-tabs--inline">
+                          {translations.map((entry) => (
+                            <button
+                              key={entry.code}
+                              type="button"
+                              className={activeLocale === entry.code ? "active" : ""}
+                              onClick={() =>
+                                setReadingLocales((prev) => ({
+                                  ...prev,
+                                  [activeReading.id]: entry.code,
+                                }))
+                              }
+                              disabled={!entry.text}
+                              aria-label={`Translation ${entry.label}`}
+                              title={entry.label}
+                            >
+                              {entry.label}
+                            </button>
+                          ))}
                         </div>
-                        <div className="muted small reading-modal__translation-body">
-                          {currentText ? (
-                            <p>{t("readings.showTranslation")}</p>
-                          ) : (
-                            <p>{t("readings.translationNotAvailable")}</p>
-                          )}
-                        </div>
-                      </aside>
+                      </div>
                       <div
-                        className="reading-modal__content"
+                        className={`reading-modal__content reading-modal__content--${readerLayout}`}
                         onMouseUp={handleSelectionLookup}
                         onTouchEnd={handleSelectionLookup}
                       >
+                        {renderQuickLookup()}
                         {syncedParagraphs.map((entry, idx) => (
                           <div key={`${activeReading.id}-${idx}`} className="reading-modal__pair">
                             <div className="reading-modal__text">
@@ -847,7 +876,6 @@ const ReadingsPage: React.FC<Props> = ({
           </div>
         </div>
       )}
-      {renderQuickLookup()}
     </>
   );
 };
@@ -1003,17 +1031,22 @@ function getGlossaryTranslation(term: GlossaryTerm, locale: GlossaryLocale): str
   return term.translation_nb || term.translation_nn || term.translation || "";
 }
 
-function resolveQuickLookupPosition(rect: DOMRect): {
+function resolveQuickLookupPosition(rect: DOMRect, containerRect: DOMRect): {
   top: number;
   left: number;
   placement: "above" | "below";
 } {
-  const padding = 14;
-  const center = rect.left + rect.width / 2;
-  const left = clamp(center, padding, window.innerWidth - padding);
-  const preferBelow = window.innerHeight - rect.bottom > 160;
+  const padding = 18;
+  const center = rect.left + rect.width / 2 - containerRect.left;
+  const left = clamp(center, padding, containerRect.width - padding);
+  const belowSpace = containerRect.bottom - rect.bottom;
+  const aboveSpace = rect.top - containerRect.top;
+  const preferBelow = belowSpace > 168 || belowSpace >= aboveSpace;
   const placement = preferBelow ? "below" : "above";
-  const top = placement === "below" ? rect.bottom + 8 : rect.top - 8;
+  const top =
+    placement === "below"
+      ? rect.bottom - containerRect.top + 10
+      : rect.top - containerRect.top - 10;
   return { top: Math.max(padding, top), left, placement };
 }
 

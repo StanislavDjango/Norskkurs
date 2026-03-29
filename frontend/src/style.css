@@ -457,18 +457,60 @@ h2 {
   gap: 18px;
 }
 
+.reading-modal__inline-menu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.reading-translation-tabs--inline {
+  margin-bottom: 0;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.reading-translation-tabs--inline button {
+  min-width: 42px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(211, 223, 241, 0.92);
+  background: rgba(255, 255, 255, 0.84);
+  color: #31445f;
+  box-shadow: 0 10px 24px rgba(82, 106, 145, 0.08);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.reading-translation-tabs--inline button:hover:not(:disabled) {
+  border-color: rgba(14, 165, 233, 0.35);
+  color: #0f3d66;
+}
+
+.reading-translation-tabs--inline button.active {
+  background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(14, 165, 233, 0.22);
+}
+
 .reading-modal__content {
   display: flex;
   flex-direction: column;
   gap: 18px;
   align-items: start;
+  width: 100%;
+  position: relative;
 }
 
 .reading-modal__pair {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, var(--reader-column-width, 440px)) minmax(0, var(--reader-column-width, 440px));
   gap: 22px;
   align-items: stretch;
+  justify-content: center;
+  width: 100%;
 }
 
 .reading-modal__pair .reading-translation {
@@ -494,6 +536,14 @@ h2 {
   box-shadow: 0 12px 24px rgba(60, 84, 118, 0.08);
 }
 
+.reading-modal__content--line .reading-modal__pair {
+  grid-template-columns: minmax(0, calc(var(--reader-column-width, 440px) * 2 + 22px));
+}
+
+.reading-modal__content--line .reading-modal__pair .reading-modal__translation {
+  margin-top: -8px;
+}
+
 .reading-modal__text p,
 .reading-modal__translation-body p {
   margin: 0 0 1.15em;
@@ -505,24 +555,52 @@ h2 {
 }
 
 .reading-quick-lookup {
-  position: fixed;
-  z-index: 1205;
-  max-width: min(82vw, 280px);
-  min-width: 160px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.96);
+  position: absolute;
+  z-index: 5;
+  max-width: min(360px, calc(100% - 24px));
+  min-width: 200px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.94);
   color: #f8fafc;
-  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.28);
+  border: 1px solid rgba(148, 163, 184, 0.22);
   display: grid;
-  gap: 6px;
+  gap: 8px;
   transform: translate(-50%, 0);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
 }
 
 .reading-quick-lookup--above {
-  transform: translate(-50%, -100%);
+  transform: translate(-50%, calc(-100% - 14px));
+}
+
+.reading-quick-lookup--below {
+  transform: translate(-50%, 14px);
+}
+
+.reading-quick-lookup::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  background: inherit;
+  border-left: 1px solid rgba(148, 163, 184, 0.22);
+  border-top: 1px solid rgba(148, 163, 184, 0.22);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.reading-quick-lookup--above::after {
+  bottom: -8px;
+  border-left: none;
+  border-top: none;
+  border-right: 1px solid rgba(148, 163, 184, 0.22);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.reading-quick-lookup--below::after {
+  top: -8px;
 }
 
 .reading-quick-lookup__header {
@@ -549,6 +627,7 @@ h2 {
   display: inline-flex;
   align-items: baseline;
   gap: 8px;
+  line-height: 1.5;
 }
 
 .reading-quick-lookup__label {
@@ -2969,12 +3048,29 @@ h2 {
 
 .reading-modal-card--wide {
   width: min(1360px, 97vw);
+  --reader-column-width: 520px;
+}
+
+.reading-modal-card--balanced {
+  --reader-column-width: 440px;
+}
+
+.reading-modal-card--compact .reading-modal__text,
+.reading-modal-card--compact .reading-modal__translation-body {
+  font-size: clamp(1.02rem, 0.8vw + 0.86rem, 1.16rem);
+  line-height: 1.82;
 }
 
 .reading-modal-card--large .reading-modal__text,
 .reading-modal-card--large .reading-modal__translation-body {
   font-size: clamp(1.26rem, 1vw + 1rem, 1.5rem);
   line-height: 2.02;
+}
+
+.reading-modal-card--xlarge .reading-modal__text,
+.reading-modal-card--xlarge .reading-modal__translation-body {
+  font-size: clamp(1.38rem, 1vw + 1.08rem, 1.7rem);
+  line-height: 2.08;
 }
 
 .reading-modal-card--dark {
@@ -4273,6 +4369,10 @@ button.ghost {
     gap: 8px;
   }
 
+  .reading-modal__inline-menu {
+    gap: 8px;
+  }
+
   .reading-modal__control-group {
     width: 100%;
     justify-content: space-between;
@@ -4286,6 +4386,10 @@ button.ghost {
   .reading-modal__pair {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  .reading-modal__content--line .reading-modal__pair {
+    grid-template-columns: 1fr;
   }
 
   .reading-modal__text,
