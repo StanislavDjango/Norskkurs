@@ -9,4 +9,4 @@ psycopg2-binary==2.9.11
 sqlparse==0.5.3
 tzdata==2025.2
 
-sentry-sdk==2.20.0
+sentry-sdk==2.56.0
