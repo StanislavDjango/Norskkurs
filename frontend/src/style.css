@@ -3396,6 +3396,17 @@ h2 {
   align-self: flex-start;
 }
 
+.auth-support-note {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  color: #164e63;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
 .auth-switch {
   margin-top: 6px;
   padding: 0;

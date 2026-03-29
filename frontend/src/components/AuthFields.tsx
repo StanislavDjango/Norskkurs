@@ -19,6 +19,7 @@ type Props = {
   setProfileAuthForm: React.Dispatch<React.SetStateAction<AuthFormState>>;
   profileAuthLoading: boolean;
   profileAuthError: string | null;
+  supportMessage: string | null;
   onSubmit: () => void;
   onToggleMode: () => void;
   onForgotPassword: () => void;
@@ -31,6 +32,7 @@ const AuthFields: React.FC<Props> = ({
   setProfileAuthForm,
   profileAuthLoading,
   profileAuthError,
+  supportMessage,
   onSubmit,
   onToggleMode,
   onForgotPassword,
@@ -113,6 +115,7 @@ const AuthFields: React.FC<Props> = ({
       <button type="button" className="auth-forgot" onClick={onForgotPassword}>
         {t("auth.forgotPassword")}
       </button>
+      {supportMessage && <p className="auth-support-note">{supportMessage}</p>}
     </>
   );
 };

@@ -17,9 +17,7 @@ const Footer: React.FC = () => {
           <h4>Links</h4>
           <ul>
             <li>
-              <a href="mailto:contact@example.com" className="footer-link">
-                ✉ Contact
-              </a>
+              <span className="footer-link">✉ support@norskkurs.no</span>
             </li>
             <li>
               <a

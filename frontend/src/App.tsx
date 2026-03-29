@@ -16,10 +16,12 @@ import type { Section, TestProfileDraft } from "./app/types";
 import { error as logError } from "./logger";
 
 const TestsPage = React.lazy(() => import("./pages/TestsPage"));
+const SUPPORT_EMAIL = "support@norskkurs.no";
 
 const App = () => {
   const { t, i18n } = useTranslation();
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [supportMessage, setSupportMessage] = useState<string | null>(null);
   const { activeSection, navigateToSection } = useSectionRoute();
   const {
     profile,
@@ -129,14 +131,15 @@ const App = () => {
       setProfileAuthForm={setProfileAuthForm}
       profileAuthLoading={profileAuthLoading}
       profileAuthError={profileAuthError}
+      supportMessage={supportMessage}
       onSubmit={authMode === "login" ? handleLogin : handleRegister}
       onToggleMode={() => {
         setProfileAuthError(null);
+        setSupportMessage(null);
         setAuthMode((prev) => (prev === "login" ? "register" : "login"));
       }}
       onForgotPassword={() => {
-        window.location.href =
-          "mailto:support@norskkurs.no?subject=Norskkurs%20password%20reset";
+        setSupportMessage(t("auth.resetHelp", { email: SUPPORT_EMAIL }));
       }}
     />
   );
@@ -179,6 +182,7 @@ const App = () => {
         onChangeLevel={handleLevelChange}
         onOpenAuthModal={() => {
           setProfileAuthError(null);
+          setSupportMessage(null);
           setAuthMode("login");
           setIsAuthModalOpen(true);
         }}
@@ -220,7 +224,10 @@ const App = () => {
               <button
                 type="button"
                 className="auth-dialog-close"
-                onClick={() => setIsAuthModalOpen(false)}
+                onClick={() => {
+                  setSupportMessage(null);
+                  setIsAuthModalOpen(false);
+                }}
                 aria-label={t("close")}
               >
                 ×
