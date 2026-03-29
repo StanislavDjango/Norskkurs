@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 import { fetchGlossary, fetchReadings } from "../api";
@@ -671,229 +672,232 @@ const ReadingsPage: React.FC<Props> = ({
         </div>
       )}
 
-      {activeReading && (
-        <div className="verb-modal" role="dialog" aria-modal="true">
-          <div className="verb-modal__backdrop" onClick={() => setActiveReading(null)} />
-          <div
-            className={`verb-modal__card reading-modal-card reading-modal-card--${readerTheme} reading-modal-card--${readerFontSize} reading-modal-card--${readerWidth}`}
-          >
-            <header className="reading-modal__header">
-              <div>
-                <p className="muted small">
-                  {streamLabel(activeReading.stream)} · {activeReading.level}
-                  {activeReadingDate ? ` · ${activeReadingDate}` : ""}
-                </p>
-                <h3>{activeReading.title}</h3>
-              </div>
-              <button type="button" onClick={() => setActiveReading(null)} aria-label={t("close")}>
-                ✕
-              </button>
-            </header>
-            <div ref={readingModalBodyRef} className="reading-modal__body">
-              {(() => {
-                  const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
-                    bokmaal: "nb",
-                    nynorsk: "nn",
-                    english: "en",
-                  };
+      {activeReading &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="verb-modal" role="dialog" aria-modal="true">
+            <div className="verb-modal__backdrop" onClick={() => setActiveReading(null)} />
+            <div
+              className={`verb-modal__card reading-modal-card reading-modal-card--${readerTheme} reading-modal-card--${readerFontSize} reading-modal-card--${readerWidth}`}
+            >
+              <header className="reading-modal__header">
+                <div>
+                  <p className="muted small">
+                    {streamLabel(activeReading.stream)} · {activeReading.level}
+                    {activeReadingDate ? ` · ${activeReadingDate}` : ""}
+                  </p>
+                  <h3>{activeReading.title}</h3>
+                </div>
+                <button type="button" onClick={() => setActiveReading(null)} aria-label={t("close")}>
+                  ✕
+                </button>
+              </header>
+              <div ref={readingModalBodyRef} className="reading-modal__body">
+                {(() => {
+                    const primaryLangByStream: Record<Stream, "en" | "nb" | "nn"> = {
+                      bokmaal: "nb",
+                      nynorsk: "nn",
+                      english: "en",
+                    };
 
-                  const versions = getReadingTextVersions(activeReading);
-                  const primaryLang = primaryLangByStream[stream];
-                  const translations: {
-                    code: "en" | "nb" | "nn" | "ru";
-                    label: string;
-                    text: string;
-                  }[] = [];
+                    const versions = getReadingTextVersions(activeReading);
+                    const primaryLang = primaryLangByStream[stream];
+                    const translations: {
+                      code: "en" | "nb" | "nn" | "ru";
+                      label: string;
+                      text: string;
+                    }[] = [];
 
-                  const langMeta: { code: "en" | "nb" | "nn" | "ru"; label: string }[] = [
-                    { code: "en", label: "EN" },
-                    { code: "nb", label: "NB" },
-                    { code: "nn", label: "NN" },
-                    { code: "ru", label: "RU" },
-                  ];
+                    const langMeta: { code: "en" | "nb" | "nn" | "ru"; label: string }[] = [
+                      { code: "en", label: "EN" },
+                      { code: "nb", label: "NB" },
+                      { code: "nn", label: "NN" },
+                      { code: "ru", label: "RU" },
+                    ];
 
-                  langMeta.forEach(({ code, label }) => {
-                    if (code === primaryLang) {
-                      return;
-                    }
-                    translations.push({
-                      code,
-                      label,
-                      text: versions[code],
+                    langMeta.forEach(({ code, label }) => {
+                      if (code === primaryLang) {
+                        return;
+                      }
+                      translations.push({
+                        code,
+                        label,
+                        text: versions[code],
+                      });
                     });
-                  });
 
-                  const availableTranslations = translations.filter((t) => t.text && t.text.trim().length > 0);
-                  const storedLocale = readingLocales[activeReading.id];
-                  const activeLocale =
-                    (storedLocale && availableTranslations.find((t) => t.code === storedLocale)?.code) ||
-                    availableTranslations[0]?.code ||
-                    translations[0]?.code ||
-                    "en";
+                    const availableTranslations = translations.filter((t) => t.text && t.text.trim().length > 0);
+                    const storedLocale = readingLocales[activeReading.id];
+                    const activeLocale =
+                      (storedLocale && availableTranslations.find((t) => t.code === storedLocale)?.code) ||
+                      availableTranslations[0]?.code ||
+                      translations[0]?.code ||
+                      "en";
 
-                  const currentEntry = availableTranslations.find((t) => t.code === activeLocale);
-                  const currentText = currentEntry?.text || "";
-                  const sourceParagraphs = splitReadingParagraphs(activeReadingPrimaryText);
-                  const translationParagraphs = splitReadingParagraphs(currentText);
-                  const paragraphCount = Math.max(sourceParagraphs.length, translationParagraphs.length);
-                  const syncedParagraphs = Array.from({ length: paragraphCount }, (_, idx) => ({
-                    source: sourceParagraphs[idx] || "",
-                    translation: translationParagraphs[idx] || "",
-                  }));
+                    const currentEntry = availableTranslations.find((t) => t.code === activeLocale);
+                    const currentText = currentEntry?.text || "";
+                    const sourceParagraphs = splitReadingParagraphs(activeReadingPrimaryText);
+                    const translationParagraphs = splitReadingParagraphs(currentText);
+                    const paragraphCount = Math.max(sourceParagraphs.length, translationParagraphs.length);
+                    const syncedParagraphs = Array.from({ length: paragraphCount }, (_, idx) => ({
+                      source: sourceParagraphs[idx] || "",
+                      translation: translationParagraphs[idx] || "",
+                    }));
 
-                  return (
-                    <>
-                      <div className="reading-modal__toolbar">
-                        {renderReadingLookup("modal")}
-                        <button
-                          type="button"
-                          className="reading-modal__controls-toggle"
-                          onClick={() => setIsReaderControlsOpen((prev) => !prev)}
-                          aria-expanded={isReaderControlsOpen}
-                        >
-                          {isReaderControlsOpen
-                            ? t("readings.hideReaderMenu")
-                            : t("readings.openReaderMenu")}
-                        </button>
-                        <div
-                          className={`reading-modal__controls ${isReaderControlsOpen ? "is-open" : ""}`}
-                          aria-label={t("readings.title")}
-                        >
-                          <div className="reading-modal__control-group">
-                            <span>Size</span>
-                            <button
-                              type="button"
-                              className={readerFontSize === "compact" ? "active" : ""}
-                              onClick={() => setReaderFontSize("compact")}
-                            >
-                              A-
-                            </button>
-                            <button
-                              type="button"
-                              className={readerFontSize === "comfortable" ? "active" : ""}
-                              onClick={() => setReaderFontSize("comfortable")}
-                            >
-                              A
-                            </button>
-                            <button
-                              type="button"
-                              className={readerFontSize === "large" ? "active" : ""}
-                              onClick={() => setReaderFontSize("large")}
-                            >
-                              A+
-                            </button>
-                            <button
-                              type="button"
-                              className={readerFontSize === "xlarge" ? "active" : ""}
-                              onClick={() => setReaderFontSize("xlarge")}
-                            >
-                              A++
-                            </button>
-                          </div>
-                          <div className="reading-modal__control-group">
-                            <span>Mode</span>
-                            <button
-                              type="button"
-                              className={readerLayout === "paired" ? "active" : ""}
-                              onClick={() => setReaderLayout("paired")}
-                            >
-                              Parallel
-                            </button>
-                            <button
-                              type="button"
-                              className={readerLayout === "line" ? "active" : ""}
-                              onClick={() => setReaderLayout("line")}
-                            >
-                              Line
-                            </button>
-                          </div>
-                          <div className="reading-modal__control-group">
-                            <span>Width</span>
-                            <button
-                              type="button"
-                              className={readerWidth === "balanced" ? "active" : ""}
-                              onClick={() => setReaderWidth("balanced")}
-                            >
-                              Split
-                            </button>
-                            <button
-                              type="button"
-                              className={readerWidth === "wide" ? "active" : ""}
-                              onClick={() => setReaderWidth("wide")}
-                            >
-                              Wide
-                            </button>
-                          </div>
-                          <div className="reading-modal__control-group">
-                            <span>Theme</span>
-                            <button
-                              type="button"
-                              className={readerTheme === "light" ? "active" : ""}
-                              onClick={() => setReaderTheme("light")}
-                            >
-                              Light
-                            </button>
-                            <button
-                              type="button"
-                              className={readerTheme === "dark" ? "active" : ""}
-                              onClick={() => setReaderTheme("dark")}
-                            >
-                              Night
-                            </button>
-                          </div>
-                          {translations.length > 0 && (
-                            <div className="reading-modal__control-group reading-modal__control-group--language">
-                              <span>Lang</span>
-                              <div className="reading-translation-tabs reading-translation-tabs--inline">
-                                {translations.map((entry) => (
-                                  <button
-                                    key={entry.code}
-                                    type="button"
-                                    className={activeLocale === entry.code ? "active" : ""}
-                                    onClick={() =>
-                                      setReadingLocales((prev) => ({
-                                        ...prev,
-                                        [activeReading.id]: entry.code,
-                                      }))
-                                    }
-                                    disabled={!entry.text}
-                                    aria-label={`Translation ${entry.label}`}
-                                    title={entry.label}
-                                  >
-                                    {entry.label}
-                                  </button>
-                                ))}
-                              </div>
+                    return (
+                      <>
+                        <div className="reading-modal__toolbar">
+                          {renderReadingLookup("modal")}
+                          <button
+                            type="button"
+                            className="reading-modal__controls-toggle"
+                            onClick={() => setIsReaderControlsOpen((prev) => !prev)}
+                            aria-expanded={isReaderControlsOpen}
+                          >
+                            {isReaderControlsOpen
+                              ? t("readings.hideReaderMenu")
+                              : t("readings.openReaderMenu")}
+                          </button>
+                          <div
+                            className={`reading-modal__controls ${isReaderControlsOpen ? "is-open" : ""}`}
+                            aria-label={t("readings.title")}
+                          >
+                            <div className="reading-modal__control-group">
+                              <span>Size</span>
+                              <button
+                                type="button"
+                                className={readerFontSize === "compact" ? "active" : ""}
+                                onClick={() => setReaderFontSize("compact")}
+                              >
+                                A-
+                              </button>
+                              <button
+                                type="button"
+                                className={readerFontSize === "comfortable" ? "active" : ""}
+                                onClick={() => setReaderFontSize("comfortable")}
+                              >
+                                A
+                              </button>
+                              <button
+                                type="button"
+                                className={readerFontSize === "large" ? "active" : ""}
+                                onClick={() => setReaderFontSize("large")}
+                              >
+                                A+
+                              </button>
+                              <button
+                                type="button"
+                                className={readerFontSize === "xlarge" ? "active" : ""}
+                                onClick={() => setReaderFontSize("xlarge")}
+                              >
+                                A++
+                              </button>
                             </div>
-                          )}
+                            <div className="reading-modal__control-group">
+                              <span>Mode</span>
+                              <button
+                                type="button"
+                                className={readerLayout === "paired" ? "active" : ""}
+                                onClick={() => setReaderLayout("paired")}
+                              >
+                                Parallel
+                              </button>
+                              <button
+                                type="button"
+                                className={readerLayout === "line" ? "active" : ""}
+                                onClick={() => setReaderLayout("line")}
+                              >
+                                Line
+                              </button>
+                            </div>
+                            <div className="reading-modal__control-group">
+                              <span>Width</span>
+                              <button
+                                type="button"
+                                className={readerWidth === "balanced" ? "active" : ""}
+                                onClick={() => setReaderWidth("balanced")}
+                              >
+                                Split
+                              </button>
+                              <button
+                                type="button"
+                                className={readerWidth === "wide" ? "active" : ""}
+                                onClick={() => setReaderWidth("wide")}
+                              >
+                                Wide
+                              </button>
+                            </div>
+                            <div className="reading-modal__control-group">
+                              <span>Theme</span>
+                              <button
+                                type="button"
+                                className={readerTheme === "light" ? "active" : ""}
+                                onClick={() => setReaderTheme("light")}
+                              >
+                                Light
+                              </button>
+                              <button
+                                type="button"
+                                className={readerTheme === "dark" ? "active" : ""}
+                                onClick={() => setReaderTheme("dark")}
+                              >
+                                Night
+                              </button>
+                            </div>
+                            {translations.length > 0 && (
+                              <div className="reading-modal__control-group reading-modal__control-group--language">
+                                <span>Lang</span>
+                                <div className="reading-translation-tabs reading-translation-tabs--inline">
+                                  {translations.map((entry) => (
+                                    <button
+                                      key={entry.code}
+                                      type="button"
+                                      className={activeLocale === entry.code ? "active" : ""}
+                                      onClick={() =>
+                                        setReadingLocales((prev) => ({
+                                          ...prev,
+                                          [activeReading.id]: entry.code,
+                                        }))
+                                      }
+                                      disabled={!entry.text}
+                                      aria-label={`Translation ${entry.label}`}
+                                      title={entry.label}
+                                    >
+                                      {entry.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div
-                        className={`reading-modal__content reading-modal__content--${readerLayout}`}
-                        onMouseUp={handleSelectionLookup}
-                        onTouchEnd={handleSelectionLookup}
-                      >
-                        {renderQuickLookup()}
-                        {syncedParagraphs.map((entry, idx) => (
-                          <div key={`${activeReading.id}-${idx}`} className="reading-modal__pair">
-                            <div className="reading-modal__text">
-                              {entry.source ? <p>{entry.source}</p> : <p>&nbsp;</p>}
-                            </div>
-                            <aside className="reading-modal__translation reading-translation">
-                              <div className="reading-modal__translation-body">
-                                {entry.translation ? <p>{entry.translation}</p> : <p>&nbsp;</p>}
+                        <div
+                          className={`reading-modal__content reading-modal__content--${readerLayout}`}
+                          onMouseUp={handleSelectionLookup}
+                          onTouchEnd={handleSelectionLookup}
+                        >
+                          {renderQuickLookup()}
+                          {syncedParagraphs.map((entry, idx) => (
+                            <div key={`${activeReading.id}-${idx}`} className="reading-modal__pair">
+                              <div className="reading-modal__text">
+                                {entry.source ? <p>{entry.source}</p> : <p>&nbsp;</p>}
                               </div>
-                            </aside>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  );
-                })()}
+                              <aside className="reading-modal__translation reading-translation">
+                                <div className="reading-modal__translation-body">
+                                  {entry.translation ? <p>{entry.translation}</p> : <p>&nbsp;</p>}
+                                </div>
+                              </aside>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 };
