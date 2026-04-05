@@ -4849,14 +4849,14 @@ button.ghost {
 .collapse-game {
   --wc-board-bg: linear-gradient(
       90deg,
-      rgba(14, 165, 233, 0.12) 0%,
-      rgba(14, 165, 233, 0.12) 50%,
-      rgba(180, 83, 9, 0.12) 50%,
-      rgba(180, 83, 9, 0.12) 100%
+      rgba(10, 61, 98, 0.96) 0%,
+      rgba(10, 61, 98, 0.96) 48%,
+      rgba(93, 49, 18, 0.96) 52%,
+      rgba(93, 49, 18, 0.96) 100%
     ),
-    #0b1220;
-  --wc-left-bg: #0b5cab;
-  --wc-right-bg: #7a4a24;
+    linear-gradient(180deg, rgba(11, 18, 32, 0.99), rgba(11, 18, 32, 0.99));
+  --wc-left-bg: linear-gradient(180deg, #1d7fde 0%, #0b5cab 100%);
+  --wc-right-bg: linear-gradient(180deg, #b3692d 0%, #7a4a24 100%);
   --wc-block-border: rgba(255, 255, 255, 0.18);
   --wc-highlight: rgba(250, 204, 21, 0.9);
   --wc-wrong: rgba(239, 68, 68, 0.65);
@@ -5008,7 +5008,7 @@ button.ghost {
   height: min(820px, 90dvh);
   padding: 1.2rem 1.4rem;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.97);
   border: 1px solid rgba(148, 163, 184, 0.35);
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
   display: flex;
@@ -5111,6 +5111,51 @@ button.ghost {
   width: 100%;
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.collapse-lane-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.collapse-lane-pill {
+  min-width: min(220px, 46%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 20px rgba(2, 6, 23, 0.22);
+}
+
+.collapse-lane-pill.left {
+  background: linear-gradient(135deg, rgba(29, 127, 222, 0.92), rgba(12, 74, 110, 0.98));
+  color: #dff4ff;
+}
+
+.collapse-lane-pill.right {
+  background: linear-gradient(135deg, rgba(220, 121, 44, 0.92), rgba(120, 53, 15, 0.98));
+  color: #ffedd5;
+  text-align: right;
+}
+
+.collapse-lane-pill strong {
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.collapse-lane-pill__role {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.78;
 }
 
 .collapse-game-area {
@@ -5119,6 +5164,42 @@ button.ghost {
   border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.28);
   background: var(--wc-board-bg);
+  isolation: isolate;
+}
+
+.collapse-game-area::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 22% 18%, rgba(125, 211, 252, 0.05), transparent 26%),
+    radial-gradient(circle at 78% 22%, rgba(251, 191, 36, 0.04), transparent 26%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.collapse-game-area::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 50%;
+  width: 4px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.82) 18%,
+      rgba(255, 255, 255, 0.82) 82%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 0 24px rgba(255, 255, 255, 0.24);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .collapse-block {
@@ -5127,20 +5208,60 @@ button.ghost {
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  padding: 6px 8px;
+  padding: 6px 9px;
   font-size: 15px;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.18;
   text-align: center;
   box-sizing: border-box;
   cursor: pointer;
   user-select: none;
-  word-break: break-word;
+  overflow: hidden;
   will-change: transform;
+  backface-visibility: hidden;
+  contain: layout paint style;
   border: 2px solid var(--wc-block-border);
   color: var(--wc-text);
   box-shadow: 0 10px 22px rgba(2, 6, 23, 0.28);
-  transition: opacity 180ms ease, border-color 180ms ease, filter 180ms ease;
+  text-shadow: 0 1px 1px rgba(2, 6, 23, 0.18);
+  transition:
+    transform 70ms linear,
+    opacity 180ms ease,
+    border-color 180ms ease,
+    filter 180ms ease,
+    box-shadow 180ms ease,
+    background 220ms ease;
+  z-index: 1;
+}
+
+.collapse-block__text {
+  display: -webkit-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
+}
+
+.collapse-block.text-tight {
+  font-size: 14px;
+}
+
+.collapse-block.text-compact {
+  font-size: 13px;
+  padding: 5px 7px;
+}
+
+.collapse-block.text-ultra {
+  font-size: 12px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  padding: 4px 6px;
 }
 
 .collapse-block.left {
@@ -5153,12 +5274,23 @@ button.ghost {
 
 .collapse-block.selected {
   border-color: var(--wc-highlight);
-  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.16), 0 10px 22px rgba(2, 6, 23, 0.28);
+  box-shadow:
+    0 0 0 3px rgba(250, 204, 21, 0.22),
+    0 14px 28px rgba(2, 6, 23, 0.34);
+  filter: saturate(1.1) brightness(1.08);
 }
 
 .collapse-block.hint {
   border-color: var(--wc-highlight);
   filter: brightness(1.08);
+}
+
+.collapse-block.left.selected {
+  background: linear-gradient(180deg, #55b6ff 0%, #1575d8 100%);
+}
+
+.collapse-block.right.selected {
+  background: linear-gradient(180deg, #f1a35d 0%, #c96a27 100%);
 }
 
 .collapse-block.dimmed {
@@ -5172,7 +5304,12 @@ button.ghost {
 
 .collapse-block.wrong {
   border-color: var(--wc-wrong);
-  background: rgba(239, 68, 68, 0.18);
+  background: linear-gradient(180deg, rgba(248, 113, 113, 0.96), rgba(185, 28, 28, 0.98));
+  color: #fff7f7;
+  box-shadow:
+    0 0 0 2px rgba(248, 113, 113, 0.2),
+    0 12px 26px rgba(127, 29, 29, 0.35);
+  text-shadow: 0 1px 1px rgba(69, 10, 10, 0.26);
 }
 
 .collapse-block.bonus.freeze {
@@ -5468,6 +5605,50 @@ button.ghost {
 
   .collapse-block {
     font-size: 14px;
+    box-shadow: 0 6px 14px rgba(2, 6, 23, 0.2);
+    transition-duration: 56ms, 180ms, 180ms, 180ms, 180ms, 220ms;
+  }
+
+  .collapse-block.text-tight {
+    font-size: 13px;
+  }
+
+  .collapse-block.text-compact,
+  .collapse-block.text-ultra {
+    font-size: 12px;
+  }
+
+  .pause-overlay,
+  .tutorial-overlay {
+    backdrop-filter: none;
+  }
+
+  .collapse-modal-backdrop {
+    backdrop-filter: blur(3px);
+  }
+
+  .collapse-lane-labels {
+    gap: 0.5rem;
+  }
+
+  .collapse-lane-pill {
+    min-width: 0;
+    flex: 1;
+    padding: 0.6rem 0.72rem;
+  }
+
+  .collapse-lane-pill strong {
+    font-size: 0.88rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collapse-block,
+  .bomb-meter__fill,
+  .frozen-overlay,
+  .combo-animation {
+    transition: none;
+    animation: none;
   }
 }
 

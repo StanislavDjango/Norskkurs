@@ -51,6 +51,72 @@ const MAX_COLS = 10;
 const PRIMARY_MUSIC_SRC = "/audio/4f13fc38b4572af.mp3";
 const FALLBACK_MUSIC_SRC = "/audio/wordcollapse.mp3";
 
+const languageOptionToLang = (language: LanguageOption) => {
+  if (language === "bokmaal") return "nb";
+  if (language === "nynorsk") return "nn";
+  if (language === "russian") return "ru";
+  return "en";
+};
+
+const isNorwegianLanguage = (language: LanguageOption) =>
+  language === "bokmaal" || language === "nynorsk";
+
+const languageOptionToLabelKey = (language: LanguageOption) => `streamLabels.${language}`;
+
+const getBlockTextClassName = (text: string) => {
+  const normalized = text.trim();
+  const segments = normalized.split(/[\s/-]+/).filter(Boolean);
+  const longestSegment = segments.reduce((max, segment) => Math.max(max, segment.length), 0);
+
+  if (normalized.length >= 20 || longestSegment >= 14) return "text-ultra";
+  if (normalized.length >= 15 || longestSegment >= 11) return "text-compact";
+  if (normalized.length >= 11 || longestSegment >= 8) return "text-tight";
+  return "text-regular";
+};
+
+type CollapseBlockButtonProps = {
+  blockId: string;
+  text: string;
+  className: string;
+  blockWidth: number;
+  blockHeight: number;
+  x: number;
+  y: number;
+  lang?: string;
+  onSelect: (id: string) => void;
+};
+
+const CollapseBlockButton = React.memo(function CollapseBlockButton({
+  blockId,
+  text,
+  className,
+  blockWidth,
+  blockHeight,
+  x,
+  y,
+  lang,
+  onSelect,
+}: CollapseBlockButtonProps) {
+  const style = useMemo(
+    () => ({
+      width: `${blockWidth}px`,
+      height: `${blockHeight}px`,
+      transform: `translate3d(${x}px, ${y}px, 0)`,
+    }),
+    [blockHeight, blockWidth, x, y],
+  );
+
+  const handleClick = useCallback(() => {
+    onSelect(blockId);
+  }, [blockId, onSelect]);
+
+  return (
+    <button type="button" className={className} style={style} lang={lang} title={text} onClick={handleClick}>
+      <span className="collapse-block__text">{text}</span>
+    </button>
+  );
+});
+
 const WordCollapseBaseGame: React.FC<Props> = ({
   stream,
   currentLevel,
@@ -131,6 +197,8 @@ const WordCollapseBaseGame: React.FC<Props> = ({
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const statusBeforeHowToRef = useRef<GameStatus>("pre-game");
   const gameWrapperRef = useRef<HTMLDivElement>(null);
+  const laneLabelsRef = useRef<HTMLDivElement>(null);
+  const handleBlockClickRef = useRef<(id: string) => void>(() => {});
   const [gameSize, setGameSize] = useState<GameSize>({
     width: 0,
     height: BLOCK_HEIGHT * 12,
@@ -240,6 +308,22 @@ const WordCollapseBaseGame: React.FC<Props> = ({
 
   const leftSideLanguage = swapSides ? rightLanguage : leftLanguage;
   const rightSideLanguage = swapSides ? leftLanguage : rightLanguage;
+  const leftSideLangAttr = languageOptionToLang(leftSideLanguage);
+  const rightSideLangAttr = languageOptionToLang(rightSideLanguage);
+  const leftSideLabel = t(languageOptionToLabelKey(leftSideLanguage));
+  const rightSideLabel = t(languageOptionToLabelKey(rightSideLanguage));
+  const leftSideRoleLabel =
+    isNorwegianLanguage(leftSideLanguage) && !isNorwegianLanguage(rightSideLanguage)
+      ? t("games.wordCollapseLaneOriginal", "Original")
+      : !isNorwegianLanguage(leftSideLanguage) && isNorwegianLanguage(rightSideLanguage)
+        ? t("games.wordCollapseLaneTranslation", "Translation")
+        : null;
+  const rightSideRoleLabel =
+    isNorwegianLanguage(rightSideLanguage) && !isNorwegianLanguage(leftSideLanguage)
+      ? t("games.wordCollapseLaneOriginal", "Original")
+      : !isNorwegianLanguage(rightSideLanguage) && isNorwegianLanguage(leftSideLanguage)
+        ? t("games.wordCollapseLaneTranslation", "Translation")
+        : null;
 
   const spawnPool = useMemo(() => {
     const pairs: SpawnPair[] = [];
@@ -292,8 +376,12 @@ const WordCollapseBaseGame: React.FC<Props> = ({
     const updateSize = () => {
       if (!gameWrapperRef.current) return;
       const parentWidth = gameWrapperRef.current.offsetWidth;
-      const parentHeight = gameWrapperRef.current.offsetHeight || window.innerHeight;
-      const targetHeight = Math.min(parentHeight, window.innerHeight * 0.9);
+      const wrapperHeight = gameWrapperRef.current.offsetHeight || window.innerHeight;
+      const labelsHeight = laneLabelsRef.current?.offsetHeight ?? 0;
+      const wrapperStyles = window.getComputedStyle(gameWrapperRef.current);
+      const frameGap = Number.parseFloat(wrapperStyles.rowGap || wrapperStyles.gap || "0") || 0;
+      const availableHeight = Math.max(0, wrapperHeight - labelsHeight - frameGap);
+      const targetHeight = Math.min(availableHeight, window.innerHeight * 0.9);
       const minHeight = BLOCK_HEIGHT * 12;
       const height = Math.max(minHeight, targetHeight);
 
@@ -384,7 +472,18 @@ const WordCollapseBaseGame: React.FC<Props> = ({
     uniqueOnly,
   });
 
-  const selectedBlock = selectedBlockId ? blocks.find((b) => b.id === selectedBlockId) : undefined;
+  useEffect(() => {
+    handleBlockClickRef.current = handleBlockClick;
+  }, [handleBlockClick]);
+
+  const forwardBlockClick = useCallback((id: string) => {
+    handleBlockClickRef.current(id);
+  }, []);
+
+  const selectedBlock = useMemo(
+    () => (selectedBlockId ? blocks.find((b) => b.id === selectedBlockId) : undefined),
+    [blocks, selectedBlockId],
+  );
   const hintTermKey = hintsEnabled ? (selectedBlock?.termKey ?? null) : null;
   const hintRoleNeeded = hintsEnabled
     ? selectedBlock?.role === "left"
@@ -393,6 +492,67 @@ const WordCollapseBaseGame: React.FC<Props> = ({
         ? "left"
         : null
     : null;
+  const renderedBlocks = useMemo(
+    () =>
+      blocks.map((block) => {
+        const isHint =
+          Boolean(hintTermKey) &&
+          Boolean(hintRoleNeeded) &&
+          !block.isFalling &&
+          block.role === hintRoleNeeded &&
+          block.termKey === hintTermKey;
+        const isDimmed =
+          Boolean(hintTermKey) &&
+          Boolean(hintRoleNeeded) &&
+          !block.isFalling &&
+          block.role !== "bonus" &&
+          block.id !== selectedBlockId &&
+          !isHint;
+
+        return (
+          <CollapseBlockButton
+            key={block.id}
+            blockId={block.id}
+            text={block.text}
+            className={[
+              "collapse-block",
+              getBlockTextClassName(block.text),
+              selectedBlockId === block.id ? "selected" : "",
+              block.isMatched ? "matched" : "",
+              block.isWrong ? "wrong" : "",
+              block.role,
+              block.bonusType || "",
+              isHint ? "hint" : "",
+              isDimmed ? "dimmed" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            blockWidth={gameSize.blockWidth}
+            blockHeight={BLOCK_HEIGHT}
+            x={block.col * gameSize.blockWidth}
+            y={block.y}
+            lang={
+              block.role === "left"
+                ? leftSideLangAttr
+                : block.role === "right"
+                  ? rightSideLangAttr
+                  : undefined
+            }
+            onSelect={forwardBlockClick}
+          />
+        );
+      }),
+    [
+      blocks,
+      forwardBlockClick,
+      gameSize.blockWidth,
+      hintRoleNeeded,
+      hintTermKey,
+      leftSideLangAttr,
+      rightSideLangAttr,
+      selectedBlockId,
+    ],
+  );
 
   const openSettings = (mode: OpenMode) => {
     setOpenMode(mode);
@@ -616,6 +776,16 @@ const WordCollapseBaseGame: React.FC<Props> = ({
                 )}
               </div>
               <div className="collapse-game-frame" ref={gameWrapperRef}>
+                <div className="collapse-lane-labels" aria-hidden="true" ref={laneLabelsRef}>
+                  <div className="collapse-lane-pill left">
+                    {leftSideRoleLabel && <span className="collapse-lane-pill__role">{leftSideRoleLabel}</span>}
+                    <strong>{leftSideLabel}</strong>
+                  </div>
+                  <div className="collapse-lane-pill right">
+                    {rightSideRoleLabel && <span className="collapse-lane-pill__role">{rightSideRoleLabel}</span>}
+                    <strong>{rightSideLabel}</strong>
+                  </div>
+                </div>
                 <div className="collapse-game-area" style={{ height: `${gameSize.height}px` }}>
                   {isFrozen && <div className="frozen-overlay" />}
                   {status === "paused" && !isTutorialOpen && (
@@ -655,47 +825,7 @@ const WordCollapseBaseGame: React.FC<Props> = ({
                     </div>
                   )}
                   {showComboAnimation && <div className="combo-animation">COMBO x{showComboAnimation}!</div>}
-                  {blocks.map((block) => {
-                    const isHint =
-                      Boolean(hintTermKey) &&
-                      Boolean(hintRoleNeeded) &&
-                      !block.isFalling &&
-                      block.role === hintRoleNeeded &&
-                      block.termKey === hintTermKey;
-                    const isDimmed =
-                      Boolean(hintTermKey) &&
-                      Boolean(hintRoleNeeded) &&
-                      !block.isFalling &&
-                      block.role !== "bonus" &&
-                      block.id !== selectedBlockId &&
-                      !isHint;
-                    return (
-                      <button
-                        key={block.id}
-                        type="button"
-                        className={[
-                          "collapse-block",
-                          selectedBlockId === block.id ? "selected" : "",
-                          block.isMatched ? "matched" : "",
-                          block.isWrong ? "wrong" : "",
-                          block.role,
-                          block.bonusType || "",
-                          isHint ? "hint" : "",
-                          isDimmed ? "dimmed" : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                        style={{
-                          width: `${gameSize.blockWidth}px`,
-                          height: `${BLOCK_HEIGHT}px`,
-                          transform: `translate3d(${block.col * gameSize.blockWidth}px, ${block.y}px, 0)`,
-                        }}
-                        onClick={() => handleBlockClick(block.id)}
-                      >
-                        {block.text}
-                      </button>
-                    );
-                  })}
+                  {renderedBlocks}
                 </div>
               </div>
             </div>

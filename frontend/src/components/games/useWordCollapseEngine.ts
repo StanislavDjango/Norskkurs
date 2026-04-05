@@ -13,7 +13,7 @@ export type EndReason = "lives" | "exhausted";
 
 const BLOCK_HEIGHT = 48;
 const INITIAL_GRACE_MS = 8000;
-const RENDER_FPS = 30;
+const RENDER_FPS = 60;
 const SETTLE_SPEED_MULTIPLIER = 1.6;
 
 export type Block = {
@@ -80,6 +80,8 @@ export const useWordCollapseEngine = ({
   const [blocks, setBlocks] = useState<Block[]>([]);
 
   const blocksRef = useRef<Block[]>([]);
+  const blockIndexRef = useRef<Map<string, Block>>(new Map());
+  const blocksDirtyRef = useRef(true);
   const gameStartedAtRef = useRef<number | null>(null);
   const spawnAccumulatorMsRef = useRef(0);
   const lastRenderAtRef = useRef(0);
@@ -113,13 +115,19 @@ export const useWordCollapseEngine = ({
     }
   }, []);
 
-  const commitBlocks = useCallback((next: Block[]) => {
+  const syncBlocksRef = useCallback((next: Block[]) => {
     blocksRef.current = next;
-    setBlocks(next);
+    blockIndexRef.current = new Map(next.map((block) => [block.id, block]));
+    blocksDirtyRef.current = true;
   }, []);
 
+  const commitBlocks = useCallback((next: Block[]) => {
+    syncBlocksRef(next);
+  }, [syncBlocksRef]);
+
   const settleColumns = useCallback(
-    (currentBlocks: Block[]) => {
+    (currentBlocks: Block[], options?: { snap?: boolean }) => {
+      const snap = options?.snap ?? false;
       const byCol = new Map<number, Block[]>();
       for (const block of currentBlocks) {
         const entry = byCol.get(block.col) ?? [];
@@ -137,6 +145,16 @@ export const useWordCollapseEngine = ({
             block.targetY !== undefined ||
             Math.abs(block.y - desiredY) > 0.5 ||
             block.y < desiredY;
+
+          if (snap) {
+            next.push({
+              ...block,
+              y: desiredY,
+              isFalling: false,
+              targetY: undefined,
+            });
+            return;
+          }
 
           if (needsMove) {
             next.push({ ...block, isFalling: true, targetY: desiredY });
@@ -241,6 +259,8 @@ export const useWordCollapseEngine = ({
     if (selected.length < 1) return false;
 
     const newBlocks: Block[] = [];
+    const spawnStamp = Date.now();
+    let spawnIndex = 0;
     const isInitialWave = existing.length === 0;
     const spawnSpread =
       isInitialWave || isMobileViewport()
@@ -292,9 +312,11 @@ export const useWordCollapseEngine = ({
 
       const leftY = spawnYForCol(leftAbsCol);
       const rightY = spawnYForCol(rightAbsCol);
+      const pairKey = `${spawnStamp}-${spawnIndex}`;
+      spawnIndex += 1;
 
       newBlocks.push({
-        id: `wc-${Date.now()}-${Math.random()}-L`,
+        id: `wc-${pairKey}-L`,
         termKey: item.termKey,
         role: "left",
         text: item.leftText,
@@ -303,7 +325,7 @@ export const useWordCollapseEngine = ({
         isFalling: true,
       });
       newBlocks.push({
-        id: `wc-${Date.now()}-${Math.random()}-R`,
+        id: `wc-${pairKey}-R`,
         termKey: item.termKey,
         role: "right",
         text: item.rightText,
@@ -363,22 +385,24 @@ export const useWordCollapseEngine = ({
       const shouldSimulate = status === "running" && !isFrozen && !isTutorialOpen;
       if (shouldSimulate && gameSize.width > 0) {
         const prev = blocksRef.current;
-        const byCol = new Map<number, Block[]>();
-        for (const block of prev) {
+        const byCol = new Map<number, Array<{ block: Block; index: number }>>();
+        for (let index = 0; index < prev.length; index += 1) {
+          const block = prev[index];
           if (block.isMatched) continue;
-          const list = byCol.get(block.col) || [];
-          list.push(block);
+          const list = byCol.get(block.col) ?? [];
+          list.push({ block, index });
           byCol.set(block.col, list);
         }
 
-        const updates = new Map<string, Block>();
+        let next = prev;
+        let anyChanged = false;
         for (const columnBlocks of byCol.values()) {
-          const sorted = [...columnBlocks].sort((a, b) => b.y - a.y);
+          columnBlocks.sort((a, b) => b.block.y - a.block.y);
           let ceilingY = gameSize.height - BLOCK_HEIGHT;
 
-          for (const block of sorted) {
+          for (const entry of columnBlocks) {
+            const { block, index } = entry;
             if (!block.isFalling) {
-              updates.set(block.id, block);
               ceilingY = block.y - BLOCK_HEIGHT;
               continue;
             }
@@ -395,30 +419,34 @@ export const useWordCollapseEngine = ({
 
             const movedY = Math.min(block.y + dyBlock, stopY);
             if (movedY >= stopY) {
-              updates.set(block.id, {
+              if (!anyChanged) {
+                next = prev.slice();
+                anyChanged = true;
+              }
+              next[index] = {
                 ...block,
                 y: stopY,
                 isFalling: false,
                 targetY: undefined,
-              });
+              };
               ceilingY = stopY - BLOCK_HEIGHT;
               continue;
             }
 
             if (movedY !== block.y) {
-              updates.set(block.id, { ...block, y: movedY });
+              if (!anyChanged) {
+                next = prev.slice();
+                anyChanged = true;
+              }
+              next[index] = { ...block, y: movedY };
               ceilingY = movedY - BLOCK_HEIGHT;
               continue;
             }
 
-            updates.set(block.id, block);
             ceilingY = block.y - BLOCK_HEIGHT;
           }
         }
-
-        const next = prev.map((block) => updates.get(block.id) ?? block);
-        const anyChanged = next.some((block, idx) => block !== prev[idx]);
-        if (anyChanged) blocksRef.current = next;
+        if (anyChanged) syncBlocksRef(next);
 
         const startedAt = gameStartedAtRef.current ?? now;
         const withinGrace = now - startedAt < INITIAL_GRACE_MS;
@@ -447,9 +475,20 @@ export const useWordCollapseEngine = ({
         }
       }
 
-      if (now - lastRenderAtRef.current >= renderIntervalMs) {
+      if (blocksDirtyRef.current && now - lastRenderAtRef.current >= renderIntervalMs) {
         lastRenderAtRef.current = now;
+        blocksDirtyRef.current = false;
         setBlocks(blocksRef.current.slice());
+      }
+
+      const keepRunning =
+        status === "running" ||
+        blocksDirtyRef.current ||
+        isTutorialOpen ||
+        isFrozen;
+      if (!keepRunning) {
+        rafRef.current = null;
+        return;
       }
 
       rafRef.current = window.requestAnimationFrame(tick);
@@ -492,9 +531,10 @@ export const useWordCollapseEngine = ({
     spawnAccumulatorMsRef.current = 0;
     lastRenderAtRef.current = 0;
     gameStartedAtRef.current = null;
-    blocksRef.current = [];
+    syncBlocksRef([]);
     setBlocks([]);
-  }, [clearPendingTimeouts, maxLives]);
+    blocksDirtyRef.current = false;
+  }, [clearPendingTimeouts, maxLives, syncBlocksRef]);
 
   const startRound = useCallback(() => {
     resetGameState();
@@ -509,7 +549,7 @@ export const useWordCollapseEngine = ({
     (blockId: string) => {
       if (status !== "running") return;
       const currentBlocks = blocksRef.current;
-      const clickedBlock = currentBlocks.find((b) => b.id === blockId);
+      const clickedBlock = blockIndexRef.current.get(blockId);
       if (
         !clickedBlock ||
         clickedBlock.isMatched ||
@@ -542,7 +582,7 @@ export const useWordCollapseEngine = ({
           const filtered = currentBlocks.filter(
             (b) => b.id !== blockId && (!b.termKey || !targetTerms.has(b.termKey)),
           );
-          commitBlocks(settleColumns(filtered));
+          commitBlocks(settleColumns(filtered, { snap: true }));
           setSelectedBlockId(null);
           setComboCount(0);
           return;
@@ -559,7 +599,7 @@ export const useWordCollapseEngine = ({
         return;
       }
 
-      const selectedBlockNow = currentBlocks.find((b) => b.id === selectedBlockId);
+      const selectedBlockNow = blockIndexRef.current.get(selectedBlockId);
       if (!selectedBlockNow) {
         setSelectedBlockId(blockId);
         return;
