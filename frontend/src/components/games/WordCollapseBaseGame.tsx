@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 import type { GlossaryTerm, Level, Stream, VerbEntry } from "../../types";
@@ -545,6 +546,376 @@ const WordCollapseBaseGame: React.FC<Props> = ({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [dismissTutorial, handleCloseModal, handleCloseSettings, handleTogglePause, isModalOpen, isSettingsOpen, isTutorialOpen, status]);
 
+  const modalOverlays =
+    isModalOpen || isTutorialOpen || isSettingsOpen ? (
+      <>
+        {isModalOpen && (
+          <div className={`collapse-game-modal ${isFullscreen ? "fullscreen" : ""}`} role="dialog" aria-modal="true">
+            <div className="collapse-modal-backdrop" />
+            <div className="collapse-modal-window" ref={modalWindowRef} tabIndex={-1}>
+              <div className="collapse-game-header">
+                <div className="collapse-modal-title">
+                  <h3>{t(titleKey)}</h3>
+                  <div className="collapse-game-scores">
+                    <span className="score lives">
+                      {t("games.wordCollapseLivesLabel", "Жизни")}: {lives}/{maxLives}
+                    </span>
+                    <span className="score correct">
+                      {t("correct", "Correct")}: {score}
+                    </span>
+                    <span className="score incorrect">
+                      {t("incorrect", "Incorrect")}: {incorrectScore}
+                    </span>
+                    {uniqueOnly && uniqueProgress.total > 0 && (
+                      <span className="score unique-progress">
+                        {t("games.wordCollapseUniqueProgress", "Уникальные: {{used}}/{{total}}", {
+                          used: uniqueProgress.used,
+                          total: uniqueProgress.total,
+                        })}
+                      </span>
+                    )}
+                    {comboCount > 1 && <span className="score combo-couter">Combo: x{comboCount}</span>}
+                  </div>
+                </div>
+                <div className="game-buttons">
+                  <button className="ghost-btn" type="button" onClick={() => setIsMusicOn((v) => !v)}>
+                    {isMusicOn ? t("games.musicOn", "Музыка: вкл") : t("games.musicOff", "Музыка: выкл")}
+                  </button>
+                  {status === "running" && (
+                    <button className="ghost-btn" type="button" onClick={handleTogglePause}>
+                      {t("games.wordCollapsePause", "Пауза")}
+                    </button>
+                  )}
+                  {status === "paused" && (
+                    <button className="start-btn" type="button" onClick={handleTogglePause}>
+                      {t("games.wordCollapseResume", "Продолжить")}
+                    </button>
+                  )}
+                  {status === "game-over" && (
+                    <button className="start-btn" type="button" onClick={handleRestart}>
+                      {t("games.restart", "Сыграть ещё")}
+                    </button>
+                  )}
+                  <button className="close-btn" type="button" onClick={handleCloseModal} aria-label={t("close", "Close")}>
+                    ×
+                  </button>
+                </div>
+              </div>
+              <div className="collapse-game-meta">
+                <div className="bomb-meter" aria-label={t("games.wordCollapseBombMeter", "Заряд бомбы")}>
+                  <div className="bomb-meter__label">
+                    <span>{t("games.wordCollapseBombLabel", "Бомба")}</span>
+                    <span className="muted small">{bombCharge}%</span>
+                  </div>
+                  <div className="bomb-meter__bar">
+                    <div className="bomb-meter__fill" style={{ width: `${bombCharge}%` }} />
+                  </div>
+                </div>
+                {hintsEnabled && (
+                  <div className="collapse-hint muted small">{t("games.wordCollapseEscHint", "Esc — пауза/продолжить.")}</div>
+                )}
+              </div>
+              <div className="collapse-game-frame" ref={gameWrapperRef}>
+                <div className="collapse-game-area" style={{ height: `${gameSize.height}px` }}>
+                  {isFrozen && <div className="frozen-overlay" />}
+                  {status === "paused" && !isTutorialOpen && (
+                    <div className="pause-overlay">
+                      <div className="pause-card">
+                        <h4>{t("games.wordCollapsePausedTitle", "Пауза")}</h4>
+                        <p className="muted small">{t("games.wordCollapsePausedHint", "Нажмите «Продолжить» или Esc.")}</p>
+                        <button className="start-btn big" type="button" onClick={handleTogglePause}>
+                          {t("games.wordCollapseResume", "Продолжить")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {status === "game-over" && (
+                    <div className="pause-overlay">
+                      <div className="pause-card">
+                        <h4>
+                          {endReason === "exhausted"
+                            ? t("games.wordCollapseCompletedTitle", "Слова закончились!")
+                            : t("games.gameOver", "Game Over")}
+                        </h4>
+                        {endReason === "exhausted" && (
+                          <p className="muted small">
+                            {t("games.wordCollapseCompletedHint", "Вы прошли все доступные слова без повторов.")}
+                          </p>
+                        )}
+                        <p className="muted small">
+                          {t("games.finalScore", "Final Score")}: {score}
+                        </p>
+                        <p className="muted small">
+                          {t("games.incorrectCount", "Mistakes")}: {incorrectScore}
+                        </p>
+                        <button className="start-btn big" type="button" onClick={handleRestart}>
+                          {t("games.restart", "Сыграть ещё")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {showComboAnimation && <div className="combo-animation">COMBO x{showComboAnimation}!</div>}
+                  {blocks.map((block) => {
+                    const isHint =
+                      Boolean(hintTermKey) &&
+                      Boolean(hintRoleNeeded) &&
+                      !block.isFalling &&
+                      block.role === hintRoleNeeded &&
+                      block.termKey === hintTermKey;
+                    const isDimmed =
+                      Boolean(hintTermKey) &&
+                      Boolean(hintRoleNeeded) &&
+                      !block.isFalling &&
+                      block.role !== "bonus" &&
+                      block.id !== selectedBlockId &&
+                      !isHint;
+                    return (
+                      <button
+                        key={block.id}
+                        type="button"
+                        className={[
+                          "collapse-block",
+                          selectedBlockId === block.id ? "selected" : "",
+                          block.isMatched ? "matched" : "",
+                          block.isWrong ? "wrong" : "",
+                          block.role,
+                          block.bonusType || "",
+                          isHint ? "hint" : "",
+                          isDimmed ? "dimmed" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        style={{
+                          width: `${gameSize.blockWidth}px`,
+                          height: `${BLOCK_HEIGHT}px`,
+                          transform: `translate3d(${block.col * gameSize.blockWidth}px, ${block.y}px, 0)`,
+                        }}
+                        onClick={() => handleBlockClick(block.id)}
+                      >
+                        {block.text}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {isTutorialOpen && (
+          <div className={`collapse-game-modal ${isFullscreen ? "fullscreen" : ""}`} role="dialog" aria-modal="true">
+            <div className="collapse-modal-backdrop" />
+            <div className="collapse-modal-window settings-window" ref={tutorialWindowRef} tabIndex={-1}>
+              <div className="settings-header">
+                <div>
+                  <p className="eyebrow">{t("games.wordCollapseHowTo", "Как играть")}</p>
+                  <h3>{t("games.wordCollapseTutorialTitle", "Как играть")}</h3>
+                </div>
+                <button className="close-btn dark" type="button" onClick={dismissTutorial} aria-label={t("close", "Close")}>
+                  ×
+                </button>
+              </div>
+              <div className="tutorial-content">
+                <ol className="tutorial-steps">
+                  <li>{t("games.wordCollapseTutorialStep1", "Тапни любой блок слева (он подсветится).")}</li>
+                  <li>{t("games.wordCollapseTutorialStep2", "Тапни правильную пару справа — получишь очко.")}</li>
+                  <li>{t("games.wordCollapseTutorialStep3", "Комбо даёт бонусы и заряжает бомбу.")}</li>
+                  <li>{t("games.wordCollapseTutorialStep4", "Лишишься жизни, если волна не сможет появиться сверху.")}</li>
+                </ol>
+              </div>
+              <div className="settings-actions">
+                <button className="start-btn" type="button" onClick={dismissTutorial}>
+                  {t("games.wordCollapseGotIt", "Понятно")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {isSettingsOpen && (
+          <div className={`collapse-game-modal ${isFullscreen ? "fullscreen" : ""}`} role="dialog" aria-modal="true">
+            <div className="collapse-modal-backdrop" />
+            <div className="collapse-modal-window settings-window" ref={settingsWindowRef} tabIndex={-1}>
+              <div className="settings-header">
+                <div>
+                  <p className="eyebrow">{t("games.settings", "Настройки")}</p>
+                  <h3>{t("games.settingsHint", "Выберите источники слов и сложность перед стартом.")}</h3>
+                </div>
+                <button className="close-btn dark" type="button" onClick={handleCloseSettings} aria-label={t("close", "Close")}>
+                  ×
+                </button>
+              </div>
+              <div className="settings-grid">
+                <div className="settings-card">
+                  <div className="settings-card__title">
+                    <span className="eyebrow">{t("games.wordSources", "Выбор слов")}</span>
+                    <span className="muted tiny">{t("games.sourceHint", "Можно выбрать сразу несколько источников")}</span>
+                  </div>
+                  <div className="settings-list">
+                    <label className="checkbox-row">
+                      <input type="checkbox" checked={useGlossary} onChange={(e) => setUseGlossary(e.target.checked)} />
+                      <span>{t("games.sourceGlossary", "Глоссарий")}</span>
+                    </label>
+                    <div className="divider" />
+                    <p className="muted tiny">{t("games.partsOfSpeech", "Части речи")}</p>
+                    <div className="parts-grid">
+                      {partOptions.map((opt) => (
+                        <label key={opt.value} className="checkbox-row">
+                          <input
+                            type="checkbox"
+                            checked={selectedParts.includes(opt.value)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setSelectedParts((prev) => {
+                                if (checked) return [...prev, opt.value];
+                                return prev.filter((val) => val !== opt.value);
+                              });
+                            }}
+                          />
+                          <span>{t(opt.label)}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <label className="checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={useIrregularOnly}
+                        onChange={(e) => setUseIrregularOnly(e.target.checked)}
+                        disabled={!selectedParts.includes("verb")}
+                      />
+                      <span>{t("games.irregularOnly", "Только неправильные (глаголы)")}</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="settings-card">
+                  <div className="settings-card__title">
+                    <span className="eyebrow">{t("games.wordCollapseLanguagesTitle", "Языки")}</span>
+                    <span className="muted tiny">
+                      {t("games.wordCollapseLanguagesHint", "Выберите языки слева и справа (можно поменять местами).")}
+                    </span>
+                  </div>
+                  <div className="settings-list">
+                    <label className="game-settings">
+                      <span>{t("games.wordCollapseLeftLabel", "Слева")}</span>
+                      <select value={leftLanguage} onChange={(e) => setLeftLanguage(e.target.value as LanguageOption)}>
+                        <option value="bokmaal">{t("streamLabels.bokmaal")}</option>
+                        <option value="nynorsk">{t("streamLabels.nynorsk")}</option>
+                        <option value="english">{t("streamLabels.english")}</option>
+                        <option value="russian">{t("streamLabels.russian", "Русский")}</option>
+                      </select>
+                    </label>
+                    <label className="game-settings">
+                      <span>{t("games.wordCollapseRightLabel", "Справа")}</span>
+                      <select value={rightLanguage} onChange={(e) => setRightLanguage(e.target.value as LanguageOption)}>
+                        <option value="bokmaal">{t("streamLabels.bokmaal")}</option>
+                        <option value="nynorsk">{t("streamLabels.nynorsk")}</option>
+                        <option value="english">{t("streamLabels.english")}</option>
+                        <option value="russian">{t("streamLabels.russian", "Русский")}</option>
+                      </select>
+                    </label>
+                    <label className="checkbox-row">
+                      <input type="checkbox" checked={swapSides} onChange={(e) => setSwapSides(e.target.checked)} />
+                      <span>{t("games.wordCollapseSwapSides", "Поменять стороны местами")}</span>
+                    </label>
+                    <label className="checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={requireTranslations}
+                        onChange={(e) => setRequireTranslations(e.target.checked)}
+                      />
+                      <span>{t("games.wordCollapseRequireTranslations", "Только слова с переводом на оба языка")}</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="settings-card">
+                  <div className="settings-card__title">
+                    <span className="eyebrow">{t("games.difficulty", "Сложность")}</span>
+                    <span className="muted tiny">{t("games.difficultyHint", "Подберите комфортный темп игры")}</span>
+                  </div>
+                  <div className="settings-list">
+                    <label className="game-settings">
+                      <span>{t("games.pairsLabel", "Pairs")}</span>
+                      <select value={pairCount} onChange={(e) => setPairCount(Number(e.target.value))}>
+                        {[...Array(9).keys()].map((i) => (
+                          <option key={i + 2} value={i + 2}>
+                            {i + 2}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="game-settings">
+                      <span>{t("games.wordCollapseSpawnLabel", "Частота волн")}</span>
+                      <select value={spawnIntervalMs} onChange={(e) => setSpawnIntervalMs(Number(e.target.value) as SpawnSpeed)}>
+                        <option value={12000}>{t("games.speedSuperSlow", "Super Slow")}</option>
+                        <option value={10000}>{t("games.speedVerySlow", "Very Slow")}</option>
+                        <option value={8000}>{t("games.speedSlow", "Slow")}</option>
+                        <option value={6000}>{t("games.speedNormal", "Normal")}</option>
+                        <option value={4000}>{t("games.speedFast", "Fast")}</option>
+                        <option value={2500}>{t("games.speedVeryFast", "Very Fast")}</option>
+                        <option value={1500}>{t("games.speedHyper", "Hyper")}</option>
+                      </select>
+                    </label>
+                    <label className="game-settings">
+                      <span>{t("games.wordCollapseFallLabel", "Скорость падения")}</span>
+                      <select value={fallSpeedPxPerSec} onChange={(e) => setFallSpeedPxPerSec(Number(e.target.value))}>
+                        <option value={60}>{t("games.wordCollapseFallVerySlow", "Очень медленно")}</option>
+                        <option value={90}>{t("games.wordCollapseFallSlow", "Медленно")}</option>
+                        <option value={120}>{t("games.wordCollapseFallNormal", "Нормально")}</option>
+                        <option value={150}>{t("games.wordCollapseFallFast", "Быстро")}</option>
+                        <option value={180}>{t("games.wordCollapseFallVeryFast", "Очень быстро")}</option>
+                      </select>
+                    </label>
+                    <label className="game-settings">
+                      <span>{t("games.wordCollapseLivesLabel", "Жизни")}</span>
+                      <select
+                        value={maxLives}
+                        onChange={(e) => {
+                          const next = Number(e.target.value);
+                          setMaxLives(next);
+                          setLives(next);
+                        }}
+                      >
+                        <option value={3}>3</option>
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                      </select>
+                    </label>
+                    <label className="checkbox-row">
+                      <input type="checkbox" checked={preferFullscreen} onChange={(e) => setPreferFullscreen(e.target.checked)} />
+                      <span>{t("games.wordCollapsePreferFullscreen", "По умолчанию фуллскрин на телефоне")}</span>
+                    </label>
+                    <label className="checkbox-row">
+                      <input type="checkbox" checked={hintsEnabled} onChange={(e) => setHintsEnabled(e.target.checked)} />
+                      <span>{t("games.wordCollapseHintsEnabled", "Подсказки во время игры")}</span>
+                    </label>
+                    <label className="checkbox-row">
+                      <input type="checkbox" checked={uniqueOnly} onChange={(e) => setUniqueOnly(e.target.checked)} />
+                      <span>{t("games.wordCollapseUniqueOnly", "Уникальные слова (без повторов)")}</span>
+                    </label>
+                    <p className="muted tiny">
+                      {t("games.wordCollapsePoolCount", "Доступно слов: {{count}}", { count: spawnPool.length })}
+                    </p>
+                    {!canStart && (
+                      <p className="settings-warning">
+                        {t(
+                          "games.wordCollapsePoolWarning",
+                          "Слишком мало слов для выбранных настроек — включите глоссарий или снимите ограничения.",
+                        )}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="settings-actions">
+                <button className="start-btn big" type="button" onClick={beginGame} disabled={!canStart}>
+                  {t("games.start")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    ) : null;
+
   return (
     <div className="collapse-game">
       <div className="collapse-launcher">
@@ -569,375 +940,7 @@ const WordCollapseBaseGame: React.FC<Props> = ({
           </button>
         </div>
       </div>
-      {isModalOpen && (
-        <div className={`collapse-game-modal ${isFullscreen ? "fullscreen" : ""}`} role="dialog" aria-modal="true">
-          <div className="collapse-modal-backdrop" />
-          <div className="collapse-modal-window" ref={modalWindowRef} tabIndex={-1}>
-            <div className="collapse-game-header">
-              <div className="collapse-modal-title">
-                <h3>{t(titleKey)}</h3>
-                <div className="collapse-game-scores">
-                  <span className="score lives">
-                    {t("games.wordCollapseLivesLabel", "Жизни")}: {lives}/{maxLives}
-                  </span>
-                  <span className="score correct">
-                    {t("correct", "Correct")}: {score}
-                  </span>
-                  <span className="score incorrect">
-                    {t("incorrect", "Incorrect")}: {incorrectScore}
-                  </span>
-                  {uniqueOnly && uniqueProgress.total > 0 && (
-                    <span className="score unique-progress">
-                      {t("games.wordCollapseUniqueProgress", "Уникальные: {{used}}/{{total}}", {
-                        used: uniqueProgress.used,
-                        total: uniqueProgress.total,
-                      })}
-                    </span>
-                  )}
-                  {comboCount > 1 && <span className="score combo-couter">Combo: x{comboCount}</span>}
-                </div>
-              </div>
-              <div className="game-buttons">
-                <button className="ghost-btn" type="button" onClick={() => setIsMusicOn((v) => !v)}>
-                  {isMusicOn ? t("games.musicOn", "Музыка: вкл") : t("games.musicOff", "Музыка: выкл")}
-                </button>
-                {status === "running" && (
-                  <button className="ghost-btn" type="button" onClick={handleTogglePause}>
-                    {t("games.wordCollapsePause", "Пауза")}
-                  </button>
-                )}
-                {status === "paused" && (
-                  <button className="start-btn" type="button" onClick={handleTogglePause}>
-                    {t("games.wordCollapseResume", "Продолжить")}
-                  </button>
-                )}
-                {status === "game-over" && (
-                  <button className="start-btn" type="button" onClick={handleRestart}>
-                    {t("games.restart", "Сыграть ещё")}
-                  </button>
-                )}
-                <button className="close-btn" type="button" onClick={handleCloseModal} aria-label={t("close", "Close")}>
-                  ×
-                </button>
-              </div>
-            </div>
-            <div className="collapse-game-meta">
-              <div className="bomb-meter" aria-label={t("games.wordCollapseBombMeter", "Заряд бомбы")}>
-                <div className="bomb-meter__label">
-                  <span>{t("games.wordCollapseBombLabel", "Бомба")}</span>
-                  <span className="muted small">{bombCharge}%</span>
-                </div>
-                <div className="bomb-meter__bar">
-                  <div className="bomb-meter__fill" style={{ width: `${bombCharge}%` }} />
-                </div>
-              </div>
-              {hintsEnabled && (
-                <div className="collapse-hint muted small">{t("games.wordCollapseEscHint", "Esc — пауза/продолжить.")}</div>
-              )}
-            </div>
-            <div className="collapse-game-frame" ref={gameWrapperRef}>
-              <div className="collapse-game-area" style={{ height: `${gameSize.height}px` }}>
-                {isFrozen && <div className="frozen-overlay" />}
-                {status === "paused" && !isTutorialOpen && (
-                  <div className="pause-overlay">
-                    <div className="pause-card">
-                      <h4>{t("games.wordCollapsePausedTitle", "Пауза")}</h4>
-                      <p className="muted small">{t("games.wordCollapsePausedHint", "Нажмите «Продолжить» или Esc.")}</p>
-                      <button className="start-btn big" type="button" onClick={handleTogglePause}>
-                        {t("games.wordCollapseResume", "Продолжить")}
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {status === "game-over" && (
-                  <div className="pause-overlay">
-                    <div className="pause-card">
-                      <h4>
-                        {endReason === "exhausted"
-                          ? t("games.wordCollapseCompletedTitle", "Слова закончились!")
-                          : t("games.gameOver", "Game Over")}
-                      </h4>
-                      {endReason === "exhausted" && (
-                        <p className="muted small">
-                          {t("games.wordCollapseCompletedHint", "Вы прошли все доступные слова без повторов.")}
-                        </p>
-                      )}
-                      <p className="muted small">
-                        {t("games.finalScore", "Final Score")}: {score}
-                      </p>
-                      <p className="muted small">
-                        {t("games.incorrectCount", "Mistakes")}: {incorrectScore}
-                      </p>
-                      <button className="start-btn big" type="button" onClick={handleRestart}>
-                        {t("games.restart", "Сыграть ещё")}
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {showComboAnimation && <div className="combo-animation">COMBO x{showComboAnimation}!</div>}
-                {blocks.map((block) => {
-                  const isHint =
-                    Boolean(hintTermKey) &&
-                    Boolean(hintRoleNeeded) &&
-                    !block.isFalling &&
-                    block.role === hintRoleNeeded &&
-                    block.termKey === hintTermKey;
-                  const isDimmed =
-                    Boolean(hintTermKey) &&
-                    Boolean(hintRoleNeeded) &&
-                    !block.isFalling &&
-                    block.role !== "bonus" &&
-                    block.id !== selectedBlockId &&
-                    !isHint;
-                  return (
-                    <button
-                      key={block.id}
-                      type="button"
-                      className={[
-                        "collapse-block",
-                        selectedBlockId === block.id ? "selected" : "",
-                        block.isMatched ? "matched" : "",
-                        block.isWrong ? "wrong" : "",
-                        block.role,
-                        block.bonusType || "",
-                        isHint ? "hint" : "",
-                        isDimmed ? "dimmed" : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                      style={{
-                        width: `${gameSize.blockWidth}px`,
-                        height: `${BLOCK_HEIGHT}px`,
-                        transform: `translate3d(${block.col * gameSize.blockWidth}px, ${block.y}px, 0)`,
-                      }}
-                      onClick={() => handleBlockClick(block.id)}
-                    >
-                      {block.text}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      {isTutorialOpen && (
-        <div className={`collapse-game-modal ${isFullscreen ? "fullscreen" : ""}`} role="dialog" aria-modal="true">
-          <div className="collapse-modal-backdrop" />
-          <div className="collapse-modal-window settings-window" ref={tutorialWindowRef} tabIndex={-1}>
-            <div className="settings-header">
-              <div>
-                <p className="eyebrow">{t("games.wordCollapseHowTo", "Как играть")}</p>
-                <h3>{t("games.wordCollapseTutorialTitle", "Как играть")}</h3>
-              </div>
-              <button className="close-btn dark" type="button" onClick={dismissTutorial} aria-label={t("close", "Close")}>
-                ×
-              </button>
-            </div>
-            <div className="tutorial-content">
-              <ol className="tutorial-steps">
-                <li>{t("games.wordCollapseTutorialStep1", "Тапни любой блок слева (он подсветится).")}</li>
-                <li>{t("games.wordCollapseTutorialStep2", "Тапни правильную пару справа — получишь очко.")}</li>
-                <li>{t("games.wordCollapseTutorialStep3", "Комбо даёт бонусы и заряжает бомбу.")}</li>
-                <li>{t("games.wordCollapseTutorialStep4", "Лишишься жизни, если волна не сможет появиться сверху.")}</li>
-              </ol>
-            </div>
-            <div className="settings-actions">
-              <button className="start-btn" type="button" onClick={dismissTutorial}>
-                {t("games.wordCollapseGotIt", "Понятно")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {isSettingsOpen && (
-        <div className={`collapse-game-modal ${isFullscreen ? "fullscreen" : ""}`} role="dialog" aria-modal="true">
-          <div className="collapse-modal-backdrop" />
-          <div className="collapse-modal-window settings-window" ref={settingsWindowRef} tabIndex={-1}>
-            <div className="settings-header">
-              <div>
-                <p className="eyebrow">{t("games.settings", "Настройки")}</p>
-                <h3>{t("games.settingsHint", "Выберите источники слов и сложность перед стартом.")}</h3>
-              </div>
-              <button className="close-btn dark" type="button" onClick={handleCloseSettings} aria-label={t("close", "Close")}>
-                ×
-              </button>
-            </div>
-            <div className="settings-grid">
-              <div className="settings-card">
-                <div className="settings-card__title">
-                  <span className="eyebrow">{t("games.wordSources", "Выбор слов")}</span>
-                  <span className="muted tiny">{t("games.sourceHint", "Можно выбрать сразу несколько источников")}</span>
-                </div>
-                <div className="settings-list">
-                  <label className="checkbox-row">
-                    <input type="checkbox" checked={useGlossary} onChange={(e) => setUseGlossary(e.target.checked)} />
-                    <span>{t("games.sourceGlossary", "Глоссарий")}</span>
-                  </label>
-                  <div className="divider" />
-                  <p className="muted tiny">{t("games.partsOfSpeech", "Части речи")}</p>
-                  <div className="parts-grid">
-                    {partOptions.map((opt) => (
-                      <label key={opt.value} className="checkbox-row">
-                        <input
-                          type="checkbox"
-                          checked={selectedParts.includes(opt.value)}
-                          onChange={(e) => {
-                            const checked = e.target.checked;
-                            setSelectedParts((prev) => {
-                              if (checked) return [...prev, opt.value];
-                              return prev.filter((val) => val !== opt.value);
-                            });
-                          }}
-                        />
-                        <span>{t(opt.label)}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <label className="checkbox-row">
-                    <input
-                      type="checkbox"
-                      checked={useIrregularOnly}
-                      onChange={(e) => setUseIrregularOnly(e.target.checked)}
-                      disabled={!selectedParts.includes("verb")}
-                    />
-                    <span>{t("games.irregularOnly", "Только неправильные (глаголы)")}</span>
-                  </label>
-                </div>
-              </div>
-              <div className="settings-card">
-                <div className="settings-card__title">
-                  <span className="eyebrow">{t("games.wordCollapseLanguagesTitle", "Языки")}</span>
-                  <span className="muted tiny">
-                    {t("games.wordCollapseLanguagesHint", "Выберите языки слева и справа (можно поменять местами).")}
-                  </span>
-                </div>
-                <div className="settings-list">
-                  <label className="game-settings">
-                    <span>{t("games.wordCollapseLeftLabel", "Слева")}</span>
-                    <select value={leftLanguage} onChange={(e) => setLeftLanguage(e.target.value as LanguageOption)}>
-                      <option value="bokmaal">{t("streamLabels.bokmaal")}</option>
-                      <option value="nynorsk">{t("streamLabels.nynorsk")}</option>
-                      <option value="english">{t("streamLabels.english")}</option>
-                      <option value="russian">{t("streamLabels.russian", "Русский")}</option>
-                    </select>
-                  </label>
-                  <label className="game-settings">
-                    <span>{t("games.wordCollapseRightLabel", "Справа")}</span>
-                    <select value={rightLanguage} onChange={(e) => setRightLanguage(e.target.value as LanguageOption)}>
-                      <option value="bokmaal">{t("streamLabels.bokmaal")}</option>
-                      <option value="nynorsk">{t("streamLabels.nynorsk")}</option>
-                      <option value="english">{t("streamLabels.english")}</option>
-                      <option value="russian">{t("streamLabels.russian", "Русский")}</option>
-                    </select>
-                  </label>
-                  <label className="checkbox-row">
-                    <input type="checkbox" checked={swapSides} onChange={(e) => setSwapSides(e.target.checked)} />
-                    <span>{t("games.wordCollapseSwapSides", "Поменять стороны местами")}</span>
-                  </label>
-                  <label className="checkbox-row">
-                    <input
-                      type="checkbox"
-                      checked={requireTranslations}
-                      onChange={(e) => setRequireTranslations(e.target.checked)}
-                    />
-                    <span>{t("games.wordCollapseRequireTranslations", "Только слова с переводом на оба языка")}</span>
-                  </label>
-                </div>
-              </div>
-              <div className="settings-card">
-                <div className="settings-card__title">
-                  <span className="eyebrow">{t("games.difficulty", "Сложность")}</span>
-                  <span className="muted tiny">{t("games.difficultyHint", "Подберите комфортный темп игры")}</span>
-                </div>
-                <div className="settings-list">
-                  <label className="game-settings">
-                    <span>{t("games.pairsLabel", "Pairs")}</span>
-                    <select value={pairCount} onChange={(e) => setPairCount(Number(e.target.value))}>
-                      {[...Array(9).keys()].map((i) => (
-                        <option key={i + 2} value={i + 2}>
-                          {i + 2}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="game-settings">
-                    <span>{t("games.wordCollapseSpawnLabel", "Частота волн")}</span>
-                    <select value={spawnIntervalMs} onChange={(e) => setSpawnIntervalMs(Number(e.target.value) as SpawnSpeed)}>
-                      <option value={12000}>{t("games.speedSuperSlow", "Super Slow")}</option>
-                      <option value={10000}>{t("games.speedVerySlow", "Very Slow")}</option>
-                      <option value={8000}>{t("games.speedSlow", "Slow")}</option>
-                      <option value={6000}>{t("games.speedNormal", "Normal")}</option>
-                      <option value={4000}>{t("games.speedFast", "Fast")}</option>
-                      <option value={2500}>{t("games.speedVeryFast", "Very Fast")}</option>
-                      <option value={1500}>{t("games.speedHyper", "Hyper")}</option>
-                    </select>
-                  </label>
-                  <label className="game-settings">
-                    <span>{t("games.wordCollapseFallLabel", "Скорость падения")}</span>
-                    <select value={fallSpeedPxPerSec} onChange={(e) => setFallSpeedPxPerSec(Number(e.target.value))}>
-                      <option value={60}>{t("games.wordCollapseFallVerySlow", "Очень медленно")}</option>
-                      <option value={90}>{t("games.wordCollapseFallSlow", "Медленно")}</option>
-                      <option value={120}>{t("games.wordCollapseFallNormal", "Нормально")}</option>
-                      <option value={150}>{t("games.wordCollapseFallFast", "Быстро")}</option>
-                      <option value={180}>{t("games.wordCollapseFallVeryFast", "Очень быстро")}</option>
-                    </select>
-                  </label>
-                  <label className="game-settings">
-                    <span>{t("games.wordCollapseLivesLabel", "Жизни")}</span>
-                    <select
-                      value={maxLives}
-                      onChange={(e) => {
-                        const next = Number(e.target.value);
-                        setMaxLives(next);
-                        setLives(next);
-                      }}
-                    >
-                      <option value={3}>3</option>
-                      <option value={5}>5</option>
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                    </select>
-                  </label>
-                  <label className="checkbox-row">
-                    <input type="checkbox" checked={preferFullscreen} onChange={(e) => setPreferFullscreen(e.target.checked)} />
-                    <span>{t("games.wordCollapsePreferFullscreen", "По умолчанию фуллскрин на телефоне")}</span>
-                  </label>
-                  <label className="checkbox-row">
-                    <input type="checkbox" checked={hintsEnabled} onChange={(e) => setHintsEnabled(e.target.checked)} />
-                    <span>{t("games.wordCollapseHintsEnabled", "Подсказки во время игры")}</span>
-                  </label>
-                  <label className="checkbox-row">
-                    <input type="checkbox" checked={uniqueOnly} onChange={(e) => setUniqueOnly(e.target.checked)} />
-                    <span>{t("games.wordCollapseUniqueOnly", "Уникальные слова (без повторов)")}</span>
-                  </label>
-                  <p className="muted tiny">
-                    {t("games.wordCollapsePoolCount", "Доступно слов: {{count}}", { count: spawnPool.length })}
-                  </p>
-                  {!canStart && (
-                    <p className="settings-warning">
-                      {t(
-                        "games.wordCollapsePoolWarning",
-                        "Слишком мало слов для выбранных настроек — включите глоссарий или снимите ограничения.",
-                      )}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="settings-actions">
-              <button
-                className="start-btn big"
-                type="button"
-                onClick={beginGame}
-                disabled={!canStart}
-              >
-                {t("games.start")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {typeof document !== "undefined" ? createPortal(modalOverlays, document.body) : null}
     </div>
   );
 };
