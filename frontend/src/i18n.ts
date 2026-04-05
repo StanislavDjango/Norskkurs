@@ -88,6 +88,9 @@ const resources = {
       showExample: "Show example",
       auth: {
         studentTitle: "Create your learning profile to track progress.",
+        identifierLabel: "Email or username",
+        nameLabel: "Your name",
+        passwordLabel: "Password",
         passwordPlaceholder: "Password (min. 6 characters)",
         identifierPlaceholder: "Email or username",
         login: "Login",
@@ -509,6 +512,10 @@ const resources = {
         B1: "B1 - Intermediate",
         B2: "B2 - Upper intermediate",
       },
+      header: {
+        showControls: "Learning settings",
+        hideControls: "Hide learning settings",
+      },
       nav: {
         dashboard: "My profile",
         readings: "Readings",
@@ -522,6 +529,8 @@ const resources = {
         games: "Games",
         glossary: "Ordliste",
         contact: "Kontakt",
+        openSectionMenu: "Open section menu",
+        sectionNavigation: "Section navigation",
       },
       parts: {
         verb: "Verb",
@@ -640,6 +649,9 @@ nb: {
       showExample: "Vis eksempel",
       auth: {
         studentTitle: "Lag læringsprofilen din for å følge med på framgangen.",
+        identifierLabel: "E-post eller brukernavn",
+        nameLabel: "Navn",
+        passwordLabel: "Passord",
         passwordPlaceholder: "Passord (min. 6 tegn)",
         identifierPlaceholder: "E-post eller brukernavn",
         login: "Logg inn",
@@ -1058,6 +1070,10 @@ nb: {
         B1: "B1 - Mellomnivå",
         B2: "B2 - Høyere mellomnivå",
       },
+      header: {
+        showControls: "Læringsinnstillinger",
+        hideControls: "Skjul læringsinnstillinger",
+      },
     nav: {
       dashboard: "Min profil",
       readings: "Lesing",
@@ -1071,6 +1087,8 @@ nb: {
       games: "Spill",
       glossary: "Ordliste",
       contact: "Kontakt",
+      openSectionMenu: "Åpne seksjonsmeny",
+      sectionNavigation: "Seksjonsnavigasjon",
     },
     parts: {
       verb: "Verb",
@@ -1189,6 +1207,9 @@ ru: {
       showExample: "Показать пример",
       auth: {
         studentTitle: "Создайте учебный профиль, чтобы отслеживать прогресс.",
+        identifierLabel: "Email или никнейм",
+        nameLabel: "Имя",
+        passwordLabel: "Пароль",
         passwordPlaceholder: "Пароль (минимум 6 символов)",
         identifierPlaceholder: "Email или никнейм",
         login: "Войти",
@@ -1614,6 +1635,10 @@ ru: {
         B1: "B1 - Средний",
         B2: "B2 - Выше среднего",
       },
+      header: {
+        showControls: "Параметры обучения",
+        hideControls: "Скрыть параметры обучения",
+      },
       nav: {
         dashboard: "Личный кабинет",
         readings: "Читать рассказы",
@@ -1627,6 +1652,8 @@ ru: {
         games: "Игры",
         glossary: "Глоссарий",
         contact: "Контакты",
+        openSectionMenu: "Открыть меню разделов",
+        sectionNavigation: "Навигация по разделам",
       },
     parts: {
       verb: "Глагол",

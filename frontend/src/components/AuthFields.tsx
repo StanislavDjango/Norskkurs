@@ -51,60 +51,102 @@ const AuthFields: React.FC<Props> = ({
   return (
     <>
       <p className="muted small">{t("auth.studentTitle")}</p>
-      <div className="search-row">
-        <input
-          type="text"
-          placeholder={
-            authMode === "login"
-              ? t("auth.identifierPlaceholder")
-              : t("yourEmail")
-          }
-          value={profileAuthForm.email}
-          onChange={(e) =>
-            setProfileAuthForm((prev) => ({
-              ...prev,
-              email: e.target.value,
-            }))
-          }
-        />
-      </div>
-      {authMode === "register" && (
+      <form
+        id="auth-form"
+        className="auth-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit();
+        }}
+      >
+        <label className="sr-only" htmlFor="auth-identifier">
+          {t("auth.identifierLabel")}
+        </label>
         <div className="search-row">
           <input
-            type="text"
-            placeholder={t("yourName")}
-            value={profileAuthForm.name}
+            id="auth-identifier"
+            data-autofocus
+            type={authMode === "login" ? "text" : "email"}
+            placeholder={
+              authMode === "login"
+                ? t("auth.identifierPlaceholder")
+                : t("yourEmail")
+            }
+            autoComplete={authMode === "login" ? "username" : "email"}
+            autoCapitalize="none"
+            autoCorrect="off"
+            inputMode={authMode === "login" ? "text" : "email"}
+            enterKeyHint="next"
+            required
+            aria-invalid={profileAuthError ? "true" : "false"}
+            aria-describedby={profileAuthError ? "auth-form-error" : undefined}
+            value={profileAuthForm.email}
             onChange={(e) =>
               setProfileAuthForm((prev) => ({
                 ...prev,
-                name: e.target.value,
+                email: e.target.value,
               }))
             }
           />
         </div>
-      )}
-      <div className="search-row">
-        <input
-          type="password"
-          placeholder={t("auth.passwordPlaceholder")}
-          value={profileAuthForm.password}
-          onChange={(e) =>
-            setProfileAuthForm((prev) => ({
-              ...prev,
-              password: e.target.value,
-            }))
-          }
-        />
-      </div>
+        {authMode === "register" && (
+          <>
+            <label className="sr-only" htmlFor="auth-name">
+              {t("auth.nameLabel")}
+            </label>
+            <div className="search-row">
+              <input
+                id="auth-name"
+                type="text"
+                placeholder={t("yourName")}
+                autoComplete="name"
+                enterKeyHint="next"
+                value={profileAuthForm.name}
+                onChange={(e) =>
+                  setProfileAuthForm((prev) => ({
+                    ...prev,
+                    name: e.target.value,
+                  }))
+                }
+              />
+            </div>
+          </>
+        )}
+        <label className="sr-only" htmlFor="auth-password">
+          {t("auth.passwordLabel")}
+        </label>
+        <div className="search-row">
+          <input
+            id="auth-password"
+            type="password"
+            placeholder={t("auth.passwordPlaceholder")}
+            autoComplete={authMode === "login" ? "current-password" : "new-password"}
+            enterKeyHint="done"
+            minLength={6}
+            required
+            aria-invalid={profileAuthError ? "true" : "false"}
+            aria-describedby={profileAuthError ? "auth-form-error" : undefined}
+            value={profileAuthForm.password}
+            onChange={(e) =>
+              setProfileAuthForm((prev) => ({
+                ...prev,
+                password: e.target.value,
+              }))
+            }
+          />
+        </div>
+      </form>
       {profileAuthError && (
-        <div className="alert small auth-error">{profileAuthError}</div>
+        <div id="auth-form-error" className="alert small auth-error" role="alert">
+          {profileAuthError}
+        </div>
       )}
       <div className="auth-actions">
         <button
-          type="button"
+          type="submit"
+          form="auth-form"
           className="pill"
           disabled={profileAuthLoading}
-          onClick={onSubmit}
         >
           {authMode === "login" ? t("auth.login") : t("auth.register")}
         </button>

@@ -752,12 +752,14 @@ const ReadingsPage: React.FC<Props> = ({
                             className="reading-modal__controls-toggle"
                             onClick={() => setIsReaderControlsOpen((prev) => !prev)}
                             aria-expanded={isReaderControlsOpen}
+                            aria-controls={`reader-controls-${activeReading.id}`}
                           >
                             {isReaderControlsOpen
                               ? t("readings.hideReaderMenu")
                               : t("readings.openReaderMenu")}
                           </button>
                           <div
+                            id={`reader-controls-${activeReading.id}`}
                             className={`reading-modal__controls ${isReaderControlsOpen ? "is-open" : ""}`}
                             aria-label={t("readings.title")}
                           >

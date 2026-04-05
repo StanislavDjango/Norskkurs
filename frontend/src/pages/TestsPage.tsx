@@ -2857,7 +2857,11 @@ const TestsPage: React.FC<Props> = (props) => {
     if (current.type === "fill" && currentAnswer.kind === "fill") {
       return (
         <div className="demo-test-fill">
+          <label className="sr-only" htmlFor={`demo-fill-${current.id}`}>
+            {pickText(current.prompt, locale)}
+          </label>
           <input
+            id={`demo-fill-${current.id}`}
             value={currentAnswer.text}
             placeholder={pickText(current.placeholder, locale)}
             onChange={(e) => setAnswer(current.id, { ...currentAnswer, text: e.target.value })}
@@ -2865,6 +2869,7 @@ const TestsPage: React.FC<Props> = (props) => {
             autoComplete="off"
             spellCheck={false}
             inputMode="text"
+            enterKeyHint="done"
           />
         </div>
       );

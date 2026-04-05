@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ApiStatusOverlay from "./components/ApiStatusOverlay";
@@ -17,11 +17,19 @@ import { error as logError } from "./logger";
 
 const TestsPage = React.lazy(() => import("./pages/TestsPage"));
 const SUPPORT_EMAIL = "support@norskkurs.no";
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const AUTH_DIALOG_TITLE_ID = "auth-dialog-title";
+const AUTH_DIALOG_BODY_ID = "auth-dialog-body";
+const SECTION_NAV_ID = "site-section-nav";
+const SECTION_NAV_LABEL_ID = "site-section-nav-label";
 
 const App = () => {
   const { t, i18n } = useTranslation();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [supportMessage, setSupportMessage] = useState<string | null>(null);
+  const authDialogRef = useRef<HTMLDivElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const { activeSection, navigateToSection } = useSectionRoute();
   const {
     profile,
@@ -123,6 +131,94 @@ const App = () => {
     setIsNavOpen(false);
   };
 
+  const openAuthModal = () => {
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setProfileAuthError(null);
+    setSupportMessage(null);
+    setAuthMode("login");
+    setIsAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setSupportMessage(null);
+    setIsAuthModalOpen(false);
+  };
+
+  useEffect(() => {
+    if (!isAuthModalOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const focusDialog = () => {
+      const dialog = authDialogRef.current;
+      if (!dialog) return;
+      const autoFocusTarget =
+        dialog.querySelector<HTMLElement>("[data-autofocus]") ||
+        dialog.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+      (autoFocusTarget || dialog).focus();
+    };
+
+    focusDialog();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const dialog = authDialogRef.current;
+      if (!dialog) return;
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeAuthModal();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusable = Array.from(
+        dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+      ).filter((element) => element.getAttribute("aria-hidden") !== "true");
+
+      if (focusable.length === 0) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (!(active instanceof HTMLElement) || !dialog.contains(active)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+        return;
+      }
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+        return;
+      }
+
+      if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      previousFocusRef.current?.focus();
+    };
+  }, [isAuthModalOpen]);
+
   const renderAuthFields = () => (
     <AuthFields
       auth={auth}
@@ -180,12 +276,7 @@ const App = () => {
         level={currentLevel}
         onChangeStream={handleStreamChange}
         onChangeLevel={handleLevelChange}
-        onOpenAuthModal={() => {
-          setProfileAuthError(null);
-          setSupportMessage(null);
-          setAuthMode("login");
-          setIsAuthModalOpen(true);
-        }}
+        onOpenAuthModal={openAuthModal}
       />
 
       <div className="mobile-nav-toggle">
@@ -193,47 +284,66 @@ const App = () => {
           className="pill"
           onClick={() => setIsNavOpen((open) => !open)}
           aria-expanded={isNavOpen}
+          aria-controls={SECTION_NAV_ID}
+          aria-label={t("nav.openSectionMenu", { defaultValue: "Open section menu" })}
         >
           {"Menu \u2192 "}
           {navItems.find((item) => item.key === activeSection)?.label || "Menu"}
         </button>
       </div>
 
-      <div className={`section-nav ${isNavOpen ? "is-open" : "is-closed"}`}>
+      <nav
+        id={SECTION_NAV_ID}
+        className={`section-nav ${isNavOpen ? "is-open" : "is-closed"}`}
+        aria-labelledby={SECTION_NAV_LABEL_ID}
+      >
+        <h2 id={SECTION_NAV_LABEL_ID} className="sr-only">
+          {t("nav.sectionNavigation", { defaultValue: "Section navigation" })}
+        </h2>
         {navItems.map((item) => (
           <button
             key={item.key}
             className={`pill ${activeSection === item.key ? "pill--active" : ""}`}
             onClick={() => openSection(item.key)}
+            aria-current={activeSection === item.key ? "page" : undefined}
           >
             {item.label}
           </button>
         ))}
-      </div>
+      </nav>
 
       {isAuthModalOpen && (
-        <div className="auth-modal">
+        <div
+          className="auth-modal"
+          onClick={closeAuthModal}
+          aria-hidden="true"
+        >
           <div
+            ref={authDialogRef}
             className="auth-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={AUTH_DIALOG_TITLE_ID}
+            aria-describedby={AUTH_DIALOG_BODY_ID}
+            tabIndex={-1}
             onClick={(event) => {
               event.stopPropagation();
             }}
           >
             <div className="auth-dialog-header">
-              <h2>{t("auth.modalTitle")}</h2>
+              <h2 id={AUTH_DIALOG_TITLE_ID}>{t("auth.modalTitle")}</h2>
               <button
                 type="button"
                 className="auth-dialog-close"
-                onClick={() => {
-                  setSupportMessage(null);
-                  setIsAuthModalOpen(false);
-                }}
+                onClick={closeAuthModal}
                 aria-label={t("close")}
               >
                 ×
               </button>
             </div>
-            <div className="auth-dialog-body">{renderAuthFields()}</div>
+            <div id={AUTH_DIALOG_BODY_ID} className="auth-dialog-body">
+              {renderAuthFields()}
+            </div>
           </div>
         </div>
       )}

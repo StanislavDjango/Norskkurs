@@ -1,4 +1,4 @@
-﻿import React from "react";
+﻿import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Level, ProfileInfo, Stream } from "../types";
 
@@ -38,11 +38,25 @@ const Header: React.FC<Props> = ({
   onOpenAuthModal,
 }) => {
   const { t } = useTranslation();
+  const [isMobileControlsOpen, setIsMobileControlsOpen] = useState(false);
 
   const apiBase = import.meta.env.VITE_API_BASE_URL as string | undefined;
   const adminBase =
     (import.meta.env.VITE_ADMIN_URL as string | undefined) ||
     (apiBase ? apiBase.replace(/\/api\/?$/, "/admin/") : "https://norskkurs.xyz/admin/");
+  const streamSummary = useMemo(
+    () => streams.find((item) => item.key === stream)?.label || stream,
+    [stream],
+  );
+  const languageSummary =
+    currentLang.startsWith("ru")
+      ? "RU"
+      : currentLang.startsWith("nb") ||
+          currentLang.startsWith("no") ||
+          currentLang.startsWith("nn")
+        ? "NO"
+        : "EN";
+  const mobileSummary = `${streamSummary} · ${level} · ${languageSummary}`;
 
   const renderUserActions = () => {
     if (auth?.is_authenticated) {
@@ -120,7 +134,25 @@ const Header: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="header-controls">
+      <button
+        type="button"
+        className="header-mobile-toggle"
+        aria-expanded={isMobileControlsOpen}
+        aria-controls="site-header-controls"
+        onClick={() => setIsMobileControlsOpen((prev) => !prev)}
+      >
+        <span className="header-mobile-toggle__label">
+          {isMobileControlsOpen
+            ? t("header.hideControls")
+            : t("header.showControls")}
+        </span>
+        <span className="header-mobile-toggle__summary">{mobileSummary}</span>
+      </button>
+
+      <div
+        id="site-header-controls"
+        className={`header-controls ${isMobileControlsOpen ? "is-open" : ""}`}
+      >
         <div className="control-block">
           <span className="group-label">{t("stream")}</span>
           <div className="control-buttons stretch">
