@@ -409,7 +409,7 @@ const ReadingsPage: React.FC<Props> = ({
     <div
       className={
         variant === "modal"
-          ? "readings-search readings-search--modal"
+          ? "readings-search readings-search--modal reading-modal__lookup"
           : "readings-search"
       }
     >
@@ -747,7 +747,6 @@ const ReadingsPage: React.FC<Props> = ({
                     return (
                       <>
                         <div className="reading-modal__toolbar">
-                          {renderReadingLookup("modal")}
                           <button
                             type="button"
                             className="reading-modal__controls-toggle"
@@ -762,6 +761,7 @@ const ReadingsPage: React.FC<Props> = ({
                             className={`reading-modal__controls ${isReaderControlsOpen ? "is-open" : ""}`}
                             aria-label={t("readings.title")}
                           >
+                            {renderReadingLookup("modal")}
                             <div className="reading-modal__control-group">
                               <span>Size</span>
                               <button

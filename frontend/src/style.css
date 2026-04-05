@@ -668,6 +668,12 @@ h2 {
   backdrop-filter: blur(14px);
 }
 
+.reading-modal__lookup {
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: 560px;
+}
+
 .readings-search input {
   border: 1px solid rgba(148, 163, 184, 0.4);
   border-radius: 999px;
@@ -4419,6 +4425,10 @@ button.ghost {
     width: 100%;
     justify-content: space-between;
     border-radius: 18px;
+  }
+
+  .reading-modal__lookup {
+    max-width: none;
   }
 
   .reading-modal__content {
