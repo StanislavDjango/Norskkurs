@@ -5476,6 +5476,265 @@ button.ghost {
   font-weight: 600;
 }
 
+.phaser-collapse-shell {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+  padding: 1.15rem;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 15% 12%, rgba(83, 183, 255, 0.18), transparent 26%),
+    radial-gradient(circle at 85% 12%, rgba(255, 166, 82, 0.18), transparent 28%),
+    linear-gradient(180deg, #101a2d, #0b1220);
+  border: 1px solid rgba(140, 181, 255, 0.18);
+  box-shadow: 0 24px 56px rgba(2, 6, 23, 0.38);
+  overflow: hidden;
+}
+
+.phaser-collapse-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.phaser-collapse-settings {
+  border-radius: 22px;
+  border: 1px solid rgba(130, 171, 255, 0.16);
+  background: rgba(8, 15, 29, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.phaser-collapse-settings summary {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.95rem 1rem;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  color: #f8fbff;
+}
+
+.phaser-collapse-settings summary::-webkit-details-marker {
+  display: none;
+}
+
+.phaser-collapse-settings[open] summary {
+  border-bottom: 1px solid rgba(130, 171, 255, 0.12);
+}
+
+.phaser-collapse-settings .falling-settings-grid {
+  padding: 0.95rem;
+}
+
+.phaser-collapse-settings .falling-settings-card {
+  border: 1px solid rgba(130, 171, 255, 0.12);
+  background: rgba(10, 17, 31, 0.74);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.phaser-collapse-settings .falling-settings-card__title,
+.phaser-collapse-settings .game-settings span,
+.phaser-collapse-settings .checkbox-row span,
+.phaser-collapse-settings .muted,
+.phaser-collapse-settings .eyebrow,
+.phaser-collapse-settings p {
+  color: #e8f2ff;
+}
+
+.phaser-collapse-settings .checkbox-row {
+  border-color: rgba(130, 171, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.phaser-collapse-settings .divider {
+  background: rgba(130, 171, 255, 0.14);
+}
+
+.phaser-collapse-settings .game-settings select {
+  border-color: rgba(130, 171, 255, 0.18);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.phaser-collapse-settings .settings-warning {
+  background: rgba(92, 27, 9, 0.68);
+  color: #ffe5d0;
+}
+
+.phaser-collapse-copy {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.phaser-collapse-copy h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #f8fbff;
+  text-shadow: 0 0 18px rgba(83, 183, 255, 0.2);
+}
+
+.phaser-collapse-copy .muted {
+  color: rgba(223, 236, 255, 0.74);
+}
+
+.phaser-collapse-actions,
+.phaser-collapse-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.phaser-collapse-actions button,
+.phaser-collapse-stats .score {
+  min-height: 44px;
+  min-width: 0;
+}
+
+.phaser-collapse-actions {
+  align-items: center;
+}
+
+.phaser-collapse-speed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.35rem 0.45rem 0.35rem 0.75rem;
+  border-radius: 14px;
+  border: 1px solid rgba(130, 171, 255, 0.18);
+  background: rgba(15, 23, 42, 0.74);
+  color: #eff6ff;
+  font-weight: 700;
+}
+
+.phaser-collapse-speed span {
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.phaser-collapse-speed select {
+  min-width: 0;
+  min-height: 38px;
+  padding: 0.55rem 2rem 0.55rem 0.8rem;
+  border-radius: 12px;
+  border: 1px solid rgba(130, 171, 255, 0.24);
+  background: rgba(255, 255, 255, 0.96);
+  color: #08101d;
+  font-weight: 700;
+  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.18);
+}
+
+.phaser-collapse-speed select:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.5);
+  outline-offset: 2px;
+}
+
+.phaser-collapse-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.phaser-collapse-lane {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.8rem 0.95rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 12px 24px rgba(2, 6, 23, 0.14);
+}
+
+.phaser-collapse-lane--left {
+  background: linear-gradient(135deg, rgba(18, 67, 121, 0.88), rgba(44, 149, 255, 0.44));
+  color: #ebf8ff;
+}
+
+.phaser-collapse-lane--right {
+  background: linear-gradient(135deg, rgba(94, 43, 7, 0.88), rgba(255, 149, 43, 0.38));
+  color: #fff1e3;
+  text-align: right;
+}
+
+.phaser-collapse-lane__eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.82;
+}
+
+.phaser-collapse-stage-wrap {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem;
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(44, 149, 255, 0.14), transparent 24%),
+    linear-gradient(225deg, rgba(255, 149, 43, 0.14), transparent 24%),
+    linear-gradient(180deg, rgba(3, 7, 14, 0.44), rgba(3, 7, 14, 0.52));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 26px 52px rgba(2, 6, 23, 0.36);
+  overflow: hidden;
+}
+
+.phaser-collapse-stage {
+  width: 100%;
+  aspect-ratio: 1080 / 690;
+  border-radius: 20px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(3, 7, 14, 0.12), rgba(3, 7, 14, 0.22)),
+    url("/images/wordcollapse3-cold-fire.png") center 42% / cover no-repeat;
+}
+
+.phaser-collapse-shell.is-mobile .phaser-collapse-stage {
+  aspect-ratio: 640 / 900;
+}
+
+.phaser-collapse-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+}
+
+.phaser-collapse-stats .score {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(130, 171, 255, 0.14);
+  background: rgba(10, 17, 31, 0.78);
+  font-weight: 700;
+  color: #f8fbff;
+  font-size: 0.94rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.phaser-collapse-stats .score.bomb.ready {
+  border-color: rgba(255, 183, 77, 0.4);
+  background: rgba(79, 34, 5, 0.86);
+  color: #ffd29a;
+}
+
+.phaser-collapse-stats .score.freeze {
+  border-color: rgba(93, 209, 255, 0.36);
+  background: rgba(8, 49, 84, 0.84);
+  color: #dcf6ff;
+}
+
+.phaser-collapse-footer {
+  margin: 0;
+}
+
 .checkbox-row {
   display: flex;
   align-items: center;
@@ -5575,6 +5834,101 @@ button.ghost {
 }
 
 @media (max-width: 768px) {
+  .phaser-collapse-shell {
+    gap: 0.75rem;
+    padding: 0.82rem;
+    border-radius: 22px;
+  }
+
+  .phaser-collapse-hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .phaser-collapse-copy h3 {
+    font-size: 1.2rem;
+  }
+
+  .phaser-collapse-copy p {
+    display: none;
+  }
+
+  .phaser-collapse-actions,
+  .phaser-collapse-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .phaser-collapse-settings {
+    border-radius: 18px;
+  }
+
+  .phaser-collapse-settings summary,
+  .phaser-collapse-settings .falling-settings-grid {
+    padding: 0.8rem;
+  }
+
+  .phaser-collapse-actions button,
+  .phaser-collapse-speed {
+    width: 100%;
+  }
+
+  .phaser-collapse-speed {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+    padding: 0.6rem 0.7rem;
+    grid-column: 1 / -1;
+  }
+
+  .phaser-collapse-speed select {
+    width: 100%;
+  }
+
+  .phaser-collapse-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .phaser-collapse-stats .score {
+    justify-content: center;
+    min-height: 40px;
+    padding: 0.42rem 0.5rem;
+    font-size: 0.82rem;
+    text-align: center;
+  }
+
+  .phaser-collapse-stats .score.status,
+  .phaser-collapse-stats .score.bomb {
+    grid-column: span 2;
+  }
+
+  .phaser-collapse-lane {
+    gap: 0.15rem;
+    padding: 0.62rem 0.72rem;
+  }
+
+  .phaser-collapse-lane strong {
+    font-size: 0.92rem;
+  }
+
+  .phaser-collapse-legend {
+    grid-template-columns: 1fr;
+  }
+
+  .phaser-collapse-stage-wrap {
+    padding: 0.3rem;
+    border-radius: 18px;
+  }
+
+  .phaser-collapse-stage {
+    border-radius: 14px;
+  }
+
+  .phaser-collapse-footer {
+    display: none;
+  }
   .collapse-game-header {
     flex-direction: column;
     align-items: stretch;
