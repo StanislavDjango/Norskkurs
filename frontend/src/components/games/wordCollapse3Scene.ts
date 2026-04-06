@@ -1,6 +1,11 @@
 import Phaser from "phaser";
 
 import { sampleWithoutReplacement } from "./wordCollapseShared";
+import {
+  WORD_COLLAPSE3_BOARD_TUNING,
+  WORD_COLLAPSE3_GAME_SIZE,
+  getWordCollapse3FontSize,
+} from "./wordCollapse3Config";
 import type { SpawnPair } from "./wordCollapseShared";
 
 type LaneRole = "left" | "right";
@@ -25,8 +30,6 @@ export type WordCollapse3SceneConfig = {
   spawnPool: SpawnPair[];
   leftLabel: string;
   rightLabel: string;
-  laneOriginalLabel: string;
-  laneTranslationLabel: string;
   isMobile: boolean;
   speedMultiplier: number;
   maxLives: number;
@@ -50,6 +53,11 @@ type CardState = {
   wrong: boolean;
 };
 
+type RemoveCardOptions = {
+  animate?: boolean;
+  lift?: number;
+};
+
 type BonusState = {
   id: string;
   type: BonusType;
@@ -63,45 +71,8 @@ type BonusState = {
   label: Phaser.GameObjects.Text;
 };
 
-const DESKTOP_BOARD_WIDTH = 1080;
-const DESKTOP_BOARD_HEIGHT = 690;
-const MOBILE_BOARD_WIDTH = 640;
-const MOBILE_BOARD_HEIGHT = 900;
-const BOARD_PADDING_X = 36;
-const BOARD_PADDING_BOTTOM = 14;
-const DESKTOP_BOARD_PADDING_TOP = 54;
-const MOBILE_BOARD_PADDING_TOP = 54;
-const DESKTOP_LANE_GAP = 12;
-const MOBILE_LANE_GAP = 10;
-const DESKTOP_COLS_PER_SIDE = 5;
-const MOBILE_COLS_PER_SIDE = 4;
-const DESKTOP_CARD_HEIGHT = 42;
-const MOBILE_CARD_HEIGHT = 44;
-const DESKTOP_CARD_GAP_Y = 4;
-const MOBILE_CARD_GAP_Y = 4;
-const DESKTOP_WAVE_SIZE = 4;
-const MOBILE_WAVE_SIZE = 3;
-const DESKTOP_WAVE_DELAY_MS = 1600;
-const MOBILE_WAVE_DELAY_MS = 1950;
-const DESKTOP_FALL_SPEED = 210;
-const MOBILE_FALL_SPEED = 170;
-const FREEZE_DURATION_MS = 5000;
-const DIAGNOSTIC_PLAIN_BOARD = true;
-const ROLE_COLORS = {
-  left: 0x2ea9ff,
-  right: 0xff9b2f,
-};
-
-const ROLE_ACCENTS = {
-  left: 0xe3f7ff,
-  right: 0xffe6c8,
-};
-
-const getFontSize = (text: string, isMobile: boolean) => {
-  if (text.length >= 26) return isMobile ? 11 : 11;
-  if (text.length >= 18) return isMobile ? 12 : 12;
-  return isMobile ? 13 : 13;
-};
+const ROLE_COLORS = WORD_COLLAPSE3_BOARD_TUNING.roleColors;
+const ROLE_ACCENTS = WORD_COLLAPSE3_BOARD_TUNING.roleAccents;
 
 export class WordCollapse3Scene extends Phaser.Scene {
   private readonly sceneConfig: WordCollapse3SceneConfig;
@@ -139,46 +110,54 @@ export class WordCollapse3Scene extends Phaser.Scene {
     };
   }
 
+  private get tuning() {
+    return this.sceneConfig.isMobile
+      ? WORD_COLLAPSE3_BOARD_TUNING.mobile
+      : WORD_COLLAPSE3_BOARD_TUNING.desktop;
+  }
+
   private get boardWidth() {
-    return this.sceneConfig.isMobile ? MOBILE_BOARD_WIDTH : DESKTOP_BOARD_WIDTH;
+    return this.sceneConfig.isMobile
+      ? WORD_COLLAPSE3_GAME_SIZE.mobile.width
+      : WORD_COLLAPSE3_GAME_SIZE.desktop.width;
   }
 
   private get boardHeight() {
-    return this.sceneConfig.isMobile ? MOBILE_BOARD_HEIGHT : DESKTOP_BOARD_HEIGHT;
+    return this.sceneConfig.isMobile
+      ? WORD_COLLAPSE3_GAME_SIZE.mobile.height
+      : WORD_COLLAPSE3_GAME_SIZE.desktop.height;
   }
 
   private get boardPaddingTop() {
-    return this.sceneConfig.isMobile ? MOBILE_BOARD_PADDING_TOP : DESKTOP_BOARD_PADDING_TOP;
+    return this.tuning.boardPaddingTop;
   }
 
   private get laneGap() {
-    return this.sceneConfig.isMobile ? MOBILE_LANE_GAP : DESKTOP_LANE_GAP;
+    return this.tuning.laneGap;
   }
 
   private get colsPerSide() {
-    return this.sceneConfig.isMobile ? MOBILE_COLS_PER_SIDE : DESKTOP_COLS_PER_SIDE;
+    return this.tuning.colsPerSide;
   }
 
   private get cardHeight() {
-    return this.sceneConfig.isMobile ? MOBILE_CARD_HEIGHT : DESKTOP_CARD_HEIGHT;
+    return this.tuning.cardHeight;
   }
 
   private get cardGapY() {
-    return this.sceneConfig.isMobile ? MOBILE_CARD_GAP_Y : DESKTOP_CARD_GAP_Y;
+    return this.tuning.cardGapY;
   }
 
   private get waveSize() {
-    return this.sceneConfig.isMobile ? MOBILE_WAVE_SIZE : DESKTOP_WAVE_SIZE;
+    return this.tuning.waveSize;
   }
 
   private get waveDelayMs() {
-    const base = this.sceneConfig.isMobile ? MOBILE_WAVE_DELAY_MS : DESKTOP_WAVE_DELAY_MS;
-    return base / this.sceneConfig.speedMultiplier;
+    return this.tuning.waveDelayMs / this.sceneConfig.speedMultiplier;
   }
 
   private get fallSpeedPxPerSec() {
-    const base = this.sceneConfig.isMobile ? MOBILE_FALL_SPEED : DESKTOP_FALL_SPEED;
-    return base * this.sceneConfig.speedMultiplier;
+    return this.tuning.fallSpeed * this.sceneConfig.speedMultiplier;
   }
 
   preload() {
@@ -292,13 +271,13 @@ export class WordCollapse3Scene extends Phaser.Scene {
 
     const laneWidth = this.getLaneWidth();
     const boardTop = this.boardPaddingTop;
-    const boardHeight = this.boardHeight - this.boardPaddingTop - BOARD_PADDING_BOTTOM;
+    const boardHeight = this.boardHeight - this.boardPaddingTop - WORD_COLLAPSE3_BOARD_TUNING.boardPaddingBottom;
     const centerX = this.boardWidth / 2;
-    const leftX = BOARD_PADDING_X;
+    const leftX = WORD_COLLAPSE3_BOARD_TUNING.boardPaddingX;
     const rightX = centerX + this.laneGap / 2;
     const boardBottom = boardTop + boardHeight;
 
-    if (DIAGNOSTIC_PLAIN_BOARD) {
+    if (WORD_COLLAPSE3_BOARD_TUNING.diagnosticPlainBoard) {
       g.fillStyle(0x05070d, 0.46);
       g.fillRect(leftX, boardTop, laneWidth, boardHeight);
       g.fillStyle(0x100804, 0.46);
@@ -473,8 +452,8 @@ export class WordCollapse3Scene extends Phaser.Scene {
 
   private spawnBonus(type: BonusType) {
     const size = this.sceneConfig.isMobile ? 42 : 46;
-    const minX = BOARD_PADDING_X + 20;
-    const maxX = this.boardWidth - BOARD_PADDING_X - 20;
+    const minX = WORD_COLLAPSE3_BOARD_TUNING.boardPaddingX + 20;
+    const maxX = this.boardWidth - WORD_COLLAPSE3_BOARD_TUNING.boardPaddingX - 20;
     const x = Phaser.Math.Between(minX, maxX);
     const y = this.boardPaddingTop - size;
     const shadow = this.add.graphics();
@@ -568,7 +547,7 @@ export class WordCollapse3Scene extends Phaser.Scene {
 
   private activateFreezePower() {
     const now = this.time.now;
-    this.freezeUntil = Math.max(this.freezeUntil, now) + FREEZE_DURATION_MS;
+    this.freezeUntil = Math.max(this.freezeUntil, now) + WORD_COLLAPSE3_BOARD_TUNING.freezeDurationMs;
     this.clearSelected();
     this.hud = { ...this.hud, isFrozen: true };
     this.emitHud();
@@ -604,7 +583,7 @@ export class WordCollapse3Scene extends Phaser.Scene {
     const x = this.getCardX(role, column);
     const startY = this.boardPaddingTop - this.cardHeight - Phaser.Math.Between(10, 70);
     const text = role === "left" ? pair.leftText : pair.rightText;
-    const fontSize = getFontSize(text, this.sceneConfig.isMobile);
+    const fontSize = getWordCollapse3FontSize(text, this.sceneConfig.isMobile);
 
     const shadow = this.add.graphics();
     const panel = this.add.graphics();
@@ -651,6 +630,16 @@ export class WordCollapse3Scene extends Phaser.Scene {
     this.cardById.set(card.id, card);
     columnIds.push(card.id);
     this.renderCard(card);
+    container.setAlpha(0.62);
+    container.setScale(0.94);
+    this.tweens.add({
+      targets: container,
+      alpha: 1,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 170,
+      ease: "Cubic.easeOut",
+    });
     return true;
   }
 
@@ -729,15 +718,15 @@ export class WordCollapse3Scene extends Phaser.Scene {
     this.popScore((a.container.x + b.container.x) / 2, Math.min(a.container.y, b.container.y) - 18, `+${1 + bonus}`);
     this.tweens.add({
       targets: [a.container, b.container],
-      scaleX: 1.08,
-      scaleY: 1.08,
-      duration: 110,
+      scaleX: 1.06,
+      scaleY: 1.06,
+      duration: 95,
       yoyo: true,
       ease: "Quad.easeOut",
     });
-    this.time.delayedCall(95, () => {
-      if (this.cardById.has(a.id)) this.removeCard(a);
-      if (this.cardById.has(b.id)) this.removeCard(b);
+    this.time.delayedCall(115, () => {
+      if (this.cardById.has(a.id)) this.removeCard(a, { animate: true, lift: 8 });
+      if (this.cardById.has(b.id)) this.removeCard(b, { animate: true, lift: 8 });
     });
   }
 
@@ -770,25 +759,32 @@ export class WordCollapse3Scene extends Phaser.Scene {
     });
   }
 
-  private removeCard(card: CardState) {
+  private removeCard(card: CardState, options: RemoveCardOptions = {}) {
     this.cardById.delete(card.id);
     const columnIds = this.columns[card.role][card.column];
     const index = columnIds.indexOf(card.id);
     if (index >= 0) columnIds.splice(index, 1);
-    this.tweens.add({
-      targets: card.container,
-      alpha: 0,
-      scaleX: 0.88,
-      scaleY: 0.88,
-      duration: 150,
-      onComplete: () => card.container.destroy(),
-    });
+    const animate = options.animate ?? true;
+    if (animate) {
+      this.tweens.add({
+        targets: card.container,
+        alpha: 0,
+        y: card.container.y - (options.lift ?? 6),
+        scaleX: 0.9,
+        scaleY: 0.9,
+        duration: 170,
+        ease: "Cubic.easeOut",
+        onComplete: () => card.container.destroy(),
+      });
+    } else {
+      card.container.destroy();
+    }
     this.collapseColumn(card.role, card.column);
   }
 
   private explodeCard(card: CardState) {
     this.spawnSparkles(card.container.x, card.container.y, card.role === "left" ? ROLE_COLORS.left : ROLE_COLORS.right);
-    this.removeCard(card);
+    this.removeCard(card, { animate: true, lift: 12 });
   }
 
   private collapseColumn(role: LaneRole, column: number) {
@@ -859,7 +855,7 @@ export class WordCollapse3Scene extends Phaser.Scene {
 
   private updateBonuses(delta: number) {
     const dyMultiplier = Math.min(delta, 34) / 1000;
-    const boardBottom = this.boardHeight - BOARD_PADDING_BOTTOM - 12;
+    const boardBottom = this.boardHeight - WORD_COLLAPSE3_BOARD_TUNING.boardPaddingBottom - 12;
     Array.from(this.bonusById.values()).forEach((bonus) => {
       const nextY = bonus.y + bonus.speed * dyMultiplier;
       bonus.y = nextY;
@@ -1099,27 +1095,32 @@ export class WordCollapse3Scene extends Phaser.Scene {
   }
 
   private getLaneWidth() {
-    return (this.boardWidth - BOARD_PADDING_X * 2 - this.laneGap) / 2;
+    return (this.boardWidth - WORD_COLLAPSE3_BOARD_TUNING.boardPaddingX * 2 - this.laneGap) / 2;
   }
 
   private getCardWidth() {
-    const laneInset = this.sceneConfig.isMobile ? 16 : 20;
-    const columnGap = this.sceneConfig.isMobile ? 4 : 6;
+    const laneInset = this.tuning.laneInset;
+    const columnGap = this.tuning.columnGap;
     const laneInner = this.getLaneWidth() - laneInset;
     return (laneInner - (this.colsPerSide - 1) * columnGap) / this.colsPerSide;
   }
 
   private getCardX(role: LaneRole, column: number) {
     const cardWidth = this.getCardWidth();
-    const columnGap = this.sceneConfig.isMobile ? 4 : 6;
+    const columnGap = this.tuning.columnGap;
     const laneStart =
       role === "left"
-        ? BOARD_PADDING_X + (this.sceneConfig.isMobile ? 8 : 10)
-        : this.boardWidth / 2 + this.laneGap / 2 + (this.sceneConfig.isMobile ? 8 : 10);
+        ? WORD_COLLAPSE3_BOARD_TUNING.boardPaddingX + this.tuning.laneStartOffset
+        : this.boardWidth / 2 + this.laneGap / 2 + this.tuning.laneStartOffset;
     return laneStart + cardWidth / 2 + column * (cardWidth + columnGap);
   }
 
   private getCardY(stackIndex: number) {
-    return this.boardHeight - BOARD_PADDING_BOTTOM - this.cardHeight / 2 - stackIndex * (this.cardHeight + this.cardGapY);
+    return (
+      this.boardHeight
+      - WORD_COLLAPSE3_BOARD_TUNING.boardPaddingBottom
+      - this.cardHeight / 2
+      - stackIndex * (this.cardHeight + this.cardGapY)
+    );
   }
 }

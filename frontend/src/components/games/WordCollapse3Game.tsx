@@ -13,6 +13,12 @@ import {
   termKeyFor,
 } from "./wordCollapseShared";
 import type { LanguageOption, PlayableTerm, SpawnPair } from "./wordCollapseShared";
+import {
+  WORD_COLLAPSE3_GAME_SIZE,
+  WORD_COLLAPSE3_MOBILE_BREAKPOINT,
+  WORD_COLLAPSE3_SPEED_MULTIPLIERS,
+} from "./wordCollapse3Config";
+import type { WordCollapse3SpeedPreset } from "./wordCollapse3Config";
 import type { WordCollapse3Hud, WordCollapse3Scene } from "./wordCollapse3Scene";
 import {
   loadStoredBool,
@@ -32,8 +38,6 @@ type Props = {
   verbEntries: VerbEntry[];
 };
 
-type SpeedPreset = "verySlow" | "slow" | "normal" | "fast" | "turbo";
-
 const FALLBACK_HUD: WordCollapse3Hud = {
   status: "idle",
   lives: 5,
@@ -48,19 +52,6 @@ const FALLBACK_HUD: WordCollapse3Hud = {
   poolSize: 0,
 };
 
-const MOBILE_BREAKPOINT = 768;
-const MOBILE_GAME_WIDTH = 640;
-const MOBILE_GAME_HEIGHT = 900;
-const DESKTOP_GAME_WIDTH = 1080;
-const DESKTOP_GAME_HEIGHT = 690;
-const SPEED_MULTIPLIERS: Record<SpeedPreset, number> = {
-  verySlow: 0.34,
-  slow: 0.48,
-  normal: 0.68,
-  fast: 0.9,
-  turbo: 1.08,
-};
-
 const ensureDifferentRightLanguage = (leftLanguage: Stream, uiLanguage: string): LanguageOption => {
   const preferred = defaultRightLanguageForUi(uiLanguage);
   if (preferred !== leftLanguage) return preferred;
@@ -70,8 +61,6 @@ const ensureDifferentRightLanguage = (leftLanguage: Stream, uiLanguage: string):
 const STORAGE_PREFIX = "wordcollapse3";
 const storageKey = (suffix: string) => `${STORAGE_PREFIX}:${suffix}`;
 const languageOptionToLabelKey = (language: LanguageOption) => `streamLabels.${language}`;
-const isNorwegianLanguage = (language: LanguageOption) =>
-  language === "bokmaal" || language === "nynorsk";
 
 const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerms, verbEntries }) => {
   const { t, i18n } = useTranslation();
@@ -80,11 +69,11 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
   const sceneRef = useRef<WordCollapse3Scene | null>(null);
   const [hud, setHud] = useState<WordCollapse3Hud>(FALLBACK_HUD);
   const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== "undefined" ? window.innerWidth <= MOBILE_BREAKPOINT : false,
+    typeof window !== "undefined" ? window.innerWidth <= WORD_COLLAPSE3_MOBILE_BREAKPOINT : false,
   );
   const [settingsExpanded, setSettingsExpanded] = useState(false);
-  const [speedPreset, setSpeedPreset] = useState<SpeedPreset>(
-    () => (loadStoredString(storageKey("speedPreset"), "verySlow") as SpeedPreset),
+  const [speedPreset, setSpeedPreset] = useState<WordCollapse3SpeedPreset>(
+    () => (loadStoredString(storageKey("speedPreset"), "verySlow") as WordCollapse3SpeedPreset),
   );
   const [useGlossary, setUseGlossary] = useState(() =>
     loadStoredBool(storageKey("useGlossary"), true),
@@ -201,29 +190,11 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
 
   const leftLabel = t(languageOptionToLabelKey(leftSideLanguage));
   const rightLabel = t(languageOptionToLabelKey(rightSideLanguage));
-  const laneOriginalLabel = useMemo(
-    () =>
-      isNorwegianLanguage(leftSideLanguage) && !isNorwegianLanguage(rightSideLanguage)
-        ? t("games.wordCollapseLaneOriginal", "Original")
-        : !isNorwegianLanguage(leftSideLanguage) && isNorwegianLanguage(rightSideLanguage)
-          ? t("games.wordCollapseLaneTranslation", "Translation")
-          : t("games.wordCollapseLaneOriginal", "Original"),
-    [leftSideLanguage, rightSideLanguage, t],
-  );
-  const laneTranslationLabel = useMemo(
-    () =>
-      isNorwegianLanguage(rightSideLanguage) && !isNorwegianLanguage(leftSideLanguage)
-        ? t("games.wordCollapseLaneOriginal", "Original")
-        : !isNorwegianLanguage(rightSideLanguage) && isNorwegianLanguage(leftSideLanguage)
-          ? t("games.wordCollapseLaneTranslation", "Translation")
-          : t("games.wordCollapseLaneTranslation", "Translation"),
-    [leftSideLanguage, rightSideLanguage, t],
-  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const updateViewport = () => {
-      const mobile = window.innerWidth <= MOBILE_BREAKPOINT;
+      const mobile = window.innerWidth <= WORD_COLLAPSE3_MOBILE_BREAKPOINT;
       setIsMobile(mobile);
     };
     updateViewport();
@@ -252,10 +223,8 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
         spawnPool,
         leftLabel,
         rightLabel,
-        laneOriginalLabel,
-        laneTranslationLabel,
         isMobile,
-        speedMultiplier: SPEED_MULTIPLIERS[speedPreset],
+        speedMultiplier: WORD_COLLAPSE3_SPEED_MULTIPLIERS[speedPreset],
         maxLives,
         onHudChange: (nextHud) => {
           setHud(nextHud);
@@ -266,8 +235,8 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
       const game = new Phaser.Game({
         type: Phaser.WEBGL,
         parent: mountRef.current,
-        width: isMobile ? MOBILE_GAME_WIDTH : DESKTOP_GAME_WIDTH,
-        height: isMobile ? MOBILE_GAME_HEIGHT : DESKTOP_GAME_HEIGHT,
+        width: isMobile ? WORD_COLLAPSE3_GAME_SIZE.mobile.width : WORD_COLLAPSE3_GAME_SIZE.desktop.width,
+        height: isMobile ? WORD_COLLAPSE3_GAME_SIZE.mobile.height : WORD_COLLAPSE3_GAME_SIZE.desktop.height,
         backgroundColor: "#000000",
         transparent: true,
         antialias: true,
@@ -282,8 +251,8 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
         scale: {
           mode: Phaser.Scale.FIT,
           autoCenter: Phaser.Scale.CENTER_BOTH,
-          width: isMobile ? MOBILE_GAME_WIDTH : DESKTOP_GAME_WIDTH,
-          height: isMobile ? MOBILE_GAME_HEIGHT : DESKTOP_GAME_HEIGHT,
+          width: isMobile ? WORD_COLLAPSE3_GAME_SIZE.mobile.width : WORD_COLLAPSE3_GAME_SIZE.desktop.width,
+          height: isMobile ? WORD_COLLAPSE3_GAME_SIZE.mobile.height : WORD_COLLAPSE3_GAME_SIZE.desktop.height,
         },
         scene: [scene],
       });
@@ -303,10 +272,10 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
       gameRef.current = null;
       if (mountRef.current) mountRef.current.innerHTML = "";
     };
-  }, [isMobile, laneOriginalLabel, laneTranslationLabel, leftLabel, maxLives, rightLabel, spawnPool]);
+  }, [isMobile, leftLabel, maxLives, rightLabel, spawnPool]);
 
   useEffect(() => {
-    sceneRef.current?.setSpeedMultiplier(SPEED_MULTIPLIERS[speedPreset]);
+    sceneRef.current?.setSpeedMultiplier(WORD_COLLAPSE3_SPEED_MULTIPLIERS[speedPreset]);
   }, [speedPreset]);
 
   const handleRestart = () => {
@@ -456,7 +425,7 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
             <div className="falling-settings-list">
               <label className="game-settings">
                 <span>{t("games.speedLabel", "Speed")}</span>
-                <select value={speedPreset} onChange={(e) => setSpeedPreset(e.target.value as SpeedPreset)}>
+                <select value={speedPreset} onChange={(e) => setSpeedPreset(e.target.value as WordCollapse3SpeedPreset)}>
                   <option value="verySlow">{t("games.speedVerySlow", "Very slow")}</option>
                   <option value="slow">{t("games.speedSlow", "Slow")}</option>
                   <option value="normal">{t("games.speedNormal", "Normal")}</option>
