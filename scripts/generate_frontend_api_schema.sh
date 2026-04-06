@@ -57,3 +57,13 @@ fi
   cd "$FRONTEND_DIR"
   npx openapi-typescript "$SCHEMA_JSON_PATH" -o "$SCHEMA_TYPES_PATH"
 )
+
+"$PYTHON_BIN" - "$SCHEMA_TYPES_PATH" <<'PY'
+from pathlib import Path
+import sys
+
+schema_types_path = Path(sys.argv[1])
+lines = schema_types_path.read_text(encoding="utf-8").splitlines()
+normalized = [line for line in lines if "Format: int64" not in line]
+schema_types_path.write_text("\n".join(normalized) + "\n", encoding="utf-8")
+PY
