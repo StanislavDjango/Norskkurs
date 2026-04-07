@@ -22,8 +22,6 @@ export const WORD_COLLAPSE3_SPEED_MULTIPLIERS: Record<WordCollapse3SpeedPreset, 
 };
 
 export const WORD_COLLAPSE3_BOARD_TUNING = {
-  boardPaddingX: 36,
-  boardPaddingBottom: 14,
   freezeDurationMs: 5000,
   diagnosticPlainBoard: true,
   roleColors: {
@@ -35,6 +33,8 @@ export const WORD_COLLAPSE3_BOARD_TUNING = {
     right: 0xffe6c8,
   },
   desktop: {
+    boardPaddingX: 36,
+    boardPaddingBottom: 14,
     boardPaddingTop: 54,
     laneGap: 12,
     colsPerSide: 5,
@@ -48,22 +48,24 @@ export const WORD_COLLAPSE3_BOARD_TUNING = {
     laneStartOffset: 10,
   },
   mobile: {
-    boardPaddingTop: 54,
-    laneGap: 10,
-    colsPerSide: 4,
-    cardHeight: 44,
-    cardGapY: 4,
+    boardPaddingX: 12,
+    boardPaddingBottom: 10,
+    boardPaddingTop: 48,
+    laneGap: 4,
+    colsPerSide: 3,
+    cardHeight: 48,
+    cardGapY: 3,
     waveSize: 3,
     waveDelayMs: 1950,
     fallSpeed: 170,
-    laneInset: 16,
-    columnGap: 4,
-    laneStartOffset: 8,
+    laneInset: 2,
+    columnGap: 1,
+    laneStartOffset: 1,
   },
 } as const;
 
 export const getWordCollapse3FontSize = (text: string, isMobile: boolean) => {
-  if (text.length >= 26) return isMobile ? 11 : 11;
-  if (text.length >= 18) return isMobile ? 12 : 12;
-  return isMobile ? 13 : 13;
+  if (text.length >= 26) return isMobile ? 12 : 11;
+  if (text.length >= 18) return isMobile ? 13 : 12;
+  return isMobile ? 15 : 13;
 };

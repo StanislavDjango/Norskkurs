@@ -132,6 +132,14 @@ export class WordCollapse3Scene extends Phaser.Scene {
     return this.tuning.boardPaddingTop;
   }
 
+  private get boardPaddingX() {
+    return this.tuning.boardPaddingX;
+  }
+
+  private get boardPaddingBottom() {
+    return this.tuning.boardPaddingBottom;
+  }
+
   private get laneGap() {
     return this.tuning.laneGap;
   }
@@ -271,9 +279,9 @@ export class WordCollapse3Scene extends Phaser.Scene {
 
     const laneWidth = this.getLaneWidth();
     const boardTop = this.boardPaddingTop;
-    const boardHeight = this.boardHeight - this.boardPaddingTop - WORD_COLLAPSE3_BOARD_TUNING.boardPaddingBottom;
+    const boardHeight = this.boardHeight - this.boardPaddingTop - this.boardPaddingBottom;
     const centerX = this.boardWidth / 2;
-    const leftX = WORD_COLLAPSE3_BOARD_TUNING.boardPaddingX;
+    const leftX = this.boardPaddingX;
     const rightX = centerX + this.laneGap / 2;
     const boardBottom = boardTop + boardHeight;
 
@@ -452,8 +460,8 @@ export class WordCollapse3Scene extends Phaser.Scene {
 
   private spawnBonus(type: BonusType) {
     const size = this.sceneConfig.isMobile ? 42 : 46;
-    const minX = WORD_COLLAPSE3_BOARD_TUNING.boardPaddingX + 20;
-    const maxX = this.boardWidth - WORD_COLLAPSE3_BOARD_TUNING.boardPaddingX - 20;
+    const minX = this.boardPaddingX + 20;
+    const maxX = this.boardWidth - this.boardPaddingX - 20;
     const x = Phaser.Math.Between(minX, maxX);
     const y = this.boardPaddingTop - size;
     const shadow = this.add.graphics();
@@ -855,7 +863,7 @@ export class WordCollapse3Scene extends Phaser.Scene {
 
   private updateBonuses(delta: number) {
     const dyMultiplier = Math.min(delta, 34) / 1000;
-    const boardBottom = this.boardHeight - WORD_COLLAPSE3_BOARD_TUNING.boardPaddingBottom - 12;
+    const boardBottom = this.boardHeight - this.boardPaddingBottom - 12;
     Array.from(this.bonusById.values()).forEach((bonus) => {
       const nextY = bonus.y + bonus.speed * dyMultiplier;
       bonus.y = nextY;
@@ -1095,7 +1103,7 @@ export class WordCollapse3Scene extends Phaser.Scene {
   }
 
   private getLaneWidth() {
-    return (this.boardWidth - WORD_COLLAPSE3_BOARD_TUNING.boardPaddingX * 2 - this.laneGap) / 2;
+    return (this.boardWidth - this.boardPaddingX * 2 - this.laneGap) / 2;
   }
 
   private getCardWidth() {
@@ -1110,7 +1118,7 @@ export class WordCollapse3Scene extends Phaser.Scene {
     const columnGap = this.tuning.columnGap;
     const laneStart =
       role === "left"
-        ? WORD_COLLAPSE3_BOARD_TUNING.boardPaddingX + this.tuning.laneStartOffset
+        ? this.boardPaddingX + this.tuning.laneStartOffset
         : this.boardWidth / 2 + this.laneGap / 2 + this.tuning.laneStartOffset;
     return laneStart + cardWidth / 2 + column * (cardWidth + columnGap);
   }
@@ -1118,7 +1126,7 @@ export class WordCollapse3Scene extends Phaser.Scene {
   private getCardY(stackIndex: number) {
     return (
       this.boardHeight
-      - WORD_COLLAPSE3_BOARD_TUNING.boardPaddingBottom
+      - this.boardPaddingBottom
       - this.cardHeight / 2
       - stackIndex * (this.cardHeight + this.cardGapY)
     );

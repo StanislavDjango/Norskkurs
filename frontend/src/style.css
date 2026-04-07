@@ -5840,10 +5840,31 @@ button.ghost {
     border-radius: 22px;
   }
 
+  .phaser-collapse-shell.is-mobile {
+    position: relative;
+    left: 50%;
+    right: 50%;
+    width: 100vw;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    padding: 0.72rem 0.72rem 0.86rem;
+    border-radius: 0;
+    border-inline: none;
+    box-shadow: none;
+  }
+
   .phaser-collapse-hero {
     flex-direction: column;
     align-items: stretch;
     gap: 0.75rem;
+  }
+
+  .phaser-collapse-shell.is-mobile .phaser-collapse-hero {
+    justify-content: flex-end;
+  }
+
+  .phaser-collapse-shell.is-mobile .phaser-collapse-copy {
+    display: none;
   }
 
   .phaser-collapse-copy h3 {
@@ -5924,6 +5945,15 @@ button.ghost {
 
   .phaser-collapse-stage {
     border-radius: 14px;
+  }
+
+  .phaser-collapse-shell.is-mobile .phaser-collapse-stage-wrap {
+    padding: 0.2rem;
+    border-radius: 16px;
+  }
+
+  .phaser-collapse-shell.is-mobile .phaser-collapse-stage {
+    border-radius: 12px;
   }
 
   .phaser-collapse-footer {
