@@ -722,19 +722,28 @@ export class WordCollapse3Scene extends Phaser.Scene {
 
     a.container.disableInteractive();
     b.container.disableInteractive();
+    const leftColor = a.role === "left" ? ROLE_COLORS.left : ROLE_COLORS.right;
+    const rightColor = b.role === "left" ? ROLE_COLORS.left : ROLE_COLORS.right;
+    const centerX = (a.container.x + b.container.x) / 2;
+    const centerY = (a.container.y + b.container.y) / 2;
+    this.drawMatchPulse(a.container.x, a.container.y, leftColor);
+    this.drawMatchPulse(b.container.x, b.container.y, rightColor);
     this.drawMatchFlash(a.container.x, a.container.y, b.container.x, b.container.y);
-    this.popScore((a.container.x + b.container.x) / 2, Math.min(a.container.y, b.container.y) - 18, `+${1 + bonus}`);
+    this.spawnSparkles(a.container.x, a.container.y, leftColor, 10);
+    this.spawnSparkles(b.container.x, b.container.y, rightColor, 10);
+    this.popScore(centerX, Math.min(a.container.y, b.container.y) - 18, `+${1 + bonus}`);
+    if (combo > 1) this.popCombo(centerX, centerY - 34, combo);
     this.tweens.add({
       targets: [a.container, b.container],
-      scaleX: 1.06,
-      scaleY: 1.06,
-      duration: 95,
+      scaleX: 1.08,
+      scaleY: 1.08,
+      duration: 110,
       yoyo: true,
-      ease: "Quad.easeOut",
+      ease: "Back.easeOut",
     });
     this.time.delayedCall(115, () => {
-      if (this.cardById.has(a.id)) this.removeCard(a, { animate: true, lift: 8 });
-      if (this.cardById.has(b.id)) this.removeCard(b, { animate: true, lift: 8 });
+      if (this.cardById.has(a.id)) this.removeCard(a, { animate: true, lift: 12 });
+      if (this.cardById.has(b.id)) this.removeCard(b, { animate: true, lift: 12 });
     });
   }
 
@@ -778,9 +787,9 @@ export class WordCollapse3Scene extends Phaser.Scene {
         targets: card.container,
         alpha: 0,
         y: card.container.y - (options.lift ?? 6),
-        scaleX: 0.9,
-        scaleY: 0.9,
-        duration: 170,
+        scaleX: 0.82,
+        scaleY: 0.82,
+        duration: 220,
         ease: "Cubic.easeOut",
         onComplete: () => card.container.destroy(),
       });
@@ -996,7 +1005,12 @@ export class WordCollapse3Scene extends Phaser.Scene {
   private drawMatchFlash(x1: number, y1: number, x2: number, y2: number) {
     const g = this.add.graphics();
     g.setDepth(45);
-    g.lineStyle(8, 0xffefaa, 0.95);
+    g.lineStyle(12, 0xffd86b, 0.16);
+    g.beginPath();
+    g.moveTo(x1, y1);
+    g.lineTo(x2, y2);
+    g.strokePath();
+    g.lineStyle(7, 0xffefaa, 0.95);
     g.beginPath();
     g.moveTo(x1, y1);
     g.lineTo(x2, y2);
@@ -1012,11 +1026,35 @@ export class WordCollapse3Scene extends Phaser.Scene {
       duration: 180,
       onComplete: () => g.destroy(),
     });
-    this.spawnSparkles((x1 + x2) / 2, (y1 + y2) / 2, 0xfacc15);
+    this.spawnSparkles((x1 + x2) / 2, (y1 + y2) / 2, 0xfacc15, 12);
   }
 
-  private spawnSparkles(x: number, y: number, color: number) {
-    for (let i = 0; i < 8; i += 1) {
+  private drawMatchPulse(x: number, y: number, color: number) {
+    const halo = this.add.circle(x, y, 22, color, 0.18);
+    halo.setDepth(46);
+    this.tweens.add({
+      targets: halo,
+      scale: 2.8,
+      alpha: 0,
+      duration: 240,
+      ease: "Cubic.easeOut",
+      onComplete: () => halo.destroy(),
+    });
+
+    const core = this.add.circle(x, y, 10, 0xffffff, 0.34);
+    core.setDepth(47);
+    this.tweens.add({
+      targets: core,
+      scale: 1.8,
+      alpha: 0,
+      duration: 180,
+      ease: "Quad.easeOut",
+      onComplete: () => core.destroy(),
+    });
+  }
+
+  private spawnSparkles(x: number, y: number, color: number, count = 8) {
+    for (let i = 0; i < count; i += 1) {
       const dot = this.add.circle(x, y, Phaser.Math.Between(3, 6), color, 0.9);
       const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
       const distance = Phaser.Math.Between(24, 62);
@@ -1031,6 +1069,29 @@ export class WordCollapse3Scene extends Phaser.Scene {
         onComplete: () => dot.destroy(),
       });
     }
+  }
+
+  private popCombo(x: number, y: number, combo: number) {
+    const pop = this.add.text(x, y, `COMBO x${combo}`, {
+      color: "#fff0a6",
+      fontFamily: "Inter, sans-serif",
+      fontSize: this.sceneConfig.isMobile ? "18px" : "22px",
+      fontStyle: "800",
+      stroke: "#231006",
+      strokeThickness: 4,
+    });
+    pop.setOrigin(0.5);
+    pop.setDepth(48);
+    this.tweens.add({
+      targets: pop,
+      y: y - 24,
+      alpha: 0,
+      scaleX: 1.06,
+      scaleY: 1.06,
+      duration: 520,
+      ease: "Cubic.easeOut",
+      onComplete: () => pop.destroy(),
+    });
   }
 
   private popScore(x: number, y: number, text: string) {

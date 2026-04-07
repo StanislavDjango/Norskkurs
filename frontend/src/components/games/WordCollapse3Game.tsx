@@ -301,24 +301,29 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
 
   return (
     <div className={`phaser-collapse-shell ${isMobile ? "is-mobile" : ""}`}>
-      <div className="phaser-collapse-hero">
+      <div className="phaser-collapse-topbar phaser-collapse-hero">
         <div className="phaser-collapse-copy">
           <h3>{t("games.tabWordCollapse3", "WordCollaps 3")}</h3>
           <p className="muted small">{t("games.wordCollapse3Subtitle", "Canvas-powered matching with smoother motion, cleaner visuals, and stronger feedback.")}</p>
         </div>
         <div className="phaser-collapse-actions">
-          <button className="start-btn" type="button" onClick={handleRestart} disabled={spawnPool.length < 2}>
+          <button className="start-btn phaser-action-btn phaser-action-btn--primary" type="button" onClick={handleRestart} disabled={spawnPool.length < 2}>
             {t("games.restart", "Сыграть ещё")}
           </button>
           <button
-            className="ghost-btn"
+            className="ghost-btn phaser-action-btn"
             type="button"
             onClick={handlePause}
             disabled={hud.status === "idle" || hud.status === "game-over"}
           >
             {hud.status === "paused" ? t("games.wordCollapseResume", "Resume") : t("games.wordCollapsePause", "Pause")}
           </button>
-          <button className="ghost-btn" type="button" onClick={handleBomb} disabled={!hud.canUseBomb}>
+          <button
+            className={`ghost-btn phaser-action-btn phaser-action-btn--bomb ${hud.canUseBomb ? "is-ready" : ""}`}
+            type="button"
+            onClick={handleBomb}
+            disabled={!hud.canUseBomb}
+          >
             {t("games.wordCollapseBombLabel", "Bomb")}
           </button>
         </div>
@@ -460,24 +465,35 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
 
       <div className="phaser-collapse-stats">
         <span className="score lives">
-          {t("games.wordCollapseLivesLabel", "Lives")}: {hud.lives}
+          <span className="score__label">{t("games.wordCollapseLivesLabel", "Lives")}</span>
+          <strong className="score__value">{hud.lives}</strong>
         </span>
         <span className="score correct">
-          {t("correct", "Correct")}: {hud.score}
+          <span className="score__label">{t("correct", "Correct")}</span>
+          <strong className="score__value">{hud.score}</strong>
         </span>
         <span className="score incorrect">
-          {t("incorrect", "Incorrect")}: {hud.incorrect}
+          <span className="score__label">{t("incorrect", "Incorrect")}</span>
+          <strong className="score__value">{hud.incorrect}</strong>
         </span>
-        <span className="score combo">Combo: x{Math.max(1, hud.combo)}</span>
+        <span className={`score combo ${hud.combo > 1 ? "is-active" : ""}`}>
+          <span className="score__label">Combo</span>
+          <strong className="score__value">x{Math.max(1, hud.combo)}</strong>
+        </span>
         <span className={`score bomb ${hud.canUseBomb ? "ready" : ""}`}>
-          {t("games.wordCollapseBombLabel", "Bomb")}: {hud.bombCharge}%
+          <span className="score__label">{t("games.wordCollapseBombLabel", "Bomb")}</span>
+          <strong className="score__value">{hud.bombCharge}%</strong>
         </span>
         {hud.isFrozen && (
           <span className="score freeze">
-            {t("games.wordCollapseFreezeLabel", "Freeze")}
+            <span className="score__label">{t("games.wordCollapseFreezeLabel", "Freeze")}</span>
+            <strong className="score__value">ON</strong>
           </span>
         )}
-        <span className="score status">{statusLabel}</span>
+        <span className={`score status score--status-${hud.status}`}>
+          <span className="score__label">Status</span>
+          <strong className="score__value">{statusLabel}</strong>
+        </span>
       </div>
 
       <div className="phaser-collapse-legend" aria-hidden="true">

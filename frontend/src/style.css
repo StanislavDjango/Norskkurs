@@ -5500,6 +5500,11 @@ button.ghost {
   flex-wrap: wrap;
 }
 
+.phaser-collapse-topbar {
+  align-items: center;
+  padding: 0.15rem 0 0.1rem;
+}
+
 .phaser-collapse-settings {
   border-radius: 22px;
   border: 1px solid rgba(130, 171, 255, 0.16);
@@ -5597,6 +5602,25 @@ button.ghost {
 
 .phaser-collapse-actions {
   align-items: center;
+}
+
+.phaser-action-btn {
+  min-height: 46px;
+  border-radius: 14px;
+  box-shadow: 0 10px 22px rgba(2, 6, 23, 0.22);
+}
+
+.phaser-action-btn--primary {
+  background: linear-gradient(135deg, #2d7bff, #1d4ed8);
+  border-color: rgba(118, 180, 255, 0.5);
+  box-shadow: 0 16px 28px rgba(31, 78, 172, 0.28);
+}
+
+.phaser-action-btn--bomb.is-ready {
+  background: linear-gradient(135deg, rgba(110, 48, 8, 0.95), rgba(255, 149, 43, 0.92));
+  border-color: rgba(255, 205, 142, 0.58);
+  color: #fff3de;
+  box-shadow: 0 16px 30px rgba(109, 45, 8, 0.3);
 }
 
 .phaser-collapse-speed {
@@ -5706,17 +5730,52 @@ button.ghost {
 }
 
 .phaser-collapse-stats .score {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.7rem;
-  border-radius: 999px;
+  display: inline-grid;
+  gap: 0.12rem;
+  align-content: center;
+  padding: 0.56rem 0.8rem;
+  border-radius: 18px;
   border: 1px solid rgba(130, 171, 255, 0.14);
-  background: rgba(10, 17, 31, 0.78);
+  background:
+    linear-gradient(180deg, rgba(20, 31, 52, 0.92), rgba(8, 15, 29, 0.9)),
+    rgba(10, 17, 31, 0.78);
   font-weight: 700;
   color: #f8fbff;
   font-size: 0.94rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 24px rgba(2, 6, 23, 0.22);
+}
+
+.phaser-collapse-stats .score__label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(210, 228, 255, 0.68);
+}
+
+.phaser-collapse-stats .score__value {
+  font-size: 1.02rem;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  color: #f8fbff;
+}
+
+.phaser-collapse-stats .score.correct .score__value {
+  color: #dff9ff;
+}
+
+.phaser-collapse-stats .score.incorrect .score__value {
+  color: #ffd8d8;
+}
+
+.phaser-collapse-stats .score.combo.is-active {
+  border-color: rgba(255, 226, 126, 0.48);
+  background: linear-gradient(180deg, rgba(69, 48, 10, 0.96), rgba(36, 22, 6, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 242, 204, 0.15), 0 14px 28px rgba(73, 46, 7, 0.26);
+}
+
+.phaser-collapse-stats .score.combo.is-active .score__value {
+  color: #ffe998;
 }
 
 .phaser-collapse-stats .score.bomb.ready {
@@ -5725,10 +5784,34 @@ button.ghost {
   color: #ffd29a;
 }
 
+.phaser-collapse-stats .score.bomb.ready .score__value {
+  color: #ffe0b7;
+}
+
 .phaser-collapse-stats .score.freeze {
   border-color: rgba(93, 209, 255, 0.36);
   background: rgba(8, 49, 84, 0.84);
   color: #dcf6ff;
+}
+
+.phaser-collapse-stats .score.freeze .score__value {
+  color: #ecfbff;
+}
+
+.phaser-collapse-stats .score.status {
+  border-color: rgba(152, 177, 226, 0.18);
+}
+
+.phaser-collapse-stats .score--status-running .score__value {
+  color: #dff8ff;
+}
+
+.phaser-collapse-stats .score--status-paused .score__value {
+  color: #ffe2a9;
+}
+
+.phaser-collapse-stats .score--status-game-over .score__value {
+  color: #ffd2d2;
 }
 
 .phaser-collapse-footer {
@@ -5915,9 +5998,18 @@ button.ghost {
   .phaser-collapse-stats .score {
     justify-content: center;
     min-height: 40px;
-    padding: 0.42rem 0.5rem;
+    padding: 0.48rem 0.55rem;
     font-size: 0.82rem;
     text-align: center;
+    justify-items: center;
+  }
+
+  .phaser-collapse-stats .score__label {
+    font-size: 0.62rem;
+  }
+
+  .phaser-collapse-stats .score__value {
+    font-size: 0.92rem;
   }
 
   .phaser-collapse-stats .score.status,
