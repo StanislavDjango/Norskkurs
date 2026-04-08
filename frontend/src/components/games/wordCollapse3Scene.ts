@@ -4,8 +4,10 @@ import { sampleWithoutReplacement } from "./wordCollapseShared";
 import {
   WORD_COLLAPSE3_BOARD_TUNING,
   WORD_COLLAPSE3_GAME_SIZE,
+  getWordCollapse3MobileTuning,
   getWordCollapse3FontSize,
 } from "./wordCollapse3Config";
+import type { WordCollapse3MobileSizePreset } from "./wordCollapse3Config";
 import type { SpawnPair } from "./wordCollapseShared";
 
 type LaneRole = "left" | "right";
@@ -31,6 +33,7 @@ export type WordCollapse3SceneConfig = {
   leftLabel: string;
   rightLabel: string;
   isMobile: boolean;
+  mobileSizePreset: WordCollapse3MobileSizePreset;
   speedMultiplier: number;
   maxLives: number;
   onHudChange: (hud: WordCollapse3Hud) => void;
@@ -112,7 +115,7 @@ export class WordCollapse3Scene extends Phaser.Scene {
 
   private get tuning() {
     return this.sceneConfig.isMobile
-      ? WORD_COLLAPSE3_BOARD_TUNING.mobile
+      ? getWordCollapse3MobileTuning(this.sceneConfig.mobileSizePreset)
       : WORD_COLLAPSE3_BOARD_TUNING.desktop;
   }
 
@@ -246,7 +249,7 @@ export class WordCollapse3Scene extends Phaser.Scene {
   }
 
   setSpeedMultiplier(nextMultiplier: number) {
-    this.sceneConfig.speedMultiplier = Phaser.Math.Clamp(nextMultiplier, 0.25, 2);
+    this.sceneConfig.speedMultiplier = Phaser.Math.Clamp(nextMultiplier, 0.05, 2);
   }
 
   private emitHud() {
@@ -591,7 +594,7 @@ export class WordCollapse3Scene extends Phaser.Scene {
     const x = this.getCardX(role, column);
     const startY = this.boardPaddingTop - this.cardHeight - Phaser.Math.Between(10, 70);
     const text = role === "left" ? pair.leftText : pair.rightText;
-    const fontSize = getWordCollapse3FontSize(text, this.sceneConfig.isMobile);
+    const fontSize = getWordCollapse3FontSize(text, this.sceneConfig.isMobile, this.sceneConfig.mobileSizePreset);
 
     const shadow = this.add.graphics();
     const panel = this.add.graphics();

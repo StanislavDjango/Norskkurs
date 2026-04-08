@@ -18,7 +18,7 @@ import {
   WORD_COLLAPSE3_MOBILE_BREAKPOINT,
   WORD_COLLAPSE3_SPEED_MULTIPLIERS,
 } from "./wordCollapse3Config";
-import type { WordCollapse3SpeedPreset } from "./wordCollapse3Config";
+import type { WordCollapse3MobileSizePreset, WordCollapse3SpeedPreset } from "./wordCollapse3Config";
 import type { WordCollapse3Hud, WordCollapse3Scene } from "./wordCollapse3Scene";
 import {
   loadStoredBool,
@@ -75,6 +75,10 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
   const [speedPreset, setSpeedPreset] = useState<WordCollapse3SpeedPreset>(
     () => (loadStoredString(storageKey("speedPreset"), "verySlow") as WordCollapse3SpeedPreset),
   );
+  const [mobileSizePreset, setMobileSizePreset] = useState<WordCollapse3MobileSizePreset>(() => {
+    const stored = loadStoredString(storageKey("mobileSizePreset"), "standard");
+    return stored === "large" ? "large" : "standard";
+  });
   const [useGlossary, setUseGlossary] = useState(() =>
     loadStoredBool(storageKey("useGlossary"), true),
   );
@@ -107,6 +111,10 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
   useEffect(() => {
     storeString(storageKey("speedPreset"), speedPreset);
   }, [speedPreset]);
+
+  useEffect(() => {
+    storeString(storageKey("mobileSizePreset"), mobileSizePreset);
+  }, [mobileSizePreset]);
 
   useEffect(() => {
     storeBool(storageKey("useGlossary"), useGlossary);
@@ -224,6 +232,7 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
         leftLabel,
         rightLabel,
         isMobile,
+        mobileSizePreset,
         speedMultiplier: WORD_COLLAPSE3_SPEED_MULTIPLIERS[speedPreset],
         maxLives,
         onHudChange: (nextHud) => {
@@ -272,7 +281,7 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
       gameRef.current = null;
       if (mountRef.current) mountRef.current.innerHTML = "";
     };
-  }, [isMobile, leftLabel, maxLives, rightLabel, spawnPool]);
+  }, [isMobile, leftLabel, maxLives, mobileSizePreset, rightLabel, spawnPool]);
 
   useEffect(() => {
     sceneRef.current?.setSpeedMultiplier(WORD_COLLAPSE3_SPEED_MULTIPLIERS[speedPreset]);
@@ -431,6 +440,8 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
               <label className="game-settings">
                 <span>{t("games.speedLabel", "Speed")}</span>
                 <select value={speedPreset} onChange={(e) => setSpeedPreset(e.target.value as WordCollapse3SpeedPreset)}>
+                  <option value="reading">{t("games.speedReading", "Reading pace")}</option>
+                  <option value="ultraSlow">{t("games.speedUltraSlow", "Ultra slow")}</option>
                   <option value="verySlow">{t("games.speedVerySlow", "Very slow")}</option>
                   <option value="slow">{t("games.speedSlow", "Slow")}</option>
                   <option value="normal">{t("games.speedNormal", "Normal")}</option>
@@ -447,6 +458,26 @@ const WordCollapse3Game: React.FC<Props> = ({ stream, currentLevel, playableTerm
                   <option value={20}>20</option>
                 </select>
               </label>
+              {isMobile && (
+                <label className="game-settings">
+                  <span>{t("games.wordCollapse3BlockSize", "Block size")}</span>
+                  <select
+                    value={mobileSizePreset}
+                    onChange={(e) => setMobileSizePreset(e.target.value as WordCollapse3MobileSizePreset)}
+                  >
+                    <option value="standard">{t("games.wordCollapse3BlockSizeStandard", "Standard (3 + 3)")}</option>
+                    <option value="large">{t("games.wordCollapse3BlockSizeLarge", "Large text (2 + 2)")}</option>
+                  </select>
+                </label>
+              )}
+              {isMobile && (
+                <p className="muted tiny">
+                  {t(
+                    "games.wordCollapse3BlockSizeHint",
+                    "Use the large-text mode to show only two wider cards on each side.",
+                  )}
+                </p>
+              )}
               <p className="muted tiny">
                 {t("games.wordCollapsePoolCount", "Words available: {{count}}", { count: spawnPool.length })}
               </p>
